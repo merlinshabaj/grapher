@@ -136,6 +136,8 @@ function main() {
 
         plotTranslation[0] += dx;
         plotTranslation[1] -= dy; 
+        rectangleTranslation[0] += dx;
+        rectangleTranslation[1] -= dy;
 
         startX = event.clientX;
         startY = event.clientY;
@@ -156,16 +158,31 @@ function main() {
 
     // ZOOMING
     var zoomLevel = 1;
-    var zoomFactor = 1.1;
-    const zoomIncrement = 0.1;
+    var zoomFactor = 1.05;
+    const zoomIncrement = 0.1;  
+    let mouseX = 0, mouseY = 0;
 
     function zoomIn() {
-        zoomLevel *= zoomFactor;
+        const [worldX, worldY] = screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel);
+
+        // zoomLevel *= zoomFactor;
+        zoomLevel -= zoomIncrement;
+
+        plotTranslation[0] -= (worldX - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[0]);
+        plotTranslation[1] -= (worldY - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[1]);
+
         updateOrthographicDimensions();
     }
 
     function zoomOut() {
-        zoomLevel /= zoomFactor;
+        const [worldX, worldY] = screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel);
+
+        // zoomLevel /= zoomFactor;
+        zoomLevel += zoomIncrement;
+
+        plotTranslation[0] -= (worldX - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[0]);
+        plotTranslation[1] -= (worldY - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[1]);
+
         updateOrthographicDimensions();
     }
 
@@ -181,28 +198,42 @@ function main() {
         drawScene();
     }
 
+    function screenToWorld(x, y, translation, zoom) {
+        return [
+            (x - gl.canvas.clientWidth / 2) * zoom + translation[0],
+            (gl.canvas.clientHeight / 2 - y) * zoom + translation[1]
+        ];
+    }
+
+    gl.canvas.addEventListener('mousemove', (event) => {
+        mouseX = event.clientX;
+        mouseY = event.clientY;
+    });
+
     gl.canvas.addEventListener('wheel', (event) => {
         // Determine zoom direction
         if (event.deltaY > 0) {
-            zoomLevel += zoomIncrement;  // Zoom out
-            // zoomOut();
+            // zoomLevel += zoomIncrement;  // Zoom out
+            zoomOut();
         } else if (event.deltaY < 0 && zoomLevel > zoomIncrement) {
-            zoomLevel -= zoomIncrement;  // Zoom in
-            // zoomIn();
+            // zoomLevel -= zoomIncrement;  // Zoom in
+            zoomIn();
         }
     
         // Adjust the orthographic boundaries based on the zoom level
-        const widthHalf = gl.canvas.clientWidth / 2 * zoomLevel;
-        const heightHalf = gl.canvas.clientHeight / 2 * zoomLevel;
+        // const widthHalf = gl.canvas.clientWidth / 2 * zoomLevel;
+        // const heightHalf = gl.canvas.clientHeight / 2 * zoomLevel;
     
-        left = -widthHalf;
-        right = widthHalf;
-        bottom = -heightHalf;
-        top = heightHalf;
+        // left = -widthHalf;
+        // right = widthHalf;
+        // bottom = -heightHalf;
+        // top = heightHalf;
     
-        orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
-        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
-        drawScene();
+        // orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
+        // viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
+        // drawScene();
+
+        updateOrthographicDimensions();
     });
 
     // Prevent the page from scrolling when using the mouse wheel on the canvas
