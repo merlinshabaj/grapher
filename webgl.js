@@ -131,8 +131,8 @@ function main() {
 
     gl.canvas.addEventListener('mousemove', (event) => {
         if (!isPanning) return; 
-        let dx = event.clientX - startX; 
-        let dy = event.clientY - startY; 
+        let dx = (event.clientX - startX) * zoomLevel; 
+        let dy = (event.clientY - startY) * zoomLevel; 
 
         plotTranslation[0] += dx;
         plotTranslation[1] -= dy; 
@@ -155,7 +155,7 @@ function main() {
 
 
     // ZOOMING
-    let zoomLevel = Math.log(1);
+    let zoomLevel = 1;
     const zoomIncrement = 0.1;
 
     gl.canvas.addEventListener('wheel', (event) => {
