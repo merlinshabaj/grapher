@@ -80,6 +80,7 @@ function main() {
 
     var rectangleTranslation = [-25, -25, 0];
     var plotTranslation = [0, 0, 0];
+    var scale = [1, 1, 1];
 
     var objectsToDraw = [
         {
@@ -98,23 +99,59 @@ function main() {
         },
     ];
 
-    window.addEventListener('keypress', function () {
-        plotTranslation[0] += 100;
-        console.log(`keydown ${rectangleTranslation}`);
-        drawScene();
-    });
+    let cameraPosition = [0, 0, 1]; // 10 units back in z-axis
+    let target = [0, 0, 0]; // Middle of the graph
+    let up = [0, 1, 0]; // Up direction
 
-
-    var rotationInRadians = -0.5;
-    var rotation = [m3.degToRad(0), m3.degToRad(0), m3.degToRad(0)];
-    var scale = [1, 1, 1];
+    var cameraMatrix = m4.lookAt(cameraPosition, target, up);
+    var viewMatrix = m4.inverse(cameraMatrix);
 
     var left = -gl.canvas.clientWidth / 2;
     var right = gl.canvas.clientWidth / 2;
     var bottom = -gl.canvas.clientHeight / 2;
     var top = gl.canvas.clientHeight / 2;
     var near = 0;
-    var far = 1;
+    var far = 2;
+
+    var orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
+    var viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
+
+
+    // PANNING
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0; 
+
+    gl.canvas.addEventListener('mousedown', (event) => {
+        isPanning = true;
+        startX = event.clientX;
+        startY = event.clientY;
+        gl.canvas.style.cursor = 'grabbing';
+    });
+
+    gl.canvas.addEventListener('mousemove', (event) => {
+        if (!isPanning) return; 
+        let dx = event.clientX - startX; 
+        let dy = event.clientY - startY; 
+
+        plotTranslation[0] += dx;
+        plotTranslation[1] -= dy; 
+
+        startX = event.clientX;
+        startY = event.clientY;
+
+        drawScene();
+    });
+
+    gl.canvas.addEventListener('mouseup', () => {
+        isPanning = false;
+        gl.canvas.style.cursor = 'default';
+    });
+
+    gl.canvas.addEventListener('mouseleave', () => {
+        isPanning = false;
+        gl.canvas.style.cursor = 'default';
+    });
 
 
     drawScene();
@@ -127,23 +164,12 @@ function main() {
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // gl.enable(gl.CULL_FACE);
-        // gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.DEPTH_TEST);
 
-        var rectangleXRotation = 0;
-        var rectangleYRotation = 0;
-        
-        let cameraPosition = [(0 + 1000) / 2, 0, 10]; // 10 units back in z-axis
-        let target = [(0 + 1000) / 2, 0, 0]; // Middle of the graph
-        let up = [0, 1, 0]; // Up direction
-        
-        var cameraMatrix = m4.lookAt(cameraPosition, target, up);
-        var viewMatrix = m4.inverse(cameraMatrix);
-        var orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
-        var viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
-        rectangleUniforms.u_matrix = computeMatrix(orthographicMatrix, rectangleTranslation, rectangleXRotation, rectangleYRotation, scale);
-        plotUniforms.u_matrix = computeMatrix(orthographicMatrix, plotTranslation, 0, 0, scale);
-        console.log(`Final Matrix: ${plotUniforms.u_matrix}`);
+
+        rectangleUniforms.u_matrix = computeMatrix(viewProjectionMatrix, rectangleTranslation, 0, 0, scale);
+        plotUniforms.u_matrix = computeMatrix(viewProjectionMatrix, plotTranslation, 0, 0, scale);
 
         objectsToDraw.forEach(function (object) {
             var program = object.programInfo;
@@ -196,15 +222,15 @@ function setRectangle(gl, x, y, width, height) {
         x2, y1, 0,
         x2, y2, 0]), gl.STATIC_DRAW);
 
-        let points = [
-            x1, y1, 0,
-            x2, y1, 0,
-            x1, y2, 0,
-            x1, y2, 0,
-            x2, y1, 0,
-            x2, y2, 0
-        ];
-        console.log(`POINTS: ${points}`);
+    let points = [
+        x1, y1, 0,
+        x2, y1, 0,
+        x1, y2, 0,
+        x1, y2, 0,
+        x2, y1, 0,
+        x2, y2, 0
+    ];
+    console.log(`POINTS: ${points}`);
 }
 
 function plotGraph(gl, start = 0, end = 1440 * 100, resolution = 100) {
