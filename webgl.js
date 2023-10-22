@@ -155,15 +155,40 @@ function main() {
 
 
     // ZOOMING
-    let zoomLevel = 1;
+    var zoomLevel = 1;
+    var zoomFactor = 1.1;
     const zoomIncrement = 0.1;
+
+    function zoomIn() {
+        zoomLevel *= zoomFactor;
+        updateOrthographicDimensions();
+    }
+
+    function zoomOut() {
+        zoomLevel /= zoomFactor;
+        updateOrthographicDimensions();
+    }
+
+    function updateOrthographicDimensions() {
+        left = (-gl.canvas.clientWidth / 2) / zoomLevel;
+        right = (gl.canvas.clientWidth / 2) / zoomLevel;
+        bottom = (-gl.canvas.clientHeight / 2) / zoomLevel;
+        top = (gl.canvas.clientHeight / 2) / zoomLevel;
+    
+        orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
+        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
+        
+        drawScene();
+    }
 
     gl.canvas.addEventListener('wheel', (event) => {
         // Determine zoom direction
         if (event.deltaY > 0) {
             zoomLevel += zoomIncrement;  // Zoom out
+            // zoomOut();
         } else if (event.deltaY < 0 && zoomLevel > zoomIncrement) {
             zoomLevel -= zoomIncrement;  // Zoom in
+            // zoomIn();
         }
     
         // Adjust the orthographic boundaries based on the zoom level
@@ -175,11 +200,7 @@ function main() {
         bottom = -heightHalf;
         top = heightHalf;
     
-        // Recompute the orthographic matrix
-        console.log(`deltaY ${event.deltaY}`);
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
-        
-        // ... (Compute and use the final matrix for rendering)
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
         drawScene();
     });
