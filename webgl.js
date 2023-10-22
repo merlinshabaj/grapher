@@ -145,13 +145,49 @@ function main() {
 
     gl.canvas.addEventListener('mouseup', () => {
         isPanning = false;
-        gl.canvas.style.cursor = 'default';
+        gl.canvas.style.cursor = 'grab';
     });
 
     gl.canvas.addEventListener('mouseleave', () => {
         isPanning = false;
         gl.canvas.style.cursor = 'default';
     });
+
+
+    // ZOOMING
+    let zoomLevel = Math.log(1);
+    const zoomIncrement = 0.1;
+
+    gl.canvas.addEventListener('wheel', (event) => {
+        // Determine zoom direction
+        if (event.deltaY > 0) {
+            zoomLevel += zoomIncrement;  // Zoom out
+        } else if (event.deltaY < 0 && zoomLevel > zoomIncrement) {
+            zoomLevel -= zoomIncrement;  // Zoom in
+        }
+    
+        // Adjust the orthographic boundaries based on the zoom level
+        const widthHalf = gl.canvas.clientWidth / 2 * zoomLevel;
+        const heightHalf = gl.canvas.clientHeight / 2 * zoomLevel;
+    
+        left = -widthHalf;
+        right = widthHalf;
+        bottom = -heightHalf;
+        top = heightHalf;
+    
+        // Recompute the orthographic matrix
+        console.log(`deltaY ${event.deltaY}`);
+        orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
+        
+        // ... (Compute and use the final matrix for rendering)
+        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
+        drawScene();
+    });
+
+    // Prevent the page from scrolling when using the mouse wheel on the canvas
+    gl.canvas.addEventListener('wheel', (event) => {
+        event.preventDefault();
+    }, { passive: false });
 
 
     drawScene();
@@ -165,8 +201,6 @@ function main() {
 
         // gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
-
-
 
         rectangleUniforms.u_matrix = computeMatrix(viewProjectionMatrix, rectangleTranslation, 0, 0, scale);
         plotUniforms.u_matrix = computeMatrix(viewProjectionMatrix, plotTranslation, 0, 0, scale);
