@@ -165,8 +165,8 @@ function main() {
     function zoomIn() {
         const [worldX, worldY] = screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel);
 
-        // zoomLevel *= zoomFactor;
-        zoomLevel -= zoomIncrement;
+        zoomLevel *= zoomFactor;
+        // zoomLevel -= zoomIncrement;
 
         plotTranslation[0] -= (worldX - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[0]);
         plotTranslation[1] -= (worldY - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[1]);
@@ -177,8 +177,8 @@ function main() {
     function zoomOut() {
         const [worldX, worldY] = screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel);
 
-        // zoomLevel /= zoomFactor;
-        zoomLevel += zoomIncrement;
+        zoomLevel /= zoomFactor;
+        // zoomLevel += zoomIncrement;
 
         plotTranslation[0] -= (worldX - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[0]);
         plotTranslation[1] -= (worldY - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[1]);
@@ -187,10 +187,13 @@ function main() {
     }
 
     function updateOrthographicDimensions() {
-        left = (-gl.canvas.clientWidth / 2) / zoomLevel;
-        right = (gl.canvas.clientWidth / 2) / zoomLevel;
-        bottom = (-gl.canvas.clientHeight / 2) / zoomLevel;
-        top = (gl.canvas.clientHeight / 2) / zoomLevel;
+        const widthHalf = (gl.canvas.clientWidth / 2) * zoomLevel;
+        const heightHalf = (gl.canvas.clientHeight / 2) * zoomLevel;
+
+        left = -widthHalf;
+        right = widthHalf;
+        bottom = -heightHalf;
+        top = heightHalf;
     
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
