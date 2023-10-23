@@ -157,27 +157,34 @@ function main() {
 
 
     // ZOOMING
+    const MIN_ZOOM_LEVEL = 0.0000000000000000000000000000000001;
+    const BASE_ZOOM_FACTOR = 1.05;
+    var zoomExponent = 1;
     var zoomLevel = 1;
-    var zoomFactor = 1.05;
+    const ZOOM_FACTOR = 0.05;
     const zoomIncrement = 0.1;  
     let mouseX = 0, mouseY = 0;
 
     function zoomIn() {
         const [worldX, worldY] = screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel);
 
-        zoomLevel *= zoomFactor;
-        // zoomLevel -= zoomIncrement;
+        zoomExponent--;
+        zoomLevel = Math.pow(BASE_ZOOM_FACTOR, zoomExponent);
+
+        // zoomLevel *= (1 - ZOOM_FACTOR);
 
         plotTranslation[0] -= (worldX - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[0]);
         plotTranslation[1] -= (worldY - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[1]);
-
+        console.log(`ZOOM LEVEL: ${zoomLevel}`);
         updateOrthographicDimensions();
     }
 
     function zoomOut() {
         const [worldX, worldY] = screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel);
 
-        zoomLevel /= zoomFactor;
+        zoomExponent++;
+        zoomLevel = Math.pow(BASE_ZOOM_FACTOR, zoomExponent);
+        // zoomLevel *= (1 + ZOOM_FACTOR);
         // zoomLevel += zoomIncrement;
 
         plotTranslation[0] -= (worldX - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[0]);
