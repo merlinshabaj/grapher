@@ -61,9 +61,12 @@ function main() {
     gl.enableVertexAttribArray(positionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
 
-    var width = gl.canvas.clientWidth;
-    var resolution = 100;
-    plotGraph(gl, 0, width * resolution, resolution);
+    var left = -gl.canvas.clientWidth / 2;
+    var right = gl.canvas.clientWidth / 2;
+    var zoomLevel = 1;
+    var plotTranslation = [0, 0, 0];
+    var resolution = 1;
+    updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
 
     var size = 3;
     var type = gl.FLOAT;
@@ -82,7 +85,7 @@ function main() {
     }
 
     var rectangleTranslation = [-25, -25, 0];
-    var plotTranslation = [0, 0, 0];
+    
     var scale = [1, 1, 1];
 
     var objectsToDraw = [
@@ -98,7 +101,8 @@ function main() {
             vertexArray: plotVAO,
             uniforms: plotUniforms,
             primitiveType: gl.LINE_STRIP,
-            count: width * resolution + 1,
+            // plotbuffer length might be needed
+            count: gl.canvas.clientWidth * resolution + 1,
         },
     ];
 
@@ -109,8 +113,7 @@ function main() {
     var cameraMatrix = m4.lookAt(cameraPosition, target, up);
     var viewMatrix = m4.inverse(cameraMatrix);
 
-    var left = -gl.canvas.clientWidth / 2;
-    var right = gl.canvas.clientWidth / 2;
+    
     var bottom = -gl.canvas.clientHeight / 2;
     var top = gl.canvas.clientHeight / 2;
     var near = 0;
@@ -139,12 +142,11 @@ function main() {
 
         plotTranslation[0] += dx;
         plotTranslation[1] -= dy; 
-        rectangleTranslation[0] += dx;
-        rectangleTranslation[1] -= dy;
 
         startX = event.clientX;
         startY = event.clientY;
-
+        // console.log(`ZoomLevel: ${zoomLevel}`);
+        updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
         drawScene();
     });
 
@@ -163,7 +165,6 @@ function main() {
     const MIN_ZOOM_LEVEL = 0.0000000000000000000000000000000001;
     const BASE_ZOOM_FACTOR = 1.05;
     var zoomExponent = 1;
-    var zoomLevel = 1;
     const ZOOM_FACTOR = 0.05;
     const zoomIncrement = 0.1;  
     let mouseX = 0, mouseY = 0;
@@ -204,10 +205,12 @@ function main() {
         right = widthHalf;
         bottom = -heightHalf;
         top = heightHalf;
-    
+        console.log(`Zoom Level: ${zoomLevel}, Left: ${left}, Right: ${right}`);
+
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
         
+        // updateGraph(gl, left, right, 1, zoomLevel, plotTranslation);
         drawScene();
     }
 
@@ -239,7 +242,6 @@ function main() {
         event.preventDefault();
     }, { passive: false });
 
-
     drawScene();
 
     function drawScene() {
@@ -267,7 +269,6 @@ function main() {
             // Draw
             var primitiveType = object.primitiveType;
             var offset = 0;
-            // var count = object.vertexArray.count() * 3;
             var count = object.count;
             gl.drawArrays(primitiveType, offset, count);
         });
@@ -315,20 +316,44 @@ function setRectangle(gl, x, y, width, height) {
     console.log(`POINTS: ${points}`);
 }
 
-function plotGraph(gl, start = 0, end = 1440 * 100, resolution = 100) {
-    var tempPoints = [];
+function generateGraphData(start, end, resolution = 100) {
+    var points = [];
 
-    let increment = start < end ? 1 : -1;
+    let startX = start * resolution;
+    let endX = end * resolution;
 
-    for (let i = start; i !== end + increment; i += increment) {
-        let x = (i - (end / 2)) / resolution;
-        let y = Math.cos(x); // Math.sin(x * x) - Math.cos(x);
-
-        tempPoints.push(x, y, 0);
+    if (startX < endX) {
+        for (let i = startX; i <= endX; i++) {
+            let x = i / resolution;
+            let y = Math.cos(x);
+            points.push(x, y, 0);
+        }
+    } else {
+        for (let i = startX; i >= endX; i--) {
+            let x = i / resolution;
+            let y = Math.cos(x);
+            points.push(x, y, 0);
+        }
     }
 
-    console.log(`Count: ${tempPoints.length / 3}`);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(tempPoints), gl.STATIC_DRAW);
+    return points
+}
+
+const MAX_SAFE_ARRAY_LENGTH = 4323
+function uploadGraphData(gl, data) {
+    // if (data.length > MAX_SAFE_ARRAY_LENGTH) {
+    //     console.error(`Data array too large: ${data.length}. Skipping upload.`);
+    //     return;
+    // }
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW);
+}
+
+function updateGraph(gl, left, right, resolution, zoom, translation) {
+    var actualLeft = left * zoom - translation[0];
+    var actualRight = right * zoom - translation[0];
+    console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}`);
+    let data = generateGraphData(actualLeft, actualRight, resolution);
+    uploadGraphData(gl, data);
 }
 
 main();
