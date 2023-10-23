@@ -60,7 +60,10 @@ function main() {
     gl.bindVertexArray(plotVAO);
     gl.enableVertexAttribArray(positionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
-    plotGraph(gl);
+
+    var width = gl.canvas.clientWidth;
+    var resolution = 100;
+    plotGraph(gl, 0, width * resolution, resolution);
 
     var size = 3;
     var type = gl.FLOAT;
@@ -95,7 +98,7 @@ function main() {
             vertexArray: plotVAO,
             uniforms: plotUniforms,
             primitiveType: gl.LINE_STRIP,
-            count: 144001,
+            count: width * resolution + 1,
         },
     ];
 
@@ -223,25 +226,10 @@ function main() {
     gl.canvas.addEventListener('wheel', (event) => {
         // Determine zoom direction
         if (event.deltaY > 0) {
-            // zoomLevel += zoomIncrement;  // Zoom out
             zoomOut();
         } else if (event.deltaY < 0 && zoomLevel > zoomIncrement) {
-            // zoomLevel -= zoomIncrement;  // Zoom in
             zoomIn();
         }
-    
-        // Adjust the orthographic boundaries based on the zoom level
-        // const widthHalf = gl.canvas.clientWidth / 2 * zoomLevel;
-        // const heightHalf = gl.canvas.clientHeight / 2 * zoomLevel;
-    
-        // left = -widthHalf;
-        // right = widthHalf;
-        // bottom = -heightHalf;
-        // top = heightHalf;
-    
-        // orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
-        // viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
-        // drawScene();
 
         updateOrthographicDimensions();
     });
@@ -301,8 +289,6 @@ function main() {
 function randomInt(range) {
     return Math.floor(Math.random() * range);
 }
-
-// Fills the buffer with the values that define a rectangle.
 
 function setRectangle(gl, x, y, width, height) {
     var x1 = x;
