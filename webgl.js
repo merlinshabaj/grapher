@@ -41,19 +41,7 @@ function main() {
     var matrixLocation = gl.getUniformLocation(program, "u_matrix");
     var colorMultLocation = gl.getUniformLocation(program, "u_colorMult");
 
-    var rectangleBuffer = gl.createBuffer();
-    var rectangleVAO = gl.createVertexArray();
-    gl.bindVertexArray(rectangleVAO);
-    gl.enableVertexAttribArray(positionAttributeLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangleBuffer);
-    setRectangle(gl, 0, 0, 50, 50);
-
-    var size = 3;          // 3 components per iteration
-    var type = gl.FLOAT;
-    var normalize = true;  // convert from 0-255 to 0.0-1.0
-    var stride = 0;        // 0 = move forward size * sizeof(type) each
-    var offset = 0;        // start at the beginning of the buffer
-    gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+    const bufferLengths = new Map();
 
     var plotBuffer = gl.createBuffer();
     var plotVAO = gl.createVertexArray();
@@ -65,8 +53,10 @@ function main() {
     var right = gl.canvas.clientWidth / 2;
     var zoomLevel = 1;
     var plotTranslation = [0, 0, 0];
-    var resolution = 1;
-    updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+    var resolution = 100;
+    let bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+    bufferLengths.set('plotBufferLength', bufferLength);
+    console.log(`COUNT INITIAL: ${bufferLengths.get('plotBufferLength') * resolution}`);
 
     var size = 3;
     var type = gl.FLOAT;
@@ -75,34 +65,20 @@ function main() {
     var offset = 0;
     gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
 
-    var rectangleUniforms = {
-        u_colorMult: [1, 0, 0, 1],
-        u_matrix: m4.identity(),
-    };
     var plotUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
     }
-
-    var rectangleTranslation = [-25, -25, 0];
     
     var scale = [1, 1, 1];
 
     var objectsToDraw = [
         {
             programInfo: program,
-            vertexArray: rectangleVAO,
-            uniforms: rectangleUniforms,
-            primitiveType: gl.TRIANGLES,
-            count: 6,
-        },
-        {
-            programInfo: program,
             vertexArray: plotVAO,
             uniforms: plotUniforms,
             primitiveType: gl.LINE_STRIP,
-            // plotbuffer length might be needed
-            count: gl.canvas.clientWidth * resolution + 1,
+            count: bufferLengths.get('plotBufferLength'),
         },
     ];
 
@@ -146,7 +122,9 @@ function main() {
         startX = event.clientX;
         startY = event.clientY;
         // console.log(`ZoomLevel: ${zoomLevel}`);
-        updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        let bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        bufferLengths.set('plotBufferLength', bufferLength);
+        console.log(`COUNT PANNING: ${bufferLengths.get('plotBufferLength')}`);
         drawScene();
     });
 
@@ -210,7 +188,9 @@ function main() {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
         
-        // updateGraph(gl, left, right, 1, zoomLevel, plotTranslation);
+        let bufferLength = updateGraph(gl, left, right, 1, zoomLevel, plotTranslation);
+        bufferLengths.set('plotBufferLength', bufferLength);
+        console.log(`COUNT ZOOM: ${bufferLengths.get('plotBufferLength')}`);
         drawScene();
     }
 
@@ -254,7 +234,6 @@ function main() {
         // gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
-        rectangleUniforms.u_matrix = computeMatrix(viewProjectionMatrix, rectangleTranslation, 0, 0, scale);
         plotUniforms.u_matrix = computeMatrix(viewProjectionMatrix, plotTranslation, 0, 0, scale);
 
         objectsToDraw.forEach(function (object) {
@@ -266,10 +245,12 @@ function main() {
             gl.uniformMatrix4fv(matrixLocation, false, object.uniforms.u_matrix);
             gl.uniform4fv(colorMultLocation, object.uniforms.u_colorMult);
 
+            let bufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+            console.log("Buffer Size:", (bufferSize / 4) / 3);
             // Draw
             var primitiveType = object.primitiveType;
             var offset = 0;
-            var count = object.count;
+            var count = (bufferSize / 4) / 3//object.count;
             gl.drawArrays(primitiveType, offset, count);
         });
     }
@@ -291,31 +272,6 @@ function randomInt(range) {
     return Math.floor(Math.random() * range);
 }
 
-function setRectangle(gl, x, y, width, height) {
-    var x1 = x;
-    var x2 = x + width;
-    var y1 = y;
-    var y2 = y + height;
-
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        x1, y1, 0,
-        x2, y1, 0,
-        x1, y2, 0,
-        x1, y2, 0,
-        x2, y1, 0,
-        x2, y2, 0]), gl.STATIC_DRAW);
-
-    let points = [
-        x1, y1, 0,
-        x2, y1, 0,
-        x1, y2, 0,
-        x1, y2, 0,
-        x2, y1, 0,
-        x2, y2, 0
-    ];
-    console.log(`POINTS: ${points}`);
-}
-
 function generateGraphData(start, end, resolution = 100) {
     var points = [];
 
@@ -325,13 +281,13 @@ function generateGraphData(start, end, resolution = 100) {
     if (startX < endX) {
         for (let i = startX; i <= endX; i++) {
             let x = i / resolution;
-            let y = Math.cos(x);
+            let y = x//Math.cos(x);
             points.push(x, y, 0);
         }
     } else {
         for (let i = startX; i >= endX; i--) {
             let x = i / resolution;
-            let y = Math.cos(x);
+            let y = x//Math.cos(x);
             points.push(x, y, 0);
         }
     }
@@ -339,21 +295,20 @@ function generateGraphData(start, end, resolution = 100) {
     return points
 }
 
-const MAX_SAFE_ARRAY_LENGTH = 4323
 function uploadGraphData(gl, data) {
-    // if (data.length > MAX_SAFE_ARRAY_LENGTH) {
-    //     console.error(`Data array too large: ${data.length}. Skipping upload.`);
-    //     return;
-    // }
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW);
+    data = new Float32Array(data);
+    let bufferLength = data.length / 3 - 1;
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    
+    return bufferLength;
 }
 
 function updateGraph(gl, left, right, resolution, zoom, translation) {
-    var actualLeft = left * zoom - translation[0];
-    var actualRight = right * zoom - translation[0];
-    console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}`);
+    var actualLeft = left / zoom - translation[0];
+    var actualRight = right / zoom - translation[0];
+    console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}, left: ${left}, right: ${right}, zoomLevel: ${zoom}, translation: ${translation[0]}`);
     let data = generateGraphData(actualLeft, actualRight, resolution);
-    uploadGraphData(gl, data);
+    return uploadGraphData(gl, data);    
 }
 
 main();
