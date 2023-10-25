@@ -3,15 +3,47 @@ import * as m3 from './m3.js';
 import * as m4 from './m4.js';
 
 var vertexShaderSource = `#version 300 es
-in vec4 a_position;
+in vec2 a_position;
+in vec4 a_points;
+
+uniform mat4 u_matrix;
+
+
+void main() {
+    vec2 position = a_position;
+    vec4 points = a_points;
+    float lineWidth = 2.0;
+
+    vec2 dir = normalize(points.zw - points.xy);
+    vec2 normal = vec2(-dir.y, dir.x);
+
+    float scale = (lineWidth / 2.0) / dir.x;
+    vec2 offset = normal * scale;
+
+    vec2 extrudedPosition = position + vec2(0.0, offset.y);
+
+    gl_Position = u_matrix * vec4(extrudedPosition, 0, 1);
+}
+`;
+
+var rectangleShader = `#version 300 es
+in vec2 a_position;
 
 uniform mat4 u_matrix;
 
 void main() {
-gl_Position = u_matrix * a_position;
+    gl_Position = u_matrix * vec4(a_position, 0, 1);
 }
 `;
+// float4 position = in.position;
+// float lineWidth = uniforms.lineWidth;
 
+// float2 a = points[instanceId];
+// float2 b = points[instanceId + 1];
+
+// float2 xBasis = b - a;
+// float2 yBasis = normalize(float2(-xBasis.y, xBasis.x));
+// float2 point = a + xBasis * position.x + yBasis * lineWidth * position.y;
 var fragmentShaderSource = `#version 300 es
 
 // fragment shaders don't have a default precision so we need
@@ -30,21 +62,26 @@ outColor = u_colorMult;
 function main() {
     /** @type {HTMLCanvasElement} */
     const canvas = document.querySelector("#webgl");
-    const gl = canvas.getContext("webgl2", { antialias: true});
+    const gl = canvas.getContext("webgl2", { antialias: true });
     if (!gl) {
         return;
     }
 
     var program = webglUtils.createProgramFromSources(gl, [vertexShaderSource, fragmentShaderSource]);
+    var rectangleProgram = webglUtils.createProgramFromSources(gl, [rectangleShader, fragmentShaderSource]);
 
     var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+    var pointsAttributeLocation = gl.getAttribLocation(program, "a_points");
     var matrixLocation = gl.getUniformLocation(program, "u_matrix");
     var colorMultLocation = gl.getUniformLocation(program, "u_colorMult");
+
+    var rectanglepositionAttributeLocation = gl.getAttribLocation(rectangleProgram, "a_position");
+    var rectangleMatrixLocation = gl.getUniformLocation(rectangleProgram, "u_matrix");
 
     var rectangleBuffer = gl.createBuffer();
     var rectangleVAO = gl.createVertexArray();
     gl.bindVertexArray(rectangleVAO);
-    gl.enableVertexAttribArray(positionAttributeLocation);
+    gl.enableVertexAttribArray(rectanglepositionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, rectangleBuffer);
     let rectanglePoints = new Float32Array([
         -5, 0, 0,
@@ -62,27 +99,49 @@ function main() {
     var normalize = false;
     var stride = 0;
     var offset = 0;
-    gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+    gl.vertexAttribPointer(rectanglepositionAttributeLocation, size, type, normalize, stride, offset);
 
+    //PLOT - static line geometry
     var plotBuffer = gl.createBuffer();
     var plotVAO = gl.createVertexArray();
     gl.bindVertexArray(plotVAO);
     gl.enableVertexAttribArray(positionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
 
-    var left = -10//-gl.canvas.clientWidth / 2;
-    var right = 10//gl.canvas.clientWidth / 2;
+    var lineSegmentInstanceGeometry = new Float32Array([
+        [0, -0.5],
+        [1, -0.5],
+        [1, 0.5],
+        [0, -0.5],
+        [1, 0.5],
+        [0, 0.5]
+    ]);
+    gl.bufferData(gl.ARRAY_BUFFER, lineSegmentInstanceGeometry, gl.DYNAMIC_DRAW);
+
+    var left = -10
+    var right = 10
+    var bottom = -10
+    var top = 10
+    var near = 0;
+    var far = 2;
+
     var zoomLevel = 1;
     var plotTranslation = [0, 0, 0];
+    var scale = [1, 1, 1];
     var resolution = 100;
-    var bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+    var graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+    var bufferLength = uploadGraphData(gl, graphData);
 
-    var size = 3;
-    var type = gl.FLOAT;
-    var normalize = false;
-    var stride = 0;
-    var offset = 0;
-    gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
+    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(positionAttributeLocation, 0);
+
+    // points for per-instance data
+    var pointsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(graphData), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(pointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(pointsAttributeLocation);
+    gl.vertexAttribDivisor(pointsAttributeLocation, 1);
 
     var rectangleUniforms = {
         u_colorMult: [1, 0, 0, 1],
@@ -92,23 +151,22 @@ function main() {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
     }
-    
-    var scale = [1, 1, 1];
 
     var objectsToDraw = [
         {
-            programInfo: program,
+            programInfo: rectangleProgram,
             vertexArray: rectangleVAO,
             uniforms: rectangleUniforms,
             primitiveType: gl.TRIANGLES,
-            getCount: function() { return 6 },
+            getCount: function () { return 6 },
         },
         {
             programInfo: program,
             vertexArray: plotVAO,
             uniforms: plotUniforms,
-            primitiveType: gl.LINE_STRIP,
-            getCount: function() { return bufferLength; },
+            primitiveType: gl.TRIANGLES,
+            getCount: function () { return 6 },
+            getInstanceCount: function () { return bufferLength; },
         },
     ];
 
@@ -119,12 +177,6 @@ function main() {
     var cameraMatrix = m4.lookAt(cameraPosition, target, up);
     var viewMatrix = m4.inverse(cameraMatrix);
 
-    
-    var bottom = -10//-gl.canvas.clientHeight / 2;
-    var top = 10//gl.canvas.clientHeight / 2;
-    var near = 0;
-    var far = 2;
-
     var orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
     var viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
@@ -132,7 +184,7 @@ function main() {
     // PANNING
     let isPanning = false;
     let startX = 0;
-    let startY = 0; 
+    let startY = 0;
 
     gl.canvas.addEventListener('mousedown', (event) => {
         isPanning = true;
@@ -142,7 +194,7 @@ function main() {
     });
 
     gl.canvas.addEventListener('mousemove', (event) => {
-        if (!isPanning) return; 
+        if (!isPanning) return;
 
         let dx = event.clientX - startX;
         let dy = event.clientY - startY;
@@ -150,11 +202,12 @@ function main() {
         let dyWorld = dy * (top - bottom) / gl.canvas.clientHeight;
 
         plotTranslation[0] += dxWorld;
-        plotTranslation[1] -= dyWorld; 
+        plotTranslation[1] -= dyWorld;
 
         startX = event.clientX;
         startY = event.clientY;
-        bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        bufferLength = uploadGraphData(gl, graphData);
         drawScene();
     });
 
@@ -180,7 +233,7 @@ function main() {
     function zoom(isZoomingIn, mouseX, mouseY) {
         const width = right - left;
         const height = top - bottom;
-        
+
         let newWidth, newHeight;
         if (isZoomingIn) {
             newWidth = width / ZOOM_FACTOR;
@@ -199,9 +252,9 @@ function main() {
         let mouseWorldX = left + (clipX + 1) * 0.5 * width;
         let mouseWorldY = bottom + (clipY + 1) * 0.5 * height;
         console.log("Mouse World Space: ", mouseWorldX, mouseWorldY);
-    
-        const widthScalingFactor = newWidth / width; 
-        const heightScalingFactor = newHeight / height; 
+
+        const widthScalingFactor = newWidth / width;
+        const heightScalingFactor = newHeight / height;
 
         let leftNew = mouseWorldX - (mouseWorldX - left) * widthScalingFactor;
         let rightNew = mouseWorldX + (right - mouseWorldX) * widthScalingFactor;
@@ -212,16 +265,17 @@ function main() {
         right = rightNew;
         bottom = bottomNew;
         top = topNew;
-    
+
         updateOrthographicDimensions();
     }
-    
+
 
     function updateOrthographicDimensions() {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
-        
-        bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+
+        graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        bufferLength = uploadGraphData(gl, graphData);
         drawScene();
     }
 
@@ -266,17 +320,29 @@ function main() {
             gl.useProgram(program);
             gl.bindVertexArray(vertexArray);
             // Set the uniforms.
+            
             gl.uniformMatrix4fv(matrixLocation, false, object.uniforms.u_matrix);
             gl.uniform4fv(colorMultLocation, object.uniforms.u_colorMult);
 
             let bufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
-            console.log("Buffer Size:", (bufferSize / 4) / 3);
+            console.log("Buffer Size:", (bufferSize / 4) / 2);
             // Draw
             var primitiveType = object.primitiveType;
             var offset = 0;
-            var count = object.getCount();//(bufferSize / 4) / 3//object.count;
+            var count = object.getCount();
             console.log('FINAL COUNT:', count);
-            gl.drawArrays(primitiveType, offset, count);
+
+            if (object.getInstanceCount) {
+                gl.drawArraysInstanced(
+                    primitiveType,
+                    offset,             // offset
+                    6,   // num vertices per instance
+                    object.getInstanceCount(),  // num instances
+                );
+            } else {
+                gl.drawArrays(primitiveType, offset, count);
+            }
+
         });
     }
 
@@ -292,11 +358,6 @@ function main() {
     }
 }
 
-// Returns a random integer from 0 to range - 1.
-function randomInt(range) {
-    return Math.floor(Math.random() * range);
-}
-
 function generateGraphData(start, end, resolution = 100) {
     var points = [];
 
@@ -307,13 +368,13 @@ function generateGraphData(start, end, resolution = 100) {
         for (let i = startX; i <= endX; i++) {
             let x = i / resolution;
             let y = Math.cos(x);
-            points.push(x, y, 0);
+            points.push(x, y);
         }
     } else {
         for (let i = startX; i >= endX; i--) {
             let x = i / resolution;
             let y = Math.cos(x);
-            points.push(x, y, 0);
+            points.push(x, y);
         }
     }
 
@@ -323,9 +384,9 @@ function generateGraphData(start, end, resolution = 100) {
 
 function uploadGraphData(gl, data) {
     data = new Float32Array(data);
-    let bufferLength = data.length / 3;
+    let bufferLength = data.length / 2;
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
-    
+
     return bufferLength;
 }
 
@@ -334,7 +395,7 @@ function updateGraph(gl, left, right, resolution, zoom, translation) {
     var actualRight = right - translation[0];
     console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}, left: ${left}, right: ${right}, zoomLevel: ${zoom}, translation: ${translation[0]}`);
     let data = generateGraphData(actualLeft, actualRight, resolution);
-    return uploadGraphData(gl, data);    
+    return data;
 }
 
 main();
