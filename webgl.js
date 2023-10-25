@@ -41,22 +41,18 @@ function main() {
     var matrixLocation = gl.getUniformLocation(program, "u_matrix");
     var colorMultLocation = gl.getUniformLocation(program, "u_colorMult");
 
-    const bufferLengths = new Map();
-
     var plotBuffer = gl.createBuffer();
     var plotVAO = gl.createVertexArray();
     gl.bindVertexArray(plotVAO);
     gl.enableVertexAttribArray(positionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
 
-    var left = -gl.canvas.clientWidth / 2;
-    var right = gl.canvas.clientWidth / 2;
+    var left = -10//-gl.canvas.clientWidth / 2;
+    var right = 10//gl.canvas.clientWidth / 2;
     var zoomLevel = 1;
     var plotTranslation = [0, 0, 0];
     var resolution = 100;
-    let bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
-    bufferLengths.set('plotBufferLength', bufferLength);
-    console.log(`COUNT INITIAL: ${bufferLengths.get('plotBufferLength') * resolution}`);
+    var bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
 
     var size = 3;
     var type = gl.FLOAT;
@@ -78,7 +74,7 @@ function main() {
             vertexArray: plotVAO,
             uniforms: plotUniforms,
             primitiveType: gl.LINE_STRIP,
-            count: bufferLengths.get('plotBufferLength'),
+            getCount: function() { return bufferLength; },
         },
     ];
 
@@ -90,8 +86,8 @@ function main() {
     var viewMatrix = m4.inverse(cameraMatrix);
 
     
-    var bottom = -gl.canvas.clientHeight / 2;
-    var top = gl.canvas.clientHeight / 2;
+    var bottom = -10//-gl.canvas.clientHeight / 2;
+    var top = 10//gl.canvas.clientHeight / 2;
     var near = 0;
     var far = 2;
 
@@ -113,18 +109,18 @@ function main() {
 
     gl.canvas.addEventListener('mousemove', (event) => {
         if (!isPanning) return; 
-        let dx = (event.clientX - startX) * zoomLevel; 
-        let dy = (event.clientY - startY) * zoomLevel; 
 
-        plotTranslation[0] += dx;
-        plotTranslation[1] -= dy; 
+        let dx = event.clientX - startX;
+        let dy = event.clientY - startY;
+        let dxWorld = dx * (right - left) / gl.canvas.clientWidth;
+        let dyWorld = dy * (top - bottom) / gl.canvas.clientHeight;
+
+        plotTranslation[0] += dxWorld;
+        plotTranslation[1] -= dyWorld; 
 
         startX = event.clientX;
         startY = event.clientY;
-        // console.log(`ZoomLevel: ${zoomLevel}`);
-        let bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
-        bufferLengths.set('plotBufferLength', bufferLength);
-        console.log(`COUNT PANNING: ${bufferLengths.get('plotBufferLength')}`);
+        bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
         drawScene();
     });
 
@@ -143,78 +139,71 @@ function main() {
     const MIN_ZOOM_LEVEL = 0.0000000000000000000000000000000001;
     const BASE_ZOOM_FACTOR = 1.05;
     var zoomExponent = 1;
-    const ZOOM_FACTOR = 0.05;
-    const zoomIncrement = 0.1;  
+    const ZOOM_FACTOR = 1.05;
     let mouseX = 0, mouseY = 0;
+    let zoomIncrement = 0.05;
 
-    function zoomIn() {
-        const [worldX, worldY] = screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel);
+    function zoom(isZoomingIn, mouseX, mouseY) {
+        const width = right - left;
+        const height = top - bottom;
+        
+        let newWidth, newHeight;
+        if (isZoomingIn) {
+            newWidth = width / ZOOM_FACTOR;
+            newHeight = height / ZOOM_FACTOR;
+        } else {
+            newWidth = width * ZOOM_FACTOR;
+            newHeight = height * ZOOM_FACTOR;
+        }
 
-        zoomExponent--;
-        zoomLevel = Math.pow(BASE_ZOOM_FACTOR, zoomExponent);
+        // Convert mouse from screen space to clip space
+        let clipX = (mouseX / gl.canvas.clientWidth) * 2 - 1;
+        let clipY = -((mouseY / gl.canvas.clientHeight) * 2 - 1);
+        console.log("Mouse Clip Space: ", clipX, clipY);
 
-        // zoomLevel *= (1 - ZOOM_FACTOR);
+        // Calculate mouse position in current orthographic dimensions
+        let mouseWorldX = left + (clipX + 1) * 0.5 * width;
+        let mouseWorldY = bottom + (clipY + 1) * 0.5 * height;
+        console.log("Mouse World Space: ", mouseWorldX, mouseWorldY);
+    
+        const widthScalingFactor = newWidth / width; 
+        const heightScalingFactor = newHeight / height; 
 
-        plotTranslation[0] -= (worldX - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[0]);
-        plotTranslation[1] -= (worldY - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[1]);
-        console.log(`ZOOM LEVEL: ${zoomLevel}`);
+        let leftNew = mouseWorldX - (mouseWorldX - left) * widthScalingFactor;
+        let rightNew = mouseWorldX + (right - mouseWorldX) * widthScalingFactor;
+        let bottomNew = mouseWorldY - (mouseWorldY - bottom) * heightScalingFactor;
+        let topNew = mouseWorldY + (top - mouseWorldY) * heightScalingFactor;
+
+        left = leftNew;
+        right = rightNew;
+        bottom = bottomNew;
+        top = topNew;
+    
         updateOrthographicDimensions();
     }
-
-    function zoomOut() {
-        const [worldX, worldY] = screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel);
-
-        zoomExponent++;
-        zoomLevel = Math.pow(BASE_ZOOM_FACTOR, zoomExponent);
-        // zoomLevel *= (1 + ZOOM_FACTOR);
-        // zoomLevel += zoomIncrement;
-
-        plotTranslation[0] -= (worldX - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[0]);
-        plotTranslation[1] -= (worldY - screenToWorld(mouseX, mouseY, plotTranslation, zoomLevel)[1]);
-
-        updateOrthographicDimensions();
-    }
+    
 
     function updateOrthographicDimensions() {
-        const widthHalf = (gl.canvas.clientWidth / 2) * zoomLevel;
-        const heightHalf = (gl.canvas.clientHeight / 2) * zoomLevel;
-
-        left = -widthHalf;
-        right = widthHalf;
-        bottom = -heightHalf;
-        top = heightHalf;
-        console.log(`Zoom Level: ${zoomLevel}, Left: ${left}, Right: ${right}`);
-
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
         
-        let bufferLength = updateGraph(gl, left, right, 1, zoomLevel, plotTranslation);
-        bufferLengths.set('plotBufferLength', bufferLength);
-        console.log(`COUNT ZOOM: ${bufferLengths.get('plotBufferLength')}`);
+        bufferLength = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
         drawScene();
     }
 
-    function screenToWorld(x, y, translation, zoom) {
-        return [
-            (x - gl.canvas.clientWidth / 2) * zoom + translation[0],
-            (gl.canvas.clientHeight / 2 - y) * zoom + translation[1]
-        ];
-    }
-
     gl.canvas.addEventListener('mousemove', (event) => {
-        mouseX = event.clientX;
-        mouseY = event.clientY;
+        var rect = gl.canvas.getBoundingClientRect();
+        mouseX = event.clientX - rect.left;
+        mouseY = event.clientY - rect.top;
     });
 
     gl.canvas.addEventListener('wheel', (event) => {
         // Determine zoom direction
         if (event.deltaY > 0) {
-            zoomOut();
+            zoom(false, mouseX, mouseY);
         } else if (event.deltaY < 0 && zoomLevel > zoomIncrement) {
-            zoomIn();
+            zoom(true, mouseX, mouseY);
         }
-
-        updateOrthographicDimensions();
     });
 
     // Prevent the page from scrolling when using the mouse wheel on the canvas
@@ -250,7 +239,8 @@ function main() {
             // Draw
             var primitiveType = object.primitiveType;
             var offset = 0;
-            var count = (bufferSize / 4) / 3//object.count;
+            var count = object.getCount();//(bufferSize / 4) / 3//object.count;
+            console.log('FINAL COUNT:', count);
             gl.drawArrays(primitiveType, offset, count);
         });
     }
@@ -281,31 +271,32 @@ function generateGraphData(start, end, resolution = 100) {
     if (startX < endX) {
         for (let i = startX; i <= endX; i++) {
             let x = i / resolution;
-            let y = x//Math.cos(x);
+            let y = Math.cos(x);
             points.push(x, y, 0);
         }
     } else {
         for (let i = startX; i >= endX; i--) {
             let x = i / resolution;
-            let y = x//Math.cos(x);
+            let y = Math.cos(x);
             points.push(x, y, 0);
         }
     }
 
+    console.log("POINTS", points)
     return points
 }
 
 function uploadGraphData(gl, data) {
     data = new Float32Array(data);
-    let bufferLength = data.length / 3 - 1;
+    let bufferLength = data.length / 3;
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
     
     return bufferLength;
 }
 
 function updateGraph(gl, left, right, resolution, zoom, translation) {
-    var actualLeft = left / zoom - translation[0];
-    var actualRight = right / zoom - translation[0];
+    var actualLeft = left - translation[0];
+    var actualRight = right - translation[0];
     console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}, left: ${left}, right: ${right}, zoomLevel: ${zoom}, translation: ${translation[0]}`);
     let data = generateGraphData(actualLeft, actualRight, resolution);
     return uploadGraphData(gl, data);    
