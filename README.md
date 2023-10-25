@@ -3,5 +3,6 @@
 
 ### TODO
 - Setup rectangle program properly
-    - conditional check for program in render loop
+    - Conditional check for program in render loop
+    - Add color location
 - Fix count and buffer size issue for instanced geometry
