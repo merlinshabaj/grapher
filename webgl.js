@@ -28,9 +28,9 @@ outColor = u_colorMult;
 `;
 
 function main() {
-
+    /** @type {HTMLCanvasElement} */
     const canvas = document.querySelector("#webgl");
-    const gl = canvas.getContext("webgl2");
+    const gl = canvas.getContext("webgl2", { antialias: true});
     if (!gl) {
         return;
     }
@@ -40,6 +40,29 @@ function main() {
     var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
     var matrixLocation = gl.getUniformLocation(program, "u_matrix");
     var colorMultLocation = gl.getUniformLocation(program, "u_colorMult");
+
+    var rectangleBuffer = gl.createBuffer();
+    var rectangleVAO = gl.createVertexArray();
+    gl.bindVertexArray(rectangleVAO);
+    gl.enableVertexAttribArray(positionAttributeLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, rectangleBuffer);
+    let rectanglePoints = new Float32Array([
+        -5, 0, 0,
+        -5, -5, 0,
+        0, 0, 0,
+        0, 5, 0,
+        -5, -5, 0,
+        0, 0, 0,
+    ]);
+    gl.bufferData(gl.ARRAY_BUFFER, rectanglePoints, gl.DYNAMIC_DRAW);
+
+
+    var size = 3;
+    var type = gl.FLOAT;
+    var normalize = false;
+    var stride = 0;
+    var offset = 0;
+    gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
 
     var plotBuffer = gl.createBuffer();
     var plotVAO = gl.createVertexArray();
@@ -61,6 +84,10 @@ function main() {
     var offset = 0;
     gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset);
 
+    var rectangleUniforms = {
+        u_colorMult: [1, 0, 0, 1],
+        u_matrix: m4.identity(),
+    }
     var plotUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
@@ -69,6 +96,13 @@ function main() {
     var scale = [1, 1, 1];
 
     var objectsToDraw = [
+        {
+            programInfo: program,
+            vertexArray: rectangleVAO,
+            uniforms: rectangleUniforms,
+            primitiveType: gl.TRIANGLES,
+            getCount: function() { return 6 },
+        },
         {
             programInfo: program,
             vertexArray: plotVAO,
@@ -223,6 +257,7 @@ function main() {
         // gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
+        rectangleUniforms.u_matrix = computeMatrix(viewProjectionMatrix, [0, 0, 0], 0, 0, scale);
         plotUniforms.u_matrix = computeMatrix(viewProjectionMatrix, plotTranslation, 0, 0, scale);
 
         objectsToDraw.forEach(function (object) {
