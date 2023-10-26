@@ -132,7 +132,7 @@ function main() {
     var scale = [1, 1, 1];
     var resolution = 10;
 
-    var graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+    var graphData = updateGraph(gl, left, right, resolution, plotTranslation);
     var bufferLength = uploadGraphData(gl, graphData);
     // var data = new Float32Array(graphData);
     // gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
@@ -242,7 +242,7 @@ function main() {
 
         startX = event.clientX;
         startY = event.clientY;
-        let graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        let graphData = updateGraph(gl, left, right, resolution, plotTranslation);
         bufferLength = uploadGraphData(gl, graphData);
         drawScene();
     });
@@ -259,9 +259,6 @@ function main() {
 
 
     // ZOOMING
-    const MIN_ZOOM_LEVEL = 0.0000000000000000000000000000000001;
-    const BASE_ZOOM_FACTOR = 1.05;
-    var zoomExponent = 1;
     const ZOOM_FACTOR = 1.05;
     let mouseX = 0, mouseY = 0;
     let zoomIncrement = 0.05;
@@ -310,7 +307,7 @@ function main() {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
-        let graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        let graphData = updateGraph(gl, left, right, resolution, plotTranslation);
         bufferLength = uploadGraphData(gl, graphData);
         drawScene();
     }
@@ -361,7 +358,8 @@ function main() {
 
             gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
             gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
-            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
+            console.log("zoomLevel:", zoomLevel);
+            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth / zoomLevel) : {};
 
             gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
             let bufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
@@ -450,10 +448,10 @@ function uploadGraphData(gl, data) {
     return bufferLength;
 }
 
-function updateGraph(gl, left, right, resolution, zoom, translation) {
+function updateGraph(gl, left, right, resolution, translation) {
     var actualLeft = left - translation[0];
     var actualRight = right - translation[0];
-    console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}, left: ${left}, right: ${right}, zoomLevel: ${zoom}, translation: ${translation[0]}`);
+    console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}, left: ${left}, right: ${right}, translation: ${translation[0]}`);
     let data = generateGraphData(actualLeft, actualRight, resolution);
     return data;
 }
