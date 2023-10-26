@@ -39,7 +39,7 @@ void main() {
     vec2 points = a_points.zw;
     float lineWidth = u_lineWidth;
     float x = lineWidth * position.x + points.x;
-    float y = lineWidth * (position.y + 4.0) + points.y;
+    float y = lineWidth * (position.y + 0.5) + points.y;
     
     gl_Position = u_matrix * vec4(x, y, 0, 1);
 
@@ -114,6 +114,13 @@ function main() {
     gl.bufferData(gl.ARRAY_BUFFER, lineSegmentInstanceGeometry, gl.DYNAMIC_DRAW);
     console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
 
+    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(positionAttributeLocation, 0);
+
+    // Points for per-instance data
+    var pointsBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
+
     var left = -10
     var right = 10
     var bottom = -10
@@ -126,12 +133,6 @@ function main() {
     var scale = [1, 1, 1];
     var resolution = 100;
 
-    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(positionAttributeLocation, 0);
-
-    // Points for per-instance data
-    var pointsBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
     var graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
     var bufferLength = uploadGraphData(gl, graphData);
     // var data = new Float32Array(graphData);
@@ -146,7 +147,7 @@ function main() {
     gl.bindVertexArray(roundJoinVAO);
     gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, roundJoinBuffer);
-    var roundJoinData = generateRoundJoinData(resolution); // probably need to call this with updateGraph() together
+    var roundJoinData = generateRoundJoinData(resolution);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(roundJoinData), gl.STATIC_DRAW);
     gl.vertexAttribPointer(roundJoinPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
@@ -173,8 +174,9 @@ function main() {
         lineWidthLoc: roundJoinLineWidthLocation,
     };
 
-    var lineWidth = 0.05
+    var lineWidth = 0.1
 
+    // plotUniforms doesn't have any effect
     var plotUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
@@ -183,7 +185,7 @@ function main() {
     var roundJoinUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
-        u_lineWidth: 0.1,
+        u_lineWidth: lineWidth,
     }
 
     var objectsToDraw = [
@@ -351,10 +353,12 @@ function main() {
 
         objectsToDraw.forEach(function (object) {
             var program = object.programInfo.program;
+            console.log("Current Program:", program);
             var vertexArray = object.vertexArray;
             gl.useProgram(program);
             gl.bindVertexArray(vertexArray);
             // Set the uniforms.
+
 
             gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
             gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
@@ -415,7 +419,10 @@ function generateGraphData(start, end, resolution = 100) {
             points.push(x, y, x, y);
         }
     }
-
+    points.shift();
+    points.shift();
+    points.pop();
+    points.pop();
     console.log("POINTS:", points)
     return points
 }
