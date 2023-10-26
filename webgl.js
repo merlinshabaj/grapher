@@ -7,43 +7,27 @@ in vec2 a_position;
 in vec4 a_points;
 
 uniform mat4 u_matrix;
+uniform float u_lineWidth;
 
 
 void main() {
     vec2 position = a_position;
     vec4 points = a_points;
-    float lineWidth = 2.0;
+    float lineWidth = u_lineWidth;
 
-    vec2 dir = normalize(points.zw - points.xy);
-    vec2 normal = vec2(-dir.y, dir.x);
+    vec2 a = points.xy;
+    vec2 b = points.zw;
 
-    float scale = (lineWidth / 2.0) / dir.x;
-    vec2 offset = normal * scale;
+    vec2 xBasis = b - a;
+    vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
 
-    vec2 extrudedPosition = position + vec2(0.0, offset.y);
+    vec2 point = a + xBasis * position.x + yBasis * lineWidth * position.y;
 
-    gl_Position = u_matrix * vec4(extrudedPosition, 0, 1);
+    gl_Position = u_matrix * vec4(point, 0, 1);
 }
 `;
 
-var rectangleShader = `#version 300 es
-in vec2 a_position;
 
-uniform mat4 u_matrix;
-
-void main() {
-    gl_Position = u_matrix * vec4(a_position, 0, 1);
-}
-`;
-// float4 position = in.position;
-// float lineWidth = uniforms.lineWidth;
-
-// float2 a = points[instanceId];
-// float2 b = points[instanceId + 1];
-
-// float2 xBasis = b - a;
-// float2 yBasis = normalize(float2(-xBasis.y, xBasis.x));
-// float2 point = a + xBasis * position.x + yBasis * lineWidth * position.y;
 var fragmentShaderSource = `#version 300 es
 
 // fragment shaders don't have a default precision so we need
@@ -68,38 +52,12 @@ function main() {
     }
 
     var program = webglUtils.createProgramFromSources(gl, [vertexShaderSource, fragmentShaderSource]);
-    var rectangleProgram = webglUtils.createProgramFromSources(gl, [rectangleShader, fragmentShaderSource]);
 
     var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
     var pointsAttributeLocation = gl.getAttribLocation(program, "a_points");
     var matrixLocation = gl.getUniformLocation(program, "u_matrix");
     var colorMultLocation = gl.getUniformLocation(program, "u_colorMult");
-
-    var rectanglepositionAttributeLocation = gl.getAttribLocation(rectangleProgram, "a_position");
-    var rectangleMatrixLocation = gl.getUniformLocation(rectangleProgram, "u_matrix");
-
-    var rectangleBuffer = gl.createBuffer();
-    var rectangleVAO = gl.createVertexArray();
-    gl.bindVertexArray(rectangleVAO);
-    gl.enableVertexAttribArray(rectanglepositionAttributeLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, rectangleBuffer);
-    let rectanglePoints = new Float32Array([
-        -5, 0, 0,
-        -5, -5, 0,
-        0, 0, 0,
-        0, 5, 0,
-        -5, -5, 0,
-        0, 0, 0,
-    ]);
-    gl.bufferData(gl.ARRAY_BUFFER, rectanglePoints, gl.DYNAMIC_DRAW);
-
-
-    var size = 3;
-    var type = gl.FLOAT;
-    var normalize = false;
-    var stride = 0;
-    var offset = 0;
-    gl.vertexAttribPointer(rectanglepositionAttributeLocation, size, type, normalize, stride, offset);
+    var lineWidthLocation = gl.getUniformLocation(program, "u_lineWidth");
 
     //PLOT - static line geometry
     var plotBuffer = gl.createBuffer();
@@ -109,14 +67,15 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
 
     var lineSegmentInstanceGeometry = new Float32Array([
-        [0, -0.5],
-        [1, -0.5],
-        [1, 0.5],
-        [0, -0.5],
-        [1, 0.5],
-        [0, 0.5]
+        -0.5, 0,  // Start point of first triangle
+        0.5, 0,
+        -0.5, 1,
+        -0.5, 1,  // Start point of second triangle
+        0.5, 0,
+        0.5, 1
     ]);
     gl.bufferData(gl.ARRAY_BUFFER, lineSegmentInstanceGeometry, gl.DYNAMIC_DRAW);
+    console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
 
     var left = -10
     var right = 10
@@ -129,8 +88,6 @@ function main() {
     var plotTranslation = [0, 0, 0];
     var scale = [1, 1, 1];
     var resolution = 100;
-    var graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
-    var bufferLength = uploadGraphData(gl, graphData);
 
     gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
     gl.vertexAttribDivisor(positionAttributeLocation, 0);
@@ -138,33 +95,34 @@ function main() {
     // points for per-instance data
     var pointsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(graphData), gl.STATIC_DRAW);
+    var graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+    var bufferLength = uploadGraphData(gl, graphData);
+    // var data = new Float32Array(graphData);
+    // gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
     gl.vertexAttribPointer(pointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(pointsAttributeLocation);
     gl.vertexAttribDivisor(pointsAttributeLocation, 1);
 
-    var rectangleUniforms = {
-        u_colorMult: [1, 0, 0, 1],
-        u_matrix: m4.identity(),
-    }
+    var plotProgramInfo = {
+        program: program,
+        positionLoc: positionAttributeLocation,
+        colorLoc: colorMultLocation,
+        matrixLoc: matrixLocation,
+        lineWidthLoc: lineWidthLocation,
+    };
+
     var plotUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
+        u_lineWidth: 0.3,
     }
 
     var objectsToDraw = [
         {
-            programInfo: rectangleProgram,
-            vertexArray: rectangleVAO,
-            uniforms: rectangleUniforms,
-            primitiveType: gl.TRIANGLES,
-            getCount: function () { return 6 },
-        },
-        {
-            programInfo: program,
+            programInfo: plotProgramInfo,
             vertexArray: plotVAO,
             uniforms: plotUniforms,
-            primitiveType: gl.TRIANGLES,
+            primitiveType: gl.TRIANGLE_STRIP,
             getCount: function () { return 6 },
             getInstanceCount: function () { return bufferLength; },
         },
@@ -311,33 +269,35 @@ function main() {
         // gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
-        rectangleUniforms.u_matrix = computeMatrix(viewProjectionMatrix, [0, 0, 0], 0, 0, scale);
         plotUniforms.u_matrix = computeMatrix(viewProjectionMatrix, plotTranslation, 0, 0, scale);
 
         objectsToDraw.forEach(function (object) {
-            var program = object.programInfo;
+            var program = object.programInfo.program;
             var vertexArray = object.vertexArray;
             gl.useProgram(program);
             gl.bindVertexArray(vertexArray);
             // Set the uniforms.
-            
-            gl.uniformMatrix4fv(matrixLocation, false, object.uniforms.u_matrix);
-            gl.uniform4fv(colorMultLocation, object.uniforms.u_colorMult);
 
+
+            gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
+            gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
+            gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth);
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
             let bufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
-            console.log("Buffer Size:", (bufferSize / 4) / 2);
+            console.log("Buffer Size:", (bufferSize / 4) / 2); // 2001
             // Draw
             var primitiveType = object.primitiveType;
             var offset = 0;
             var count = object.getCount();
-            console.log('FINAL COUNT:', count);
+            console.log('FINAL COUNT:', count); //6
 
             if (object.getInstanceCount) {
                 gl.drawArraysInstanced(
                     primitiveType,
                     offset,             // offset
                     6,   // num vertices per instance
-                    object.getInstanceCount(),  // num instances
+                    1000,  // num instances
                 );
             } else {
                 gl.drawArrays(primitiveType, offset, count);
