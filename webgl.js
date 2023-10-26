@@ -124,7 +124,7 @@ function main() {
             uniforms: plotUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
             getCount: function () { return 6 },
-            getInstanceCount: function () { return bufferLength; },
+            getInstanceCount: function () { return bufferLength / 2 },
         },
     ];
 
@@ -164,7 +164,7 @@ function main() {
 
         startX = event.clientX;
         startY = event.clientY;
-        graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        let graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
         bufferLength = uploadGraphData(gl, graphData);
         drawScene();
     });
@@ -232,7 +232,7 @@ function main() {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
-        graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
+        let graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
         bufferLength = uploadGraphData(gl, graphData);
         drawScene();
     }
@@ -283,21 +283,21 @@ function main() {
             gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
             gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
             let bufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
             console.log("Buffer Size:", (bufferSize / 4) / 2); // 2001
             // Draw
             var primitiveType = object.primitiveType;
             var offset = 0;
             var count = object.getCount();
+            var instanceCount = object.getInstanceCount();
             console.log('FINAL COUNT:', count); //6
 
             if (object.getInstanceCount) {
                 gl.drawArraysInstanced(
                     primitiveType,
                     offset,             // offset
-                    6,   // num vertices per instance
-                    1000,  // num instances
+                    count,   // num vertices per instance
+                    instanceCount,  // num instances
                 );
             } else {
                 gl.drawArrays(primitiveType, offset, count);
