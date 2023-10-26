@@ -38,10 +38,9 @@ void main() {
     vec2 position = a_position;
     vec2 points = a_points.zw;
     float lineWidth = u_lineWidth;
-    float x = lineWidth * position.x + points.x;
-    float y = lineWidth * (position.y + 0.5) + points.y;
+    vec2 point = lineWidth * position + points;
     
-    gl_Position = u_matrix * vec4(x, y, 0, 1);
+    gl_Position = u_matrix * vec4(point, 0, 1);
 
 }
 `;
@@ -104,12 +103,12 @@ function main() {
     gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
 
     var lineSegmentInstanceGeometry = new Float32Array([
-        -0.5, 0,  // Start point of first triangle
-        0.5, 0,
-        -0.5, 1,
-        -0.5, 1,  // Start point of second triangle
-        0.5, 0,
-        0.5, 1
+        0, -0.5,
+        1, -0.5,
+        1,  0.5,
+        0, -0.5,
+        1,  0.5,
+        0,  0.5
     ]);
     gl.bufferData(gl.ARRAY_BUFFER, lineSegmentInstanceGeometry, gl.DYNAMIC_DRAW);
     console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
@@ -131,7 +130,7 @@ function main() {
     var zoomLevel = 1;
     var plotTranslation = [0, 0, 0];
     var scale = [1, 1, 1];
-    var resolution = 100;
+    var resolution = 10;
 
     var graphData = updateGraph(gl, left, right, resolution, zoomLevel, plotTranslation);
     var bufferLength = uploadGraphData(gl, graphData);
@@ -428,8 +427,8 @@ function generateGraphData(start, end, resolution = 100) {
 }
 
 function generateRoundJoinData(resolution) {
+    resolution = 1000
     var points = [];
-        resolution = 100;
         for (let i = 0; i < resolution; i++) {
             let theta0 = (2.0 * Math.PI * i) / resolution;
             let theta1 = (2.0 * Math.PI * i + 1.0) / resolution;
