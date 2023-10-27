@@ -130,7 +130,7 @@ function main() {
     var zoomLevel = 1;
     var plotTranslation = [0, 0, 0];
     var scale = [1, 1, 1];
-    var resolution = 100;
+    var resolution = 250;
 
     var graphData = updateGraph(gl, left, right, resolution, plotTranslation);
     var bufferLength = uploadGraphData(gl, graphData);
@@ -416,16 +416,21 @@ function generateGraphData(start, end, resolution = 100) {
     let startX = start * resolution;
     let endX = end * resolution;
 
+    function f(x) {
+        let y = Math.cos(x);
+        return y;
+    }
+ 
     if (startX < endX) {
         for (let i = startX; i <= endX; i++) {
             let x = i / resolution;
-            let y = Math.cos(x);
+            let y = f(x);
             points.push(x, y, x, y);
         }
     } else {
         for (let i = startX; i >= endX; i--) {
             let x = i / resolution;
-            let y = Math.cos(x);
+            let y = f(x);
             points.push(x, y, x, y);
         }
     }
