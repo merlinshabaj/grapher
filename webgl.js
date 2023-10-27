@@ -267,15 +267,17 @@ function main() {
         const width = right - left;
         const height = top - bottom;
 
-        let newWidth, newHeight, newLineWidth;
+        let newWidth, newHeight, newLineWidth, newResolution;
         if (isZoomingIn) {
             newWidth = width / ZOOM_FACTOR;
             newHeight = height / ZOOM_FACTOR;
             newLineWidth = lineWidth / ZOOM_FACTOR;
+            newResolution = resolution * ZOOM_FACTOR;
         } else {
             newWidth = width * ZOOM_FACTOR;
             newHeight = height * ZOOM_FACTOR;
             newLineWidth = lineWidth * ZOOM_FACTOR;
+            newResolution = resolution / ZOOM_FACTOR;
         }
 
         // Convert mouse from screen space to clip space
@@ -291,6 +293,7 @@ function main() {
         const widthScalingFactor = newWidth / width;
         const heightScalingFactor = newHeight / height;
         const lineWidthScalingFactor = newLineWidth / lineWidth;
+        const resolutionScalingFactor = newResolution / resolution;
 
         let leftNew = mouseWorldX - (mouseWorldX - left) * widthScalingFactor;
         let rightNew = mouseWorldX + (right - mouseWorldX) * widthScalingFactor;
@@ -300,6 +303,9 @@ function main() {
         lineWidth = lineWidth * lineWidthScalingFactor;
         plotUniforms.u_lineWidth = lineWidth;
         roundJoinUniforms.u_lineWidth = lineWidth;
+
+        resolution = resolution * resolutionScalingFactor;
+        console.log("resolution:", resolution);
 
         left = leftNew;
         right = rightNew;
@@ -432,7 +438,7 @@ function generateGraphData(start, end, resolution = 100) {
 }
 
 function generateRoundJoinData(resolution) {
-    resolution = 1000
+    resolution = 100
     var points = [];
         for (let i = 0; i < resolution; i++) {
             let theta0 = (2.0 * Math.PI * i) / resolution;
