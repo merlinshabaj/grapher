@@ -130,7 +130,7 @@ function main() {
     var zoomLevel = 1;
     var plotTranslation = [0, 0, 0];
     var scale = [1, 1, 1];
-    var resolution = 10;
+    var resolution = 100;
 
     var graphData = updateGraph(gl, left, right, resolution, plotTranslation);
     var bufferLength = uploadGraphData(gl, graphData);
@@ -261,19 +261,21 @@ function main() {
     // ZOOMING
     const ZOOM_FACTOR = 1.05;
     let mouseX = 0, mouseY = 0;
-    let zoomIncrement = 0.05;
+    // let zoomIncrement = 0.05;
 
     function zoom(isZoomingIn, mouseX, mouseY) {
         const width = right - left;
         const height = top - bottom;
 
-        let newWidth, newHeight;
+        let newWidth, newHeight, newLineWidth;
         if (isZoomingIn) {
             newWidth = width / ZOOM_FACTOR;
             newHeight = height / ZOOM_FACTOR;
+            newLineWidth = lineWidth / ZOOM_FACTOR;
         } else {
             newWidth = width * ZOOM_FACTOR;
             newHeight = height * ZOOM_FACTOR;
+            newLineWidth = lineWidth * ZOOM_FACTOR;
         }
 
         // Convert mouse from screen space to clip space
@@ -288,11 +290,16 @@ function main() {
 
         const widthScalingFactor = newWidth / width;
         const heightScalingFactor = newHeight / height;
+        const lineWidthScalingFactor = newLineWidth / lineWidth;
 
         let leftNew = mouseWorldX - (mouseWorldX - left) * widthScalingFactor;
         let rightNew = mouseWorldX + (right - mouseWorldX) * widthScalingFactor;
         let bottomNew = mouseWorldY - (mouseWorldY - bottom) * heightScalingFactor;
         let topNew = mouseWorldY + (top - mouseWorldY) * heightScalingFactor;
+
+        lineWidth = lineWidth * lineWidthScalingFactor;
+        plotUniforms.u_lineWidth = lineWidth;
+        roundJoinUniforms.u_lineWidth = lineWidth;
 
         left = leftNew;
         right = rightNew;
@@ -322,7 +329,7 @@ function main() {
         // Determine zoom direction
         if (event.deltaY > 0) {
             zoom(false, mouseX, mouseY);
-        } else if (event.deltaY < 0 && zoomLevel > zoomIncrement) {
+        } else if (event.deltaY < 0) { //&& zoomLevel > zoomIncrement) {
             zoom(true, mouseX, mouseY);
         }
     });
