@@ -28,14 +28,14 @@ void main() {
 `;
 
 var roundJoinShaderSource = `#version 300 es
-in vec2 a_position;
+in vec2 a_pposition;
 in vec4 a_points;
 
 uniform mat4 u_matrix;
 uniform float u_lineWidth;
 
 void main() {
-    vec2 position = a_position;
+    vec2 position = a_pposition;
     vec2 points = a_points.zw;
     float lineWidth = u_lineWidth;
     vec2 point = lineWidth * position + points;
@@ -82,25 +82,25 @@ function main() {
     var program = webglUtils.createProgramFromSources(gl, [vertexShaderSource, fragmentShaderSource]);
     var roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
 
-    var positionAttributeLocation = gl.getAttribLocation(program, "a_position");
+    var linePositionAttributeLocation = gl.getAttribLocation(program, "a_position");
     var pointsAttributeLocation = gl.getAttribLocation(program, "a_points");
-    var matrixLocation = gl.getUniformLocation(program, "u_matrix");
-    var colorMultLocation = gl.getUniformLocation(program, "u_colorMult");
+    var lineMatrixLocation = gl.getUniformLocation(program, "u_matrix");
+    var lineColorMultLocation = gl.getUniformLocation(program, "u_colorMult");
     var lineWidthLocation = gl.getUniformLocation(program, "u_lineWidth");
 
     // Round join locations
-    var roundJoinPositionAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_position");
+    var roundJoinPositionAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_pposition");
     var roundJoinPointsAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_points");
     var roundJoinMatrixLocation = gl.getUniformLocation(roundJoinProgram, "u_matrix");
     var roundJoinColorMultLocation = gl.getUniformLocation(roundJoinProgram, "u_colorMult");
     var roundJoinLineWidthLocation = gl.getUniformLocation(roundJoinProgram, "u_lineWidth");
 
-    //PLOT - static line geometry
-    var plotBuffer = gl.createBuffer();
-    var plotVAO = gl.createVertexArray();
-    gl.bindVertexArray(plotVAO);
-    gl.enableVertexAttribArray(positionAttributeLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, plotBuffer);
+    // Line - static geometry
+    var lineBuffer = gl.createBuffer();
+    var lineVAO = gl.createVertexArray();
+    gl.bindVertexArray(lineVAO);
+    gl.enableVertexAttribArray(linePositionAttributeLocation);
+    gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
 
     var lineSegmentInstanceGeometry = new Float32Array([
         0, -0.5,
@@ -113,8 +113,8 @@ function main() {
     gl.bufferData(gl.ARRAY_BUFFER, lineSegmentInstanceGeometry, gl.DYNAMIC_DRAW);
     console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
 
-    gl.vertexAttribPointer(positionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(positionAttributeLocation, 0);
+    gl.vertexAttribPointer(linePositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(linePositionAttributeLocation, 0);
 
     // Points for per-instance data
     var pointsBuffer = gl.createBuffer();
@@ -128,17 +128,17 @@ function main() {
     var far = 2;
 
     var zoomLevel = 1;
-    var plotTranslation = [0, 0, 0];
+    var lineTranslation = [0, 0, 0];
     var scale = [1, 1, 1];
     var resolution = 250;
 
-    var graphData = updateGraph(gl, left, right, resolution, plotTranslation);
+    var graphData = updateGraph(gl, left, right, resolution, lineTranslation);
     var bufferLength = uploadGraphData(gl, graphData);
-    // var data = new Float32Array(graphData);
-    // gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    
     gl.vertexAttribPointer(pointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(pointsAttributeLocation);
     gl.vertexAttribDivisor(pointsAttributeLocation, 1);
+
 
     // Round join points
     var roundJoinBuffer = gl.createBuffer();
@@ -151,17 +151,18 @@ function main() {
     gl.vertexAttribPointer(roundJoinPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
     gl.vertexAttribDivisor(roundJoinPointsAttributeLocation, 0); 
-    // Points per instance-data
+    // Points for per-instance data (graphData)
     gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
     gl.vertexAttribPointer(roundJoinPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(roundJoinPointsAttributeLocation);
     gl.vertexAttribDivisor(roundJoinPointsAttributeLocation, 1);
+    
 
-    var plotProgramInfo = {
+    var lineProgramInfo = {
         program: program,
-        positionLoc: positionAttributeLocation,
-        colorLoc: colorMultLocation,
-        matrixLoc: matrixLocation,
+        positionLoc: linePositionAttributeLocation,
+        colorLoc: lineColorMultLocation,
+        matrixLoc: lineMatrixLocation,
         lineWidthLoc: lineWidthLocation,
     };
 
@@ -175,8 +176,8 @@ function main() {
 
     var lineWidth = 0.1
 
-    // plotUniforms doesn't have any effect
-    var plotUniforms = {
+    // lineUniforms doesn't have any effect
+    var lineUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
         u_lineWidth: lineWidth,
@@ -189,9 +190,9 @@ function main() {
 
     var objectsToDraw = [
         {
-            programInfo: plotProgramInfo,
-            vertexArray: plotVAO,
-            uniforms: plotUniforms,
+            programInfo: lineProgramInfo,
+            vertexArray: lineVAO,
+            uniforms: lineUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
             getCount: function() { return 6 },
             getInstanceCount: function() { return bufferLength / 2 },
@@ -237,12 +238,12 @@ function main() {
         let dxWorld = dx * (right - left) / gl.canvas.clientWidth;
         let dyWorld = dy * (top - bottom) / gl.canvas.clientHeight;
 
-        plotTranslation[0] += dxWorld;
-        plotTranslation[1] -= dyWorld;
+        lineTranslation[0] += dxWorld;
+        lineTranslation[1] -= dyWorld;
 
         startX = event.clientX;
         startY = event.clientY;
-        let graphData = updateGraph(gl, left, right, resolution, plotTranslation);
+        let graphData = updateGraph(gl, left, right, resolution, lineTranslation);
         bufferLength = uploadGraphData(gl, graphData);
         drawScene();
     });
@@ -261,7 +262,6 @@ function main() {
     // ZOOMING
     const ZOOM_FACTOR = 1.05;
     let mouseX = 0, mouseY = 0;
-    // let zoomIncrement = 0.05;
 
     function zoom(isZoomingIn, mouseX, mouseY) {
         const width = right - left;
@@ -301,7 +301,7 @@ function main() {
         let topNew = mouseWorldY + (top - mouseWorldY) * heightScalingFactor;
 
         lineWidth = lineWidth * lineWidthScalingFactor;
-        plotUniforms.u_lineWidth = lineWidth;
+        lineUniforms.u_lineWidth = lineWidth;
         roundJoinUniforms.u_lineWidth = lineWidth;
 
         resolution = resolution * resolutionScalingFactor;
@@ -320,7 +320,7 @@ function main() {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
-        let graphData = updateGraph(gl, left, right, resolution, plotTranslation);
+        let graphData = updateGraph(gl, left, right, resolution, lineTranslation);
         bufferLength = uploadGraphData(gl, graphData);
         drawScene();
     }
@@ -357,8 +357,8 @@ function main() {
         // gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
-        plotUniforms.u_matrix = computeMatrix(viewProjectionMatrix, plotTranslation, 0, 0, scale);
-        roundJoinUniforms.u_matrix = computeMatrix(viewProjectionMatrix, plotTranslation, 0, 0, scale);
+        lineUniforms.u_matrix = computeMatrix(viewProjectionMatrix, lineTranslation, 0, 0, scale);
+        roundJoinUniforms.u_matrix = computeMatrix(viewProjectionMatrix, lineTranslation, 0, 0, scale);
 
         objectsToDraw.forEach(function (object) {
             var program = object.programInfo.program;
