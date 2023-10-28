@@ -127,20 +127,19 @@ function main() {
     var near = 0;
     var far = 2;
 
-    var zoomLevel = 1;
     var lineTranslation = [0, 0, 0];
     var scale = [1, 1, 1];
     var resolution = 250;
 
-    var graphData = updateGraph(left, right, resolution, lineTranslation);
+    var f = functionArray[0];
+
+    var graphData = updateGraph(left, right, resolution, lineTranslation, f);
     gl.bufferData(gl.ARRAY_BUFFER, graphData, gl.DYNAMIC_DRAW);
-    var bufferLength = getGraphBufferLength(graphData);
+    var graphDataBufferLength = getGraphBufferLength(graphData);
     
     gl.vertexAttribPointer(pointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(pointsAttributeLocation);
     gl.vertexAttribDivisor(pointsAttributeLocation, 1);
-
-
     // Round join points
     var roundJoinBuffer = gl.createBuffer();
     var roundJoinVAO = gl.createVertexArray();
@@ -195,7 +194,7 @@ function main() {
             uniforms: lineUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
             getCount: function() { return 6 },
-            getInstanceCount: function() { return bufferLength / 2 },
+            getInstanceCount: function() { return graphDataBufferLength / 2 },
         },
         {
             programInfo: roundJoinProgramInfo,
@@ -203,13 +202,13 @@ function main() {
             uniforms: roundJoinUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
             getCount: function() { return roundJoinData.length / 2 },
-            getInstanceCount: function() { return bufferLength / 2},
+            getInstanceCount: function() { return graphDataBufferLength / 2},
         }
     ];
 
-    let cameraPosition = [0, 0, 1]; // 10 units back in z-axis
-    let target = [0, 0, 0]; // Middle of the graph
-    let up = [0, 1, 0]; // Up direction
+    let cameraPosition = [0, 0, 1];
+    let target = [0, 0, 0]; 
+    let up = [0, 1, 0]; 
 
     var cameraMatrix = m4.lookAt(cameraPosition, target, up);
     var viewMatrix = m4.inverse(cameraMatrix);
@@ -243,9 +242,9 @@ function main() {
 
         startX = event.clientX;
         startY = event.clientY;
-        let graphData = updateGraph(left, right, resolution, lineTranslation);
+        let graphData = updateGraph(left, right, resolution, lineTranslation, f);  
         gl.bufferData(gl.ARRAY_BUFFER, graphData, gl.DYNAMIC_DRAW);
-        bufferLength = getGraphBufferLength(graphData);
+        graphDataBufferLength = getGraphBufferLength(graphData);
         drawScene();
     });
 
@@ -281,12 +280,12 @@ function main() {
             newResolution = resolution / ZOOM_FACTOR;
         }
 
-        // Convert mouse from screen space to clip space
+        // Convert mouse position from screen space to clip space
         let clipX = (mouseX / gl.canvas.clientWidth) * 2 - 1;
         let clipY = -((mouseY / gl.canvas.clientHeight) * 2 - 1);
         console.log("Mouse Clip Space: ", clipX, clipY);
 
-        // Calculate mouse position in current orthographic dimensions
+        // Calculate mouse position in world space
         let mouseWorldX = left + (clipX + 1) * 0.5 * width;
         let mouseWorldY = bottom + (clipY + 1) * 0.5 * height;
         console.log("Mouse World Space: ", mouseWorldX, mouseWorldY);
@@ -321,9 +320,9 @@ function main() {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
-        let graphData = updateGraph(left, right, resolution, lineTranslation);
+        let graphData = updateGraph(left, right, resolution, lineTranslation, f);
         gl.bufferData(gl.ARRAY_BUFFER, graphData, gl.DYNAMIC_DRAW);
-        bufferLength = getGraphBufferLength(graphData);
+        graphDataBufferLength = getGraphBufferLength(graphData);
         drawScene();
     }
 
@@ -337,7 +336,7 @@ function main() {
         // Determine zoom direction
         if (event.deltaY > 0) {
             zoom(false, mouseX, mouseY);
-        } else if (event.deltaY < 0) { //&& zoomLevel > zoomIncrement) {
+        } else if (event.deltaY < 0) {
             zoom(true, mouseX, mouseY);
         }
     });
@@ -372,8 +371,7 @@ function main() {
             // Set the uniforms.
             gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
             gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
-            console.log("zoomLevel:", zoomLevel);
-            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth / zoomLevel) : {};
+            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
 
             gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
             let bufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
@@ -410,16 +408,11 @@ function computeMatrix(viewProjectionMatrix, translation, xRotation, yRotation, 
     return matrix;
 }
 
-function generateGraphData(start, end, resolution) {
+function generateGraphData(start, end, resolution, f) {
     var points = [];
 
     let startX = start * resolution;
     let endX = end * resolution;
-
-    function f(x) {
-        let y = Math.cos(x);
-        return y;
-    }
  
     if (startX < endX) {
         for (let i = startX; i <= endX; i++) {
@@ -442,6 +435,26 @@ function generateGraphData(start, end, resolution) {
     return points
 }
 
+function cosineFunction(x) {
+    return Math.cos(x)
+}
+
+function sineFunction(x) {
+    return Math.sin(x)
+}
+
+const functionArray = [
+    function(x) {
+        return Math.cos(x);
+    },
+    function(x) {
+        return Math.sin(x);
+    },
+    function(x) {
+        return x * x;
+    }
+];
+
 function generateRoundJoinData(resolution) {
     resolution = 100
     var points = [];
@@ -459,16 +472,19 @@ function generateRoundJoinData(resolution) {
 }
 
 function getGraphBufferLength(data) {
-    let bufferLength = data.length / 2;
-    return bufferLength;
+    let graphDataBufferLength = data.length / 2;
+    return graphDataBufferLength;
 }
 
-
-function updateGraph(left, right, resolution, translation) {
+function updateGraph(left, right, resolution, translation, f) {
     var actualLeft = left - translation[0];
     var actualRight = right - translation[0];
     console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}, left: ${left}, right: ${right}, translation: ${translation[0]}`);
-    let data = new Float32Array(generateGraphData(actualLeft, actualRight, resolution));
+    // var data = [];
+    // for (let i = 0; i < functionArray.length; i++) {
+    //     const f = functionArray[i];
+        let data = (new Float32Array(generateGraphData(actualLeft, actualRight, resolution, f)));
+    // }
     return data;
 }
 
