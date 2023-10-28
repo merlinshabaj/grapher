@@ -2,7 +2,7 @@ import * as webglUtils from './webgl-utils.js';
 import * as m3 from './m3.js';
 import * as m4 from './m4.js';
 
-var vertexShaderSource = `#version 300 es
+var lineVertexShaderSource = `#version 300 es
 in vec2 a_position;
 in vec4 a_points;
 
@@ -79,14 +79,14 @@ function main() {
         return;
     }
 
-    var program = webglUtils.createProgramFromSources(gl, [vertexShaderSource, fragmentShaderSource]);
+    var lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     var roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
 
-    var linePositionAttributeLocation = gl.getAttribLocation(program, "a_position");
-    var pointsAttributeLocation = gl.getAttribLocation(program, "a_points");
-    var lineMatrixLocation = gl.getUniformLocation(program, "u_matrix");
-    var lineColorMultLocation = gl.getUniformLocation(program, "u_colorMult");
-    var lineWidthLocation = gl.getUniformLocation(program, "u_lineWidth");
+    var linePositionAttributeLocation = gl.getAttribLocation(lineProgram, "a_position");
+    var pointsAttributeLocation = gl.getAttribLocation(lineProgram, "a_points");
+    var lineMatrixLocation = gl.getUniformLocation(lineProgram, "u_matrix");
+    var lineColorMultLocation = gl.getUniformLocation(lineProgram, "u_colorMult");
+    var lineWidthLocation = gl.getUniformLocation(lineProgram, "u_lineWidth");
 
     // Round join locations
     var roundJoinPositionAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_pposition");
@@ -132,8 +132,9 @@ function main() {
     var scale = [1, 1, 1];
     var resolution = 250;
 
-    var graphData = updateGraph(gl, left, right, resolution, lineTranslation);
-    var bufferLength = uploadGraphData(gl, graphData);
+    var graphData = updateGraph(left, right, resolution, lineTranslation);
+    gl.bufferData(gl.ARRAY_BUFFER, graphData, gl.DYNAMIC_DRAW);
+    var bufferLength = getGraphBufferLength(graphData);
     
     gl.vertexAttribPointer(pointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(pointsAttributeLocation);
@@ -159,7 +160,7 @@ function main() {
     
 
     var lineProgramInfo = {
-        program: program,
+        program: lineProgram,
         positionLoc: linePositionAttributeLocation,
         colorLoc: lineColorMultLocation,
         matrixLoc: lineMatrixLocation,
@@ -176,7 +177,6 @@ function main() {
 
     var lineWidth = 0.1
 
-    // lineUniforms doesn't have any effect
     var lineUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
@@ -243,8 +243,9 @@ function main() {
 
         startX = event.clientX;
         startY = event.clientY;
-        let graphData = updateGraph(gl, left, right, resolution, lineTranslation);
-        bufferLength = uploadGraphData(gl, graphData);
+        let graphData = updateGraph(left, right, resolution, lineTranslation);
+        gl.bufferData(gl.ARRAY_BUFFER, graphData, gl.DYNAMIC_DRAW);
+        bufferLength = getGraphBufferLength(graphData);
         drawScene();
     });
 
@@ -320,8 +321,9 @@ function main() {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
-        let graphData = updateGraph(gl, left, right, resolution, lineTranslation);
-        bufferLength = uploadGraphData(gl, graphData);
+        let graphData = updateGraph(left, right, resolution, lineTranslation);
+        gl.bufferData(gl.ARRAY_BUFFER, graphData, gl.DYNAMIC_DRAW);
+        bufferLength = getGraphBufferLength(graphData);
         drawScene();
     }
 
@@ -366,9 +368,8 @@ function main() {
             var vertexArray = object.vertexArray;
             gl.useProgram(program);
             gl.bindVertexArray(vertexArray);
+
             // Set the uniforms.
-
-
             gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
             gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
             console.log("zoomLevel:", zoomLevel);
@@ -394,23 +395,22 @@ function main() {
             } else {
                 gl.drawArrays(primitiveType, offset, count);
             }
-
         });
-    }
-
-    function computeMatrix(viewProjectionMatrix, translation, xRotation, yRotation, scale) {
-        var matrix = m4.translate(viewProjectionMatrix,
-            translation[0],
-            translation[1],
-            translation[2]);
-        matrix = m4.xRotate(matrix, xRotation);
-        matrix = m4.yRotate(matrix, yRotation);
-        matrix = m4.scale(matrix, scale[0], scale[1], scale[2]);
-        return matrix;
     }
 }
 
-function generateGraphData(start, end, resolution = 100) {
+function computeMatrix(viewProjectionMatrix, translation, xRotation, yRotation, scale) {
+    var matrix = m4.translate(viewProjectionMatrix,
+        translation[0],
+        translation[1],
+        translation[2]);
+    matrix = m4.xRotate(matrix, xRotation);
+    matrix = m4.yRotate(matrix, yRotation);
+    matrix = m4.scale(matrix, scale[0], scale[1], scale[2]);
+    return matrix;
+}
+
+function generateGraphData(start, end, resolution) {
     var points = [];
 
     let startX = start * resolution;
@@ -458,19 +458,17 @@ function generateRoundJoinData(resolution) {
         return points
 }
 
-function uploadGraphData(gl, data) {
-    data = new Float32Array(data);
+function getGraphBufferLength(data) {
     let bufferLength = data.length / 2;
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
-
     return bufferLength;
 }
 
-function updateGraph(gl, left, right, resolution, translation) {
+
+function updateGraph(left, right, resolution, translation) {
     var actualLeft = left - translation[0];
     var actualRight = right - translation[0];
     console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}, left: ${left}, right: ${right}, translation: ${translation[0]}`);
-    let data = generateGraphData(actualLeft, actualRight, resolution);
+    let data = new Float32Array(generateGraphData(actualLeft, actualRight, resolution));
     return data;
 }
 
