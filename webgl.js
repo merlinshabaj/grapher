@@ -199,15 +199,15 @@ function main() {
         lineWidthLoc: roundJoinLineWidthLocation,
     };
 
-    let lineWidth = 0.2;
+    let lineWidth = 0.1;
 
     const lineUniforms = {
-        u_colorMult: [0, 0, 1, 1],
+        u_colorMult: [0, 0, 0, 1],
         u_matrix: m4.identity(),
         u_lineWidth: lineWidth,
     };
     const roundJoinUniforms = {
-        u_colorMult: [0, 0, 1, 1],
+        u_colorMult: [0, 0, 0, 1],
         u_matrix: m4.identity(),
         u_lineWidth: lineWidth,
     }
@@ -377,7 +377,7 @@ function main() {
         webglUtils.resizeCanvasToDisplaySize(canvas, devicePixelRatio);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
         
-        gl.clearColor(0, 0, 0, 1);
+        gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // gl.enable(gl.CULL_FACE);
