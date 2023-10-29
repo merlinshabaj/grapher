@@ -5,25 +5,29 @@ import * as m4 from './m4.js';
 const lineVertexShaderSource = `#version 300 es
 precision highp float;
 
-in vec2 a_position;
+in vec2 a_instanceVertexPosition;
 in vec4 a_startAndEndPoints;
 
-uniform mat4 u_matrix;
+uniform mat4 u_mvp;
 uniform float u_lineWidth;
 
-
 void main() {
-    vec2 position = a_position;
-    vec4 points = a_startAndEndPoints;
-    float lineWidth = u_lineWidth;
+    vec2 start = a_startAndEndPoints.xy; // start points
+    vec2 end = a_startAndEndPoints.zw; // end points
 
-    vec2 start = points.xy; // start points
-    vec2 end = points.zw; // end points
+    vec2 direction = end - start;
+    vec2 unitNormal = normalize(vec2(-direction.y, direction.x));
+    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + unitNormal * u_lineWidth * a_instanceVertexPosition.y;
+    // vec2 p = start + segmentLength * a_instanceVertexPosition + vec2(unitNormal * u_lineWidth/2.0);
 
-    vec2 dir = end - start;
-    vec2 up = vec2(0, 1);
-    float crossProduct = up.x * dir.y - up.y * dir.x;
-    float side = sign(crossProduct);
+    gl_Position = u_mvp * vec4(worldSpacePosition, 0, 1);
+}
+`;
+
+
+  // vec2 up = vec2(0, 1);
+    // float crossProduct = up.x * dir.y - up.y * dir.x;
+    // float side = sign(crossProduct);
     // vec2 normal = vec2(0, 0);
     // if (side > 0.0) {
     //     normal = normalize(vec2(-dir.y, dir.x));
@@ -33,13 +37,6 @@ void main() {
     // dir = normalize(dir);
     // float segmentLength = length(end - start);
 
-    vec2 normal = normalize(vec2(-dir.y, dir.x));
-    vec2 point = start + dir * position.x + normal * lineWidth * position.y;
-    // vec2 p = start + segmentLength * position + vec2(normal * lineWidth/2.0);
-
-    gl_Position = u_matrix * vec4(point, 0, 1);
-}
-`;
 
         // 0, -0.5,
         // 1, -0.5,
@@ -49,19 +46,18 @@ void main() {
         // 0,  0.5
 
 const roundJoinShaderSource = `#version 300 es
-in vec2 a_position;
+in vec2 a_instanceVertexPosition;
 in vec4 a_startAndEndPoints;
 
-uniform mat4 u_matrix;
+uniform mat4 u_mvp;
 uniform float u_lineWidth;
 
 void main() {
-    vec2 position = a_position;
-    vec2 points = a_startAndEndPoints.xy;
-    float lineWidth = u_lineWidth;
-    vec2 point = lineWidth * position + points;
+    vec2 startPoint = a_startAndEndPoints.xy;
+
+    vec2 point = u_lineWidth * a_instanceVertexPosition + startPoint;
     
-    gl_Position = u_matrix * vec4(point, 0, 1);
+    gl_Position = u_mvp * vec4(point, 0, 1);
 
 }
 `;
@@ -104,23 +100,21 @@ function main() {
     /** @type {HTMLCanvasElement} */
     const canvas = document.querySelector("#webgl");
     const gl = canvas.getContext("webgl2", { antialias: true });
-    if (!gl) {
-        return;
-    }
+    if (!gl) return
 
     const lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
 
-    const linePositionAttributeLocation = gl.getAttribLocation(lineProgram, "a_position");
+    const linePositionAttributeLocation = gl.getAttribLocation(lineProgram, "a_instanceVertexPosition");
     const pointsAttributeLocation = gl.getAttribLocation(lineProgram, "a_startAndEndPoints");
-    const lineMatrixLocation = gl.getUniformLocation(lineProgram, "u_matrix");
+    const lineMatrixLocation = gl.getUniformLocation(lineProgram, "u_mvp");
     const lineColorMultLocation = gl.getUniformLocation(lineProgram, "u_colorMult");
     const lineWidthLocation = gl.getUniformLocation(lineProgram, "u_lineWidth");
 
     // Round join locations
-    const roundJoinPositionAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_position");
+    const roundJoinPositionAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_instanceVertexPosition");
     const roundJoinPointsAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_startAndEndPoints");
-    const roundJoinMatrixLocation = gl.getUniformLocation(roundJoinProgram, "u_matrix");
+    const roundJoinMatrixLocation = gl.getUniformLocation(roundJoinProgram, "u_mvp");
     const roundJoinColorMultLocation = gl.getUniformLocation(roundJoinProgram, "u_colorMult");
     const roundJoinLineWidthLocation = gl.getUniformLocation(roundJoinProgram, "u_lineWidth");
 
@@ -149,8 +143,9 @@ function main() {
     const pointsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
 
-    let left = -10
-    let right = 10
+    let aspectRatio = gl.canvas.clientWidth / gl.canvas.clientHeight;
+    let left = -10 * aspectRatio
+    let right = 10 * aspectRatio
     let bottom = -10
     let top = 10
     const near = 0;
@@ -245,7 +240,7 @@ function main() {
 
     let orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
     let viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
-
+    console.log("viewProjectionMatrix", viewProjectionMatrix);
 
     // PANNING
     let isPanning = false;
@@ -379,9 +374,9 @@ function main() {
     drawScene();
 
     function drawScene() {
-        webglUtils.resizeCanvasToDisplaySize(canvas);
+        webglUtils.resizeCanvasToDisplaySize(canvas, devicePixelRatio);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
+        
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
