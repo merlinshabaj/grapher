@@ -92,7 +92,8 @@ function main() {
 
     const lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
-    const gridProgram = webglUtils.createProgramFromSources(gl, [gridShaderSource, fragmentShaderSource]);
+    const majorGridPogram = webglUtils.createProgramFromSources(gl, [gridShaderSource, fragmentShaderSource]);
+    const minorGridPogram = webglUtils.createProgramFromSources(gl, [gridShaderSource, fragmentShaderSource]);
 
     const linePositionAttributeLocation = gl.getAttribLocation(lineProgram, "a_instanceVertexPosition");
     const pointsAttributeLocation = gl.getAttribLocation(lineProgram, "a_startAndEndPoints");
@@ -107,12 +108,20 @@ function main() {
     const roundJoinColorMultLocation = gl.getUniformLocation(roundJoinProgram, "u_colorMult");
     const roundJoinLineWidthLocation = gl.getUniformLocation(roundJoinProgram, "u_lineWidth");
 
-    // Grid locations
-    const gridVertexPositionAttributeLocation = gl.getAttribLocation(gridProgram, "a_instanceVertexPosition");
-    const gridStartAndEndPointsAttributeLocation = gl.getAttribLocation(gridProgram, "a_startAndEndPoints");;
-    const gridMVPLocation = gl.getUniformLocation(gridProgram, "u_mvp");
-    const gridColorMultLocation = gl.getUniformLocation(gridProgram, "u_colorMult");
-    const gridLineWidthLocation = gl.getUniformLocation(gridProgram, "u_lineWidth");
+    // Major grid locations
+    const majorGridVertexPositionAttributeLocation = gl.getAttribLocation(majorGridPogram, "a_instanceVertexPosition");
+    const majorGridStartAndEndPointsAttributeLocation = gl.getAttribLocation(majorGridPogram, "a_startAndEndPoints");;
+    const majorGridMVPLocation = gl.getUniformLocation(majorGridPogram, "u_mvp");
+    const majorGridColorMultLocation = gl.getUniformLocation(majorGridPogram, "u_colorMult");
+    const majorGridLineWidthLocation = gl.getUniformLocation(majorGridPogram, "u_lineWidth");
+
+    // Minor grid locations
+    const minorGridVertexPositionAttributeLocation = gl.getAttribLocation(minorGridPogram, "a_instanceVertexPosition");
+    const minorGridStartAndEndPointsAttributeLocation = gl.getAttribLocation(minorGridPogram, "a_startAndEndPoints");;
+    const minorGridMVPLocation = gl.getUniformLocation(minorGridPogram, "u_mvp");
+    const minorGridColorMultLocation = gl.getUniformLocation(minorGridPogram, "u_colorMult");
+    const minorGridLineWidthLocation = gl.getUniformLocation(minorGridPogram, "u_lineWidth");
+
 
     // Line - static geometry
     const lineBuffer = gl.createBuffer();
@@ -147,14 +156,14 @@ function main() {
     const near = 0;
     const far = 2;
 
-    let lineTranslation = [0, 0, 0];
+    let translation = [0, 0, 0];
     const scale = [1, 1, 1];
     // let resolution = 250;
     let resolution = 100;
 
     const f = functionArray[3];
 
-    const graphData = updateGraph(left, right, resolution, lineTranslation, f);
+    const graphData = updateGraph(left, right, resolution, translation, f);
     uploadAttributeData(gl, pointsBuffer, graphData);
     let graphDataBufferLength = getBufferLength(graphData);
     
@@ -177,12 +186,11 @@ function main() {
     gl.enableVertexAttribArray(roundJoinPointsAttributeLocation);
     gl.vertexAttribDivisor(roundJoinPointsAttributeLocation, 1);
 
-    // Grid - static geometry
-    const gridGeometryBuffer = gl.createBuffer();
-    const gridVAO = gl.createVertexArray();
-    gl.bindVertexArray(gridVAO);
-    gl.enableVertexAttribArray(gridVertexPositionAttributeLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, gridGeometryBuffer);
+    // Major grid - static geometry
+    const majorGridGeometryBuffer = gl.createBuffer();
+    const majorGridVAO = gl.createVertexArray();
+    gl.bindVertexArray(majorGridVAO);
+    gl.enableVertexAttribArray(majorGridVertexPositionAttributeLocation);
     const gridInstanceGeometry = new Float32Array([
         0, -0.5,
         1, -0.5,
@@ -191,19 +199,38 @@ function main() {
         1,  0.5,
         0,  0.5
     ]);
-    gl.bufferData(gl.ARRAY_BUFFER, gridInstanceGeometry, gl.DYNAMIC_DRAW);
-    gl.vertexAttribPointer(gridVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(gridVertexPositionAttributeLocation, 0);
-    // Start and end points for per-instace data grid
-    const gridDataBuffer = gl.createBuffer();
-    const gridData = new Float32Array(computeMajorGridPoints(left, right, top, bottom));
-    let gridDataBufferLength = getBufferLength(gridData);
-    console.log("gridDataBufferLength", gridDataBufferLength);
-    uploadAttributeData(gl, gridDataBuffer, gridData);
-    gl.vertexAttribPointer(gridStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(gridStartAndEndPointsAttributeLocation);
-    gl.vertexAttribDivisor(gridStartAndEndPointsAttributeLocation, 1);
+    uploadAttributeData(gl, majorGridGeometryBuffer, gridInstanceGeometry);
+    gl.vertexAttribPointer(majorGridVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(majorGridVertexPositionAttributeLocation, 0);
 
+    // Start and end points for per-instace data majorgrid
+    const majorGridDataBuffer = gl.createBuffer();
+    const majorGridData = new Float32Array(computeMajorGridPoints(left, right, top, bottom));
+    let majorGridDataBufferLength = getBufferLength(majorGridData);
+    console.log("majorGridDataBufferLength", majorGridDataBufferLength);
+    uploadAttributeData(gl, majorGridDataBuffer, majorGridData);
+    gl.vertexAttribPointer(majorGridStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(majorGridStartAndEndPointsAttributeLocation);
+    gl.vertexAttribDivisor(majorGridStartAndEndPointsAttributeLocation, 1);
+
+    // Minor grid - static geometry
+    const minorGridGeometryBuffer = gl.createBuffer();
+    const minorGridVAO = gl.createVertexArray();
+    gl.bindVertexArray(minorGridVAO);
+    gl.enableVertexAttribArray(minorGridVertexPositionAttributeLocation);
+    uploadAttributeData(gl, minorGridGeometryBuffer, gridInstanceGeometry);
+    gl.vertexAttribPointer(minorGridVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(minorGridVertexPositionAttributeLocation, 0);
+
+    // Start and end points for per-instance data minor grid
+    const minorGridDataBuffer = gl.createBuffer();
+    const minorGridData = new Float32Array(computeMinorGridPoints(left, right, top, bottom));
+    let minorGridDataBufferLength = getBufferLength(minorGridData);
+    console.log("majorGridDataBufferLength", minorGridDataBufferLength);
+    uploadAttributeData(gl, minorGridDataBuffer, minorGridData);
+    gl.vertexAttribPointer(minorGridStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(minorGridStartAndEndPointsAttributeLocation);
+    gl.vertexAttribDivisor(minorGridStartAndEndPointsAttributeLocation, 1);
 
     const lineProgramInfo = {
         program: lineProgram,
@@ -219,18 +246,27 @@ function main() {
         matrixLoc: roundJoinMVPLocation,
         lineWidthLoc: roundJoinLineWidthLocation,
     };
-    const gridProgramInfo = {
-        program: gridProgram,
-        positionLoc: gridVertexPositionAttributeLocation,
-        colorLoc: gridColorMultLocation,
-        matrixLoc: gridMVPLocation,
-        lineWidthLoc: gridLineWidthLocation,
-    }
+    const majorGridProgramInfo = {
+        program: majorGridPogram,
+        positionLoc: majorGridVertexPositionAttributeLocation,
+        colorLoc: majorGridColorMultLocation,
+        matrixLoc: majorGridMVPLocation,
+        lineWidthLoc: majorGridLineWidthLocation,
+    };
+    const minorGridProgramInfo = {
+        program: minorGridPogram,
+        positionLoc: minorGridVertexPositionAttributeLocation,
+        colorLoc: minorGridColorMultLocation,
+        matrixLoc: minorGridMVPLocation,
+        lineWidthLoc: minorGridLineWidthLocation,
+    };
 
     let plotLineWidth = 0.1;
-    let gridLineWidth = 0.05
+    let majorGridLineWidth = 0.05;
+    let minorGridLineWidth = 0.025;
     let graphColor = [0, 0, 0, 1];
-    let gridColor = [0, 0, 0, 0.2];
+    let majorGridColor = [0, 0, 0, 0.2];
+    let minorGridColor = [0, 0, 0, 0.1];
 
     const lineUniforms = {
         u_colorMult: graphColor,
@@ -241,12 +277,17 @@ function main() {
         u_colorMult: graphColor,
         u_matrix: m4.identity(),
         u_lineWidth: plotLineWidth,
-    }
-    const gridUniforms = {
-        u_colorMult: gridColor,
+    };
+    const majorGridUniforms = {
+        u_colorMult: majorGridColor,
         u_matrix: m4.identity(),
-        u_lineWidth: gridLineWidth,
-    }
+        u_lineWidth: majorGridLineWidth,
+    };
+    const minorGridUniforms = {
+        u_colorMult: minorGridColor,
+        u_matrix: m4.identity(),
+        u_lineWidth: minorGridLineWidth,
+    };
 
     const objectsToDraw = [
         {
@@ -268,13 +309,22 @@ function main() {
             getInstanceCount: function() { return graphDataBufferLength / 2},
         },
         {
-            programInfo: gridProgramInfo,
-            vertexArray: gridVAO,
-            uniforms: gridUniforms,
+            programInfo: majorGridProgramInfo,
+            vertexArray: majorGridVAO,
+            uniforms: majorGridUniforms,
             primitiveType: gl.TRIANGLES,
-            dataBuffer: gridDataBuffer,
+            dataBuffer: majorGridDataBuffer,
             getCount: function() { return 6 },
-            getInstanceCount: function() { return gridDataBufferLength / 2}, // x-axis range + y-axis range
+            getInstanceCount: function() { return majorGridDataBufferLength / 2},
+        },
+        {
+            programInfo: minorGridProgramInfo,
+            vertexArray: minorGridVAO,
+            uniforms: minorGridUniforms,
+            primitiveType: gl.TRIANGLES,
+            dataBuffer: minorGridDataBuffer,
+            getCount: function() { return 6 },
+            getInstanceCount: function() { return minorGridDataBufferLength / 2},
         }
     ];
 
@@ -308,19 +358,24 @@ function main() {
         const dxWorld = dx * (right - left) / gl.canvas.clientWidth;
         const dyWorld = dy * (top - bottom) / gl.canvas.clientHeight;
 
-        lineTranslation[0] += dxWorld;
-        lineTranslation[1] -= dyWorld;
+        translation[0] += dxWorld;
+        translation[1] -= dyWorld;
 
         startX = event.clientX;
         startY = event.clientY;
 
-        const graphData = updateGraph(left, right, resolution, lineTranslation, f);  
+        const graphData = updateGraph(left, right, resolution, translation, f);  
         uploadAttributeData(gl, pointsBuffer, graphData);
         graphDataBufferLength = getBufferLength(graphData);
 
-        const gridData = updateMajorGrid(left, right, top, bottom, lineTranslation);
-        uploadAttributeData(gl, gridDataBuffer, gridData);
-        gridDataBufferLength = getBufferLength(gridData);
+        const majorGridData = updateMajorGrid(left, right, top, bottom, translation);
+        uploadAttributeData(gl, majorGridDataBuffer, majorGridData);
+        majorGridDataBufferLength = getBufferLength(majorGridData);
+
+        const minorGridData = updateMinorGrid(left, right, top, bottom, translation);
+        uploadAttributeData(gl, minorGridDataBuffer, minorGridData);
+        minorGridDataBufferLength = getBufferLength(minorGridData);
+
         drawScene();
     });
 
@@ -343,18 +398,20 @@ function main() {
         const width = right - left;
         const height = top - bottom;
 
-        let newWidth, newHeight, newPlotLineWidth, newGridLineWidth, newResolution;
+        let newWidth, newHeight, newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newResolution;
         if (isZoomingIn) {
             newWidth = width / ZOOM_FACTOR;
             newHeight = height / ZOOM_FACTOR;
             newPlotLineWidth = plotLineWidth / ZOOM_FACTOR;
-            newGridLineWidth = gridLineWidth / ZOOM_FACTOR;
+            newMajorGridLineWidth = majorGridLineWidth / ZOOM_FACTOR;
+            newMinorGridLineWidth = minorGridLineWidth / ZOOM_FACTOR;
             newResolution = resolution * ZOOM_FACTOR;
         } else {
             newWidth = width * ZOOM_FACTOR;
             newHeight = height * ZOOM_FACTOR;
             newPlotLineWidth = plotLineWidth * ZOOM_FACTOR;
-            newGridLineWidth = gridLineWidth * ZOOM_FACTOR;
+            newMajorGridLineWidth = majorGridLineWidth * ZOOM_FACTOR;
+            newMinorGridLineWidth = minorGridLineWidth * ZOOM_FACTOR;
             newResolution = resolution / ZOOM_FACTOR;
         }
 
@@ -371,7 +428,8 @@ function main() {
         const widthScalingFactor = newWidth / width;
         const heightScalingFactor = newHeight / height;
         const plotLineWidthScalingFactor = newPlotLineWidth / plotLineWidth;
-        const gridLineWidthScalingFactor = newGridLineWidth / gridLineWidth;
+        const majorGridLineWidthScalingFactor = newMajorGridLineWidth / majorGridLineWidth;
+        const minorGridLineWidthScalingFactor = newMinorGridLineWidth / minorGridLineWidth;
         const resolutionScalingFactor = newResolution / resolution;
 
         const leftNew = mouseWorldX - (mouseWorldX - left) * widthScalingFactor;
@@ -383,8 +441,11 @@ function main() {
         lineUniforms.u_lineWidth = plotLineWidth;
         roundJoinUniforms.u_lineWidth = plotLineWidth;
         
-        gridLineWidth = gridLineWidth * gridLineWidthScalingFactor;
-        gridUniforms.u_lineWidth = gridLineWidth;
+        majorGridLineWidth = majorGridLineWidth * majorGridLineWidthScalingFactor;
+        majorGridUniforms.u_lineWidth = majorGridLineWidth;
+
+        minorGridLineWidth = minorGridLineWidth * minorGridLineWidthScalingFactor;
+        minorGridUniforms.u_lineWidth = minorGridLineWidth;
 
         resolution = resolution * resolutionScalingFactor;
         console.log("resolution:", resolution);
@@ -402,13 +463,18 @@ function main() {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
-        let graphData = updateGraph(left, right, resolution, lineTranslation, f);
+        let graphData = updateGraph(left, right, resolution, translation, f);
         uploadAttributeData(gl, pointsBuffer, graphData);
         graphDataBufferLength = getBufferLength(graphData);
 
-        let gridData = updateMajorGrid(left, right, top, bottom, lineTranslation);
-        uploadAttributeData(gl, gridDataBuffer, gridData);
-        gridDataBufferLength = getBufferLength(gridData);
+        let majorGridData = updateMajorGrid(left, right, top, bottom, translation);
+        uploadAttributeData(gl, majorGridDataBuffer, majorGridData);
+        majorGridDataBufferLength = getBufferLength(majorGridData);
+
+        let minorGridData = updateMinorGrid(left, right, top, bottom, translation);
+        uploadAttributeData(gl, minorGridDataBuffer, minorGridData);
+        minorGridDataBufferLength = getBufferLength(minorGridData);
+
         drawScene();
     }
 
@@ -444,10 +510,11 @@ function main() {
         // gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
-        lineUniforms.u_matrix = computeMatrix(viewProjectionMatrix, lineTranslation, 0, 0, scale);
-        roundJoinUniforms.u_matrix = computeMatrix(viewProjectionMatrix, lineTranslation, 0, 0, scale);
-        gridUniforms.u_matrix = computeMatrix(viewProjectionMatrix, lineTranslation, 0, 0, scale);
-
+        lineUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
+        roundJoinUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
+        majorGridUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
+        minorGridUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
+        
         objectsToDraw.forEach(function (object) {
             const program = object.programInfo.program;
             console.log("Current Program:", program);
@@ -460,7 +527,7 @@ function main() {
             gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
             object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, object.dataBuffer); // Watch this 
+            // gl.bindBuffer(gl.ARRAY_BUFFER, object.dataBuffer); // Watch this 
             // Draw
             const primitiveType = object.primitiveType;
             const offset = 0;
@@ -559,6 +626,37 @@ function computeMajorGridPoints(left, right, top, bottom) {
     return points
 }
 
+function computeMinorGridPoints(left, right, top, bottom) {
+    const points = [];
+
+    const xRange = Math.abs(right - left);
+    const yRange = Math.abs(top - bottom);
+    const maxRange = Math.max(xRange, yRange);
+    const majorGridSize = determineGridSize(maxRange);
+
+    const minorGridSize = majorGridSize / 5; // 5 minor lines between major lines
+
+    // Adjust start and end points to align with the minor grid size
+    const xStart = Math.ceil(left / minorGridSize) * minorGridSize;
+    const yStart = Math.ceil(bottom / minorGridSize) * minorGridSize;
+
+    for (let x = xStart; x <= right; x += minorGridSize) {
+        // Skip points that lie on major grid lines
+        if (Math.abs(x % majorGridSize) > 0.0001) { // Use a small epsilon to avoid floating-point errors
+            points.push(x, top, x, bottom);
+        }
+    }
+
+    for (let y = yStart; y <= top; y += minorGridSize) {
+        // Skip points that lie on major grid lines
+        if (Math.abs(y % majorGridSize) > 0.0001) { // Use a small epsilon to avoid floating-point errors
+            points.push(left, y, right, y);
+        }
+    }
+
+    return points;
+}
+
 function determineGridSize(maxRange) {
     const orderOfMagnitude = Math.floor(Math.log10(maxRange));
 
@@ -593,6 +691,15 @@ function updateMajorGrid(left, right, top, bottom, translation) {
     const translatedTop = top - translation[1];
     const translatedBottom = bottom - translation[1];
     const points = new Float32Array(computeMajorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
+    return points
+}
+
+function updateMinorGrid(left, right, top, bottom, translation) {
+    const translatedLeft = left - translation[0];
+    const translatedRight = right - translation[0];
+    const translatedTop = top - translation[1];
+    const translatedBottom = bottom - translation[1];
+    const points = new Float32Array(computeMinorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
     return points
 }
 
