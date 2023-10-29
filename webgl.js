@@ -196,7 +196,7 @@ function main() {
     gl.vertexAttribDivisor(gridVertexPositionAttributeLocation, 0);
     // Start and end points for per-instace data grid
     const gridDataBuffer = gl.createBuffer();
-    const gridData = new Float32Array(computeGridPoints(left, right, top, bottom));
+    const gridData = new Float32Array(computeMajorGridPoints(left, right, top, bottom));
     let gridDataBufferLength = getBufferLength(gridData);
     console.log("gridDataBufferLength", gridDataBufferLength);
     uploadAttributeData(gl, gridDataBuffer, gridData);
@@ -230,7 +230,7 @@ function main() {
     let plotLineWidth = 0.1;
     let gridLineWidth = 0.05
     let graphColor = [0, 0, 0, 1];
-    let gridColor = [1, 0, 0, 1];
+    let gridColor = [0, 0, 0, 0.2];
 
     const lineUniforms = {
         u_colorMult: graphColor,
@@ -318,7 +318,7 @@ function main() {
         uploadAttributeData(gl, pointsBuffer, graphData);
         graphDataBufferLength = getBufferLength(graphData);
 
-        const gridData = updateGrid(left, right, top, bottom, lineTranslation);
+        const gridData = updateMajorGrid(left, right, top, bottom, lineTranslation);
         uploadAttributeData(gl, gridDataBuffer, gridData);
         gridDataBufferLength = getBufferLength(gridData);
         drawScene();
@@ -406,7 +406,7 @@ function main() {
         uploadAttributeData(gl, pointsBuffer, graphData);
         graphDataBufferLength = getBufferLength(graphData);
 
-        let gridData = updateGrid(left, right, top, bottom, lineTranslation);
+        let gridData = updateMajorGrid(left, right, top, bottom, lineTranslation);
         uploadAttributeData(gl, gridDataBuffer, gridData);
         gridDataBufferLength = getBufferLength(gridData);
         drawScene();
@@ -536,38 +536,43 @@ function generateRoundJoinData(resolution) {
         return points
 }
 
-function computeGridPoints(left, right, top, bottom) {
+function computeMajorGridPoints(left, right, top, bottom) {
     const points = [];
-
-    left = Math.round(left);
-    right = Math.round(right);
-    top = Math.round(top);
-    bottom = Math.round(bottom);
+     const xRange = Math.abs(right - left);
+     const yRange = Math.abs(top - bottom);
+ 
+     const maxRange = Math.max(xRange, yRange);
+     const gridSize = determineGridSize(maxRange);
+ 
+     // Start points based on grid size
+     const xStart = Math.ceil(left / gridSize) * gridSize;
+     const yStart = Math.ceil(bottom / gridSize) * gridSize;
+ 
+     for (let x = xStart; x <= right; x += gridSize) {
+         points.push(x, top, x, bottom);
+     }
+ 
+     for (let y = yStart; y <= top; y += gridSize) {
+         points.push(left, y, right, y);
+     }
     
-    if (left < right) {
-        for (let i = left; i <= right; i++) {
-            points.push(i, top);
-            points.push(i, bottom);
-        }
-    } else {
-        for (let i = left; i >= right; i--) {
-            points.push(i, top);
-            points.push(i, bottom);
-        }
+    return points
+}
+
+function determineGridSize(maxRange) {
+    const orderOfMagnitude = Math.floor(Math.log10(maxRange));
+
+    let gridSize = Math.pow(10, orderOfMagnitude);
+
+    const rangeGridMultiple = maxRange / gridSize;
+
+    if (rangeGridMultiple < 5) {
+        gridSize /= 5; 
+    } else if (rangeGridMultiple < 10) {
+        gridSize /= 2; 
     }
 
-    if (bottom < top) {
-        for (let i = bottom; i <= top; i++) {
-            points.push(left, i);
-            points.push(right, i);
-        }
-    } else {
-        for (let i = bottom; i >= top; i--) {
-            points.push(left, i);
-            points.push(right, i);
-        }
-    }
-    return points
+    return gridSize;
 }
 
 function getBufferLength(data) {
@@ -582,12 +587,12 @@ function updateGraph(left, right, resolution, translation, f) {
     return points;
 }
 
-function updateGrid(left, right, top, bottom, translation) {
+function updateMajorGrid(left, right, top, bottom, translation) {
     const translatedLeft = left - translation[0];
     const translatedRight = right - translation[0];
     const translatedTop = top - translation[1];
     const translatedBottom = bottom - translation[1];
-    const points = new Float32Array(computeGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
+    const points = new Float32Array(computeMajorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
     return points
 }
 
