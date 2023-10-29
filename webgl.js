@@ -2,9 +2,11 @@ import * as webglUtils from './webgl-utils.js';
 import * as m3 from './m3.js';
 import * as m4 from './m4.js';
 
-var lineVertexShaderSource = `#version 300 es
+const lineVertexShaderSource = `#version 300 es
+precision highp float;
+
 in vec2 a_position;
-in vec4 a_points;
+in vec4 a_startAndEndPoints;
 
 uniform mat4 u_matrix;
 uniform float u_lineWidth;
@@ -12,31 +14,50 @@ uniform float u_lineWidth;
 
 void main() {
     vec2 position = a_position;
-    vec4 points = a_points;
+    vec4 points = a_startAndEndPoints;
     float lineWidth = u_lineWidth;
 
-    vec2 a = points.xy;
-    vec2 b = points.zw;
+    vec2 start = points.xy; // start points
+    vec2 end = points.zw; // end points
 
-    vec2 xBasis = b - a;
-    vec2 yBasis = normalize(vec2(-xBasis.y, xBasis.x));
+    vec2 dir = end - start;
+    vec2 up = vec2(0, 1);
+    float crossProduct = up.x * dir.y - up.y * dir.x;
+    float side = sign(crossProduct);
+    // vec2 normal = vec2(0, 0);
+    // if (side > 0.0) {
+    //     normal = normalize(vec2(-dir.y, dir.x));
+    // } else {
+    //     normal = normalize(vec2(dir.y, -dir.x));
+    // }
+    // dir = normalize(dir);
+    // float segmentLength = length(end - start);
 
-    vec2 point = a + xBasis * position.x + yBasis * lineWidth * position.y;
+    vec2 normal = normalize(vec2(-dir.y, dir.x));
+    vec2 point = start + dir * position.x + normal * lineWidth * position.y;
+    // vec2 p = start + segmentLength * position + vec2(normal * lineWidth/2.0);
 
     gl_Position = u_matrix * vec4(point, 0, 1);
 }
 `;
 
-var roundJoinShaderSource = `#version 300 es
-in vec2 a_pposition;
-in vec4 a_points;
+        // 0, -0.5,
+        // 1, -0.5,
+        // 1,  0.5,
+        // 0, -0.5,
+        // 1,  0.5,
+        // 0,  0.5
+
+const roundJoinShaderSource = `#version 300 es
+in vec2 a_position;
+in vec4 a_startAndEndPoints;
 
 uniform mat4 u_matrix;
 uniform float u_lineWidth;
 
 void main() {
-    vec2 position = a_pposition;
-    vec2 points = a_points.zw;
+    vec2 position = a_position;
+    vec2 points = a_startAndEndPoints.xy;
     float lineWidth = u_lineWidth;
     vec2 point = lineWidth * position + points;
     
@@ -56,7 +77,7 @@ void main() {
 //     .pointSize = 10
 
 
-var fragmentShaderSource = `#version 300 es
+const fragmentShaderSource = `#version 300 es
 
 // fragment shaders don't have a default precision so we need
 // to pick one. highp is a good default. It means "high precision"
@@ -71,6 +92,14 @@ outColor = u_colorMult;
 }
 `;
 
+const functionArray = [
+    x => Math.cos(x),
+    x => Math.sin(x),
+    x => x,
+    x => x * x,
+    x => Math.log1p(x),
+];
+
 function main() {
     /** @type {HTMLCanvasElement} */
     const canvas = document.querySelector("#webgl");
@@ -79,30 +108,30 @@ function main() {
         return;
     }
 
-    var lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
-    var roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
+    const lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
+    const roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
 
-    var linePositionAttributeLocation = gl.getAttribLocation(lineProgram, "a_position");
-    var pointsAttributeLocation = gl.getAttribLocation(lineProgram, "a_points");
-    var lineMatrixLocation = gl.getUniformLocation(lineProgram, "u_matrix");
-    var lineColorMultLocation = gl.getUniformLocation(lineProgram, "u_colorMult");
-    var lineWidthLocation = gl.getUniformLocation(lineProgram, "u_lineWidth");
+    const linePositionAttributeLocation = gl.getAttribLocation(lineProgram, "a_position");
+    const pointsAttributeLocation = gl.getAttribLocation(lineProgram, "a_startAndEndPoints");
+    const lineMatrixLocation = gl.getUniformLocation(lineProgram, "u_matrix");
+    const lineColorMultLocation = gl.getUniformLocation(lineProgram, "u_colorMult");
+    const lineWidthLocation = gl.getUniformLocation(lineProgram, "u_lineWidth");
 
     // Round join locations
-    var roundJoinPositionAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_pposition");
-    var roundJoinPointsAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_points");
-    var roundJoinMatrixLocation = gl.getUniformLocation(roundJoinProgram, "u_matrix");
-    var roundJoinColorMultLocation = gl.getUniformLocation(roundJoinProgram, "u_colorMult");
-    var roundJoinLineWidthLocation = gl.getUniformLocation(roundJoinProgram, "u_lineWidth");
+    const roundJoinPositionAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_position");
+    const roundJoinPointsAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_startAndEndPoints");
+    const roundJoinMatrixLocation = gl.getUniformLocation(roundJoinProgram, "u_matrix");
+    const roundJoinColorMultLocation = gl.getUniformLocation(roundJoinProgram, "u_colorMult");
+    const roundJoinLineWidthLocation = gl.getUniformLocation(roundJoinProgram, "u_lineWidth");
 
     // Line - static geometry
-    var lineBuffer = gl.createBuffer();
-    var lineVAO = gl.createVertexArray();
+    const lineBuffer = gl.createBuffer();
+    const lineVAO = gl.createVertexArray();
     gl.bindVertexArray(lineVAO);
     gl.enableVertexAttribArray(linePositionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
 
-    var lineSegmentInstanceGeometry = new Float32Array([
+    const lineSegmentInstanceGeometry = new Float32Array([
         0, -0.5,
         1, -0.5,
         1,  0.5,
@@ -117,36 +146,37 @@ function main() {
     gl.vertexAttribDivisor(linePositionAttributeLocation, 0);
 
     // Points for per-instance data
-    var pointsBuffer = gl.createBuffer();
+    const pointsBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
 
-    var left = -10
-    var right = 10
-    var bottom = -10
-    var top = 10
-    var near = 0;
-    var far = 2;
+    let left = -10
+    let right = 10
+    let bottom = -10
+    let top = 10
+    const near = 0;
+    const far = 2;
 
-    var lineTranslation = [0, 0, 0];
-    var scale = [1, 1, 1];
-    var resolution = 250;
+    let lineTranslation = [0, 0, 0];
+    const scale = [1, 1, 1];
+    // let resolution = 250;
+    let resolution = 100;
 
-    var f = functionArray[0];
+    const f = functionArray[3];
 
-    var graphData = updateGraph(left, right, resolution, lineTranslation, f);
+    const graphData = updateGraph(left, right, resolution, lineTranslation, f);
     gl.bufferData(gl.ARRAY_BUFFER, graphData, gl.DYNAMIC_DRAW);
-    var graphDataBufferLength = getGraphBufferLength(graphData);
+    let graphDataBufferLength = getGraphBufferLength(graphData);
     
     gl.vertexAttribPointer(pointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(pointsAttributeLocation);
     gl.vertexAttribDivisor(pointsAttributeLocation, 1);
     // Round join points
-    var roundJoinBuffer = gl.createBuffer();
-    var roundJoinVAO = gl.createVertexArray();
+    const roundJoinBuffer = gl.createBuffer();
+    const roundJoinVAO = gl.createVertexArray();
     gl.bindVertexArray(roundJoinVAO);
     gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
     gl.bindBuffer(gl.ARRAY_BUFFER, roundJoinBuffer);
-    var roundJoinData = generateRoundJoinData(resolution);
+    const roundJoinData = generateRoundJoinData(resolution);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(roundJoinData), gl.STATIC_DRAW);
     gl.vertexAttribPointer(roundJoinPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
@@ -158,7 +188,7 @@ function main() {
     gl.vertexAttribDivisor(roundJoinPointsAttributeLocation, 1);
     
 
-    var lineProgramInfo = {
+    const lineProgramInfo = {
         program: lineProgram,
         positionLoc: linePositionAttributeLocation,
         colorLoc: lineColorMultLocation,
@@ -166,7 +196,7 @@ function main() {
         lineWidthLoc: lineWidthLocation,
     };
 
-    var roundJoinProgramInfo = {
+    const roundJoinProgramInfo = {
         program: roundJoinProgram,
         positionLoc: roundJoinPointsAttributeLocation,
         colorLoc: roundJoinColorMultLocation,
@@ -174,20 +204,20 @@ function main() {
         lineWidthLoc: roundJoinLineWidthLocation,
     };
 
-    var lineWidth = 0.1
+    let lineWidth = 0.2;
 
-    var lineUniforms = {
+    const lineUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
         u_lineWidth: lineWidth,
     };
-    var roundJoinUniforms = {
+    const roundJoinUniforms = {
         u_colorMult: [0, 0, 1, 1],
         u_matrix: m4.identity(),
         u_lineWidth: lineWidth,
     }
 
-    var objectsToDraw = [
+    const objectsToDraw = [
         {
             programInfo: lineProgramInfo,
             vertexArray: lineVAO,
@@ -206,15 +236,15 @@ function main() {
         }
     ];
 
-    let cameraPosition = [0, 0, 1];
-    let target = [0, 0, 0]; 
-    let up = [0, 1, 0]; 
+    const cameraPosition = [0, 0, 1];
+    const target = [0, 0, 0]; 
+    const up = [0, 1, 0]; 
 
-    var cameraMatrix = m4.lookAt(cameraPosition, target, up);
-    var viewMatrix = m4.inverse(cameraMatrix);
+    const cameraMatrix = m4.lookAt(cameraPosition, target, up);
+    const viewMatrix = m4.inverse(cameraMatrix);
 
-    var orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
-    var viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
+    let orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
+    let viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
 
 
     // PANNING
@@ -232,17 +262,17 @@ function main() {
     gl.canvas.addEventListener('mousemove', (event) => {
         if (!isPanning) return;
 
-        let dx = event.clientX - startX;
-        let dy = event.clientY - startY;
-        let dxWorld = dx * (right - left) / gl.canvas.clientWidth;
-        let dyWorld = dy * (top - bottom) / gl.canvas.clientHeight;
+        const dx = event.clientX - startX;
+        const dy = event.clientY - startY;
+        const dxWorld = dx * (right - left) / gl.canvas.clientWidth;
+        const dyWorld = dy * (top - bottom) / gl.canvas.clientHeight;
 
         lineTranslation[0] += dxWorld;
         lineTranslation[1] -= dyWorld;
 
         startX = event.clientX;
         startY = event.clientY;
-        let graphData = updateGraph(left, right, resolution, lineTranslation, f);  
+        const graphData = updateGraph(left, right, resolution, lineTranslation, f);  
         gl.bufferData(gl.ARRAY_BUFFER, graphData, gl.DYNAMIC_DRAW);
         graphDataBufferLength = getGraphBufferLength(graphData);
         drawScene();
@@ -281,13 +311,13 @@ function main() {
         }
 
         // Convert mouse position from screen space to clip space
-        let clipX = (mouseX / gl.canvas.clientWidth) * 2 - 1;
-        let clipY = -((mouseY / gl.canvas.clientHeight) * 2 - 1);
+        const clipX = (mouseX / gl.canvas.clientWidth) * 2 - 1;
+        const clipY = -((mouseY / gl.canvas.clientHeight) * 2 - 1);
         console.log("Mouse Clip Space: ", clipX, clipY);
 
         // Calculate mouse position in world space
-        let mouseWorldX = left + (clipX + 1) * 0.5 * width;
-        let mouseWorldY = bottom + (clipY + 1) * 0.5 * height;
+        const mouseWorldX = left + (clipX + 1) * 0.5 * width;
+        const mouseWorldY = bottom + (clipY + 1) * 0.5 * height;
         console.log("Mouse World Space: ", mouseWorldX, mouseWorldY);
 
         const widthScalingFactor = newWidth / width;
@@ -295,10 +325,10 @@ function main() {
         const lineWidthScalingFactor = newLineWidth / lineWidth;
         const resolutionScalingFactor = newResolution / resolution;
 
-        let leftNew = mouseWorldX - (mouseWorldX - left) * widthScalingFactor;
-        let rightNew = mouseWorldX + (right - mouseWorldX) * widthScalingFactor;
-        let bottomNew = mouseWorldY - (mouseWorldY - bottom) * heightScalingFactor;
-        let topNew = mouseWorldY + (top - mouseWorldY) * heightScalingFactor;
+        const leftNew = mouseWorldX - (mouseWorldX - left) * widthScalingFactor;
+        const rightNew = mouseWorldX + (right - mouseWorldX) * widthScalingFactor;
+        const bottomNew = mouseWorldY - (mouseWorldY - bottom) * heightScalingFactor;
+        const topNew = mouseWorldY + (top - mouseWorldY) * heightScalingFactor;
 
         lineWidth = lineWidth * lineWidthScalingFactor;
         lineUniforms.u_lineWidth = lineWidth;
@@ -327,7 +357,7 @@ function main() {
     }
 
     gl.canvas.addEventListener('mousemove', (event) => {
-        var rect = gl.canvas.getBoundingClientRect();
+        const rect = gl.canvas.getBoundingClientRect();
         mouseX = event.clientX - rect.left;
         mouseY = event.clientY - rect.top;
     });
@@ -352,7 +382,7 @@ function main() {
         webglUtils.resizeCanvasToDisplaySize(canvas);
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-        gl.clearColor(0, 0, 0, 0);
+        gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
         // gl.enable(gl.CULL_FACE);
@@ -362,9 +392,9 @@ function main() {
         roundJoinUniforms.u_matrix = computeMatrix(viewProjectionMatrix, lineTranslation, 0, 0, scale);
 
         objectsToDraw.forEach(function (object) {
-            var program = object.programInfo.program;
+            const program = object.programInfo.program;
             console.log("Current Program:", program);
-            var vertexArray = object.vertexArray;
+            const vertexArray = object.vertexArray;
             gl.useProgram(program);
             gl.bindVertexArray(vertexArray);
 
@@ -374,13 +404,13 @@ function main() {
             object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
 
             gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
-            let bufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
+            const bufferSize = gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE);
             console.log("Buffer Size:", (bufferSize / 4) / 2); 
             // Draw
-            var primitiveType = object.primitiveType;
-            var offset = 0;
-            var count = object.getCount();
-            var instanceCount = object.getInstanceCount();
+            const primitiveType = object.primitiveType;
+            const offset = 0;
+            const count = object.getCount();
+            const instanceCount = object.getInstanceCount();
             console.log('FINAL COUNT:', count); 
 
             if (object.getInstanceCount) {
@@ -398,7 +428,7 @@ function main() {
 }
 
 function computeMatrix(viewProjectionMatrix, translation, xRotation, yRotation, scale) {
-    var matrix = m4.translate(viewProjectionMatrix,
+    let matrix = m4.translate(viewProjectionMatrix,
         translation[0],
         translation[1],
         translation[2]);
@@ -409,21 +439,21 @@ function computeMatrix(viewProjectionMatrix, translation, xRotation, yRotation, 
 }
 
 function generateGraphData(start, end, resolution, f) {
-    var points = [];
+    const points = [];
 
-    let startX = start * resolution;
-    let endX = end * resolution;
+    const startX = start * resolution;
+    const endX = end * resolution;
  
     if (startX < endX) {
         for (let i = startX; i <= endX; i++) {
-            let x = i / resolution;
-            let y = f(x);
+            const x = i / resolution;
+            const y = f(x);
             points.push(x, y, x, y);
         }
     } else {
         for (let i = startX; i >= endX; i--) {
-            let x = i / resolution;
-            let y = f(x);
+            const x = i / resolution;
+            const y = f(x);
             points.push(x, y, x, y);
         }
     }
@@ -435,32 +465,12 @@ function generateGraphData(start, end, resolution, f) {
     return points
 }
 
-function cosineFunction(x) {
-    return Math.cos(x)
-}
-
-function sineFunction(x) {
-    return Math.sin(x)
-}
-
-const functionArray = [
-    function(x) {
-        return Math.cos(x);
-    },
-    function(x) {
-        return Math.sin(x);
-    },
-    function(x) {
-        return x * x;
-    }
-];
-
 function generateRoundJoinData(resolution) {
     resolution = 100
-    var points = [];
+    const points = [];
         for (let i = 0; i < resolution; i++) {
-            let theta0 = (2.0 * Math.PI * i) / resolution;
-            let theta1 = (2.0 * Math.PI * i + 1.0) / resolution;
+            const theta0 = (2.0 * Math.PI * i) / resolution;
+            const theta1 = (2.0 * Math.PI * i + 1.0) / resolution;
             
             points.push(0.5 * Math.cos(theta0), 0.5 * Math.sin(theta0));
             points.push(0, 0);
@@ -472,18 +482,18 @@ function generateRoundJoinData(resolution) {
 }
 
 function getGraphBufferLength(data) {
-    let graphDataBufferLength = data.length / 2;
+    const graphDataBufferLength = data.length / 2;
     return graphDataBufferLength;
 }
 
 function updateGraph(left, right, resolution, translation, f) {
-    var actualLeft = left - translation[0];
-    var actualRight = right - translation[0];
+    const actualLeft = left - translation[0];
+    const actualRight = right - translation[0];
     console.log(`actualLeft: ${actualLeft}, actualRight: ${actualRight}, left: ${left}, right: ${right}, translation: ${translation[0]}`);
-    // var data = [];
+    // let data = [];
     // for (let i = 0; i < functionArray.length; i++) {
     //     const f = functionArray[i];
-        let data = (new Float32Array(generateGraphData(actualLeft, actualRight, resolution, f)));
+        const data = (new Float32Array(generateGraphData(actualLeft, actualRight, resolution, f)));
     // }
     return data;
 }
