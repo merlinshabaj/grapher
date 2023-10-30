@@ -133,7 +133,7 @@ const main = () => {
     const pointsBuffer = gl.createBuffer();
 
 
-    let aspectRatio = gl.canvas.clientWidth / gl.canvas.clientHeight;
+    let aspectRatio = canvas.clientWidth / canvas.clientHeight;
     let left = -10 * aspectRatio;
     let right = 10 * aspectRatio;
     let bottom = -10;
@@ -370,21 +370,21 @@ const main = () => {
     let isPanning = false;
     let panningStartPosition = [0, 0]
 
-    gl.canvas.addEventListener('mousedown', event => {
+    canvas.addEventListener('mousedown', event => {
         isPanning = true;
         const mousePosition = [event.clientX, event.clientY]
         panningStartPosition = mousePosition
-        gl.canvas.style.cursor = 'grabbing';
+        canvas.style.cursor = 'grabbing';
     });
 
-    gl.canvas.addEventListener('mousemove', event => {
+    canvas.addEventListener('mousemove', event => {
         if (!isPanning) return;
 
         const mousePosition = [event.clientX, event.clientY]
         const delta = sub(mousePosition, panningStartPosition)
         const deltaWorld = [
-            delta[0] * (right - left) / gl.canvas.clientWidth,
-            delta[1] * (top - bottom) / gl.canvas.clientHeight
+            delta[0] * (right - left) / canvas.clientWidth,
+            delta[1] * (top - bottom) / canvas.clientHeight
         ]
 
         translation[0] += deltaWorld[0];
@@ -411,14 +411,14 @@ const main = () => {
         drawScene();
     });
 
-    gl.canvas.addEventListener('mouseup', () => {
+    canvas.addEventListener('mouseup', () => {
         isPanning = false;
-        gl.canvas.style.cursor = 'grab';
+        canvas.style.cursor = 'grab';
     });
 
-    gl.canvas.addEventListener('mouseleave', () => {
+    canvas.addEventListener('mouseleave', () => {
         isPanning = false;
-        gl.canvas.style.cursor = 'default';
+        canvas.style.cursor = 'default';
     });
 
 
@@ -450,8 +450,8 @@ const main = () => {
         }
 
         // Convert mouse position from screen space to clip space
-        const clipX = (mouseX / gl.canvas.clientWidth) * 2 - 1;
-        const clipY = -((mouseY / gl.canvas.clientHeight) * 2 - 1);
+        const clipX = (mouseX / canvas.clientWidth) * 2 - 1;
+        const clipY = -((mouseY / canvas.clientHeight) * 2 - 1);
         console.log("Mouse Clip Space: ", clipX, clipY);
 
         // Calculate mouse position in world space
@@ -520,13 +520,13 @@ const main = () => {
         drawScene();
     }
 
-    gl.canvas.addEventListener('mousemove', event => {
-        const rect = gl.canvas.getBoundingClientRect();
+    canvas.addEventListener('mousemove', event => {
+        const rect = canvas.getBoundingClientRect();
         mouseX = event.clientX - rect.left;
         mouseY = event.clientY - rect.top;
     });
 
-    gl.canvas.addEventListener('wheel', event => {
+    canvas.addEventListener('wheel', event => {
         // Determine zoom direction
         if (event.deltaY > 0) {
             zoom(false, mouseX, mouseY);
@@ -536,13 +536,13 @@ const main = () => {
     });
 
     // Prevent the page from scrolling when using the mouse wheel on the canvas
-    gl.canvas.addEventListener('wheel', event => {
+    canvas.addEventListener('wheel', event => {
         event.preventDefault();
     }, { passive: false });
 
     const drawScene = () => {
         webglUtils.resizeCanvasToDisplaySize(canvas, devicePixelRatio);
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        gl.viewport(0, 0, canvas.width, canvas.height);
 
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
