@@ -183,7 +183,7 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
 
     // Start and end points for per-instace data majorgrid
-    const majorGridData = new Float32Array(majorGridPoints(xMin, xMax, yMax, yMin));
+    const majorGridData = new Float32Array(majorGridPoints());
     let majorGridDataBufferLength = getBufferLength(majorGridData);
     const majorGridPointsBuffer = createBufferWithData(majorGridData)
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
@@ -194,7 +194,7 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
 
     // Start and end points for per-instance data minor grid
-    const minorGridData = new Float32Array(minorGridPoints(xMin, xMax, yMax, yMin));
+    const minorGridData = new Float32Array(minorGridPoints());
     let minorGridDataBufferLength = getBufferLength(minorGridData);
     const minorGridPointsBuffer = createBufferWithData(minorGridData)
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
@@ -205,7 +205,7 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionAxes)
 
     // Start and end points for per-instance data minor grid
-    const _axesPoints = new Float32Array(axesPoints(xMin, xMax, yMax, yMin));
+    const _axesPoints = new Float32Array(axesPoints());
     let axesPointsBufferLength = getBufferLength(_axesPoints);
     const axesPointsBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
