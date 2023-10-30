@@ -370,14 +370,14 @@ const main = () => {
     let startX = 0;
     let startY = 0;
 
-    gl.canvas.addEventListener('mousedown', (event) => {
+    gl.canvas.addEventListener('mousedown', event => {
         isPanning = true;
         startX = event.clientX;
         startY = event.clientY;
         gl.canvas.style.cursor = 'grabbing';
     });
 
-    gl.canvas.addEventListener('mousemove', (event) => {
+    gl.canvas.addEventListener('mousemove', event => {
         if (!isPanning) return;
 
         const dx = event.clientX - startX;
@@ -519,13 +519,13 @@ const main = () => {
         drawScene();
     }
 
-    gl.canvas.addEventListener('mousemove', (event) => {
+    gl.canvas.addEventListener('mousemove', event => {
         const rect = gl.canvas.getBoundingClientRect();
         mouseX = event.clientX - rect.left;
         mouseY = event.clientY - rect.top;
     });
 
-    gl.canvas.addEventListener('wheel', (event) => {
+    gl.canvas.addEventListener('wheel', event => {
         // Determine zoom direction
         if (event.deltaY > 0) {
             zoom(false, mouseX, mouseY);
@@ -535,7 +535,7 @@ const main = () => {
     });
 
     // Prevent the page from scrolling when using the mouse wheel on the canvas
-    gl.canvas.addEventListener('wheel', (event) => {
+    gl.canvas.addEventListener('wheel', event => {
         event.preventDefault();
     }, { passive: false });
 
