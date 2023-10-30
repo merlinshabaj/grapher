@@ -37,7 +37,6 @@ void main() {
     vec2 point = u_lineWidth * a_instanceVertexPosition + startPoint;
     
     gl_Position = u_mvp * vec4(point, 0, 1);
-
 }
 `;
 
@@ -53,7 +52,7 @@ uniform vec4 u_colorMult;
 out vec4 outColor;
 
 void main() {
-outColor = u_colorMult;
+    outColor = u_colorMult;
 }
 `;
 
@@ -241,31 +240,17 @@ const main = () => {
     let minorGridLineWidth = 0.025;
     let axesLineWidth = 0.15;
 
-    const lineUniforms = {
-        u_colorMult: graphColor,
+    const uniforms = (u_colorMult, u_lineWidth) => ({
+        u_colorMult,
         u_matrix: m4.identity(),
-        u_lineWidth: plotLineWidth,
-    };
-    const roundJoinUniforms = {
-        u_colorMult: graphColor,
-        u_matrix: m4.identity(),
-        u_lineWidth: plotLineWidth,
-    };
-    const majorGridUniforms = {
-        u_colorMult: majorGridColor,
-        u_matrix: m4.identity(),
-        u_lineWidth: majorGridLineWidth,
-    };
-    const minorGridUniforms = {
-        u_colorMult: minorGridColor,
-        u_matrix: m4.identity(),
-        u_lineWidth: minorGridLineWidth,
-    };
-    const axesUniforms = {
-        u_colorMult: axesColor,
-        u_matrix: m4.identity(),
-        u_lineWidth: axesLineWidth,
-    };
+        u_lineWidth,
+    })
+
+    const lineUniforms = uniforms(graphColor, plotLineWidth);
+    const roundJoinUniforms = uniforms(graphColor, plotLineWidth);
+    const majorGridUniforms = uniforms(majorGridColor, majorGridLineWidth);
+    const minorGridUniforms = uniforms(minorGridColor, minorGridLineWidth);
+    const axesUniforms = uniforms(axesColor, axesLineWidth);
 
     const objectsToDraw = [
         {
