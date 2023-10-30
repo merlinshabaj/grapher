@@ -77,62 +77,72 @@ const main = () => {
     const getLocations = program => {
         const getAttribLocation = name => gl.getAttribLocation(program, name)
         const getUniformLocation = name => gl.getUniformLocation(program, name)
-        const startAndEndPoints = getAttribLocation("a_startAndEndPoints");;
         const mvp = getUniformLocation("u_mvp");
         const colorMult = getUniformLocation("u_colorMult");
         const lineWidth = getUniformLocation("u_lineWidth");    
         return {
-            startAndEndPoints,
             mvp,
             colorMult,
             lineWidth
         }
     }
 
+    const getAttribLocations = program => ["a_instanceVertexPosition", "a_startAndEndPoints"].map(name => gl.getAttribLocation(program, name))
+
     // Line locations
     const {
-        startAndEndPoints: startAndEndPointsLine,
         mvp: mvpLine,
         colorMult: colorMultLine,
         lineWidth: lineWidthLine
     } = getLocations(lineProgram)
-    const instanceVertexPositionLine = gl.getAttribLocation(lineProgram, "a_instanceVertexPosition");
+    const [
+        instanceVertexPositionLine,
+        startAndEndPointsLine,
+    ] = getAttribLocations(lineProgram)
 
     // Round join locations
     const {
-        startAndEndPoints: startAndEndPointsRoundJoin,
         mvp: mvpRoundJoin,
         colorMult: colorMultRoundJoin,
         lineWidth: lineWidthRoundJoin
     } = getLocations(roundJoinProgram)
-    const instanceVertexPositionRoundJoin = gl.getAttribLocation(roundJoinProgram, "a_instanceVertexPosition");
+    const [
+        instanceVertexPositionRoundJoin,
+        startAndEndPointsRoundJoin,
+    ] = getAttribLocations(roundJoinProgram)
 
     // Major grid locations
     const {
-        startAndEndPoints: startAndEndPointsMajorGrid,
         mvp: mvpMajorGrid,
         colorMult: colorMultMajorGrid,
         lineWidth: lineWidthMajorGrid
     } = getLocations(majorGridProgram)
-    const instanceVertexPositionMajorGrid = gl.getAttribLocation(majorGridProgram, "a_instanceVertexPosition");
+    const [
+        instanceVertexPositionMajorGrid,
+        startAndEndPointsMajorGrid,
+    ] = getAttribLocations(majorGridProgram)
 
     // Minor grid locations
     const {
-        startAndEndPoints: startAndEndPointsMinorGrid,
         mvp: mvpMinorGrid,
         colorMult: colorMultMinorGrid,
         lineWidth: lineWidthMinorGrid
     } = getLocations(minorGridProgram)
-    const instanceVertexPositionMinorGrid = gl.getAttribLocation(minorGridProgram, "a_instanceVertexPosition");
+    const [
+        instanceVertexPositionMinorGrid,
+        startAndEndPointsMinorGrid,
+    ] = getAttribLocations(minorGridProgram)
 
     // Axes locations
     const {
-        startAndEndPoints: startAndEndPointsAxes,
         mvp: mvpAxes,
         colorMult: colorMultAxes,
         lineWidth: lineWidthAxes
     } = getLocations(axesProgram)
-    const instanceVertexPositionAxes = gl.getAttribLocation(axesProgram, "a_instanceVertexPosition");
+    const [
+        instanceVertexPositionAxes,
+        startAndEndPointsAxes,
+    ] = getAttribLocations(axesProgram)
 
     const lineSegmentInstanceGeometry = new Float32Array([
         0, -0.5,
