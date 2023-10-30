@@ -151,10 +151,15 @@ const main = () => {
         return buffer
     }
 
+    const createAndBindVAO = () => {
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);    
+        return vao
+    }
+
     // Line - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
-    const lineVAO = gl.createVertexArray();
-    gl.bindVertexArray(lineVAO);
+    const lineVAO = createAndBindVAO()
     gl.enableVertexAttribArray(linePositionAttributeLocation);
 
     console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
@@ -184,16 +189,16 @@ const main = () => {
     gl.vertexAttribPointer(pointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(pointsAttributeLocation);
     gl.vertexAttribDivisor(pointsAttributeLocation, 1);
+
     // Round join points
-    const roundJoinBuffer = gl.createBuffer();
-    const roundJoinVAO = gl.createVertexArray();
-    gl.bindVertexArray(roundJoinVAO);
-    gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
     const roundJoinGeometry = computeRoundJoinGeometry(resolution);
-    uploadAttributeData(roundJoinBuffer, new Float32Array(roundJoinGeometry));
+    createBufferWithData(new Float32Array(roundJoinGeometry))
+    const roundJoinVAO = createAndBindVAO()
+    gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
     gl.vertexAttribPointer(roundJoinPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
     gl.vertexAttribDivisor(roundJoinPointsAttributeLocation, 0);
+
     // Start and End points for per-instance data (graphPoints)
     gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
     gl.vertexAttribPointer(roundJoinPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
@@ -203,57 +208,46 @@ const main = () => {
     // Major grid - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
 
-    const majorGridVAO = gl.createVertexArray();
-    gl.bindVertexArray(majorGridVAO);
+    const majorGridVAO = createAndBindVAO()
     gl.enableVertexAttribArray(majorGridVertexPositionAttributeLocation);
-
     gl.vertexAttribPointer(majorGridVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
     gl.vertexAttribDivisor(majorGridVertexPositionAttributeLocation, 0);
 
     // Start and end points for per-instace data majorgrid
-    const majorGridDataBuffer = gl.createBuffer();
     const majorGridData = new Float32Array(computeMajorGridPoints(left, right, top, bottom));
+    const majorGridDataBuffer = createBufferWithData(majorGridData)
     let majorGridDataBufferLength = getBufferLength(majorGridData);
-    console.log("majorGridDataBufferLength", majorGridDataBufferLength);
-    uploadAttributeData(majorGridDataBuffer, majorGridData);
-    gl.vertexAttribPointer(majorGridStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
+    
     gl.enableVertexAttribArray(majorGridStartAndEndPointsAttributeLocation);
+    gl.vertexAttribPointer(majorGridStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.vertexAttribDivisor(majorGridStartAndEndPointsAttributeLocation, 1);
 
     // Minor grid - static geometry
-    const minorGridGeometryBuffer = gl.createBuffer();
-    const minorGridVAO = gl.createVertexArray();
-    gl.bindVertexArray(minorGridVAO);
+    createBufferWithData(lineSegmentInstanceGeometry)
+    const minorGridVAO = createAndBindVAO()
     gl.enableVertexAttribArray(minorGridVertexPositionAttributeLocation);
-    uploadAttributeData(minorGridGeometryBuffer, lineSegmentInstanceGeometry);
     gl.vertexAttribPointer(minorGridVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
     gl.vertexAttribDivisor(minorGridVertexPositionAttributeLocation, 0);
 
     // Start and end points for per-instance data minor grid
-    const minorGridDataBuffer = gl.createBuffer();
     const minorGridData = new Float32Array(computeMinorGridPoints(left, right, top, bottom));
     let minorGridDataBufferLength = getBufferLength(minorGridData);
-    console.log("majorGridDataBufferLength", minorGridDataBufferLength);
-    uploadAttributeData(minorGridDataBuffer, minorGridData);
+    const minorGridDataBuffer = createBufferWithData(minorGridData)
     gl.vertexAttribPointer(minorGridStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(minorGridStartAndEndPointsAttributeLocation);
     gl.vertexAttribDivisor(minorGridStartAndEndPointsAttributeLocation, 1);
 
     // Axes - static geometry
-    const axesGeometryBuffer = gl.createBuffer();
-    const axesVAO = gl.createVertexArray();
-    gl.bindVertexArray(axesVAO);
+    createBufferWithData(lineSegmentInstanceGeometry)
+    const axesVAO = createAndBindVAO()
     gl.enableVertexAttribArray(axesVertexPositionAttributeLocation);
-    uploadAttributeData(axesGeometryBuffer, lineSegmentInstanceGeometry);
     gl.vertexAttribPointer(axesVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
     gl.vertexAttribDivisor(axesVertexPositionAttributeLocation, 0);
 
     // Start and end points for per-instance data minor grid
-    const axesDataBuffer = gl.createBuffer();
     const axesPoints = new Float32Array(computeAxesPoints(left, right, top, bottom));
     let axesPointsBufferLength = getBufferLength(axesPoints);
-    console.log("axesPointsBufferLength", axesPointsBufferLength);
-    uploadAttributeData(axesDataBuffer, axesPoints);
+    const axesDataBuffer = createBufferWithData(axesPoints)
     gl.vertexAttribPointer(axesStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(axesStartAndEndPointsAttributeLocation);
     gl.vertexAttribDivisor(axesStartAndEndPointsAttributeLocation, 1);
