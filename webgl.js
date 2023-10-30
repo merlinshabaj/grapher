@@ -160,7 +160,7 @@ const main = () => {
     const f = functionArray[3];
 
     // Points for per-instance data
-    const graphPoints = updateGraph(left, right, resolution, translation, f);
+    const graphPoints = translatedGraphPoints(left, right, resolution, translation, f);
     const pointsBuffer = createBufferWithData(graphPoints);
     let graphPointsBufferLength = getBufferLength(graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
@@ -182,7 +182,7 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
 
     // Start and end points for per-instace data majorgrid
-    const majorGridData = new Float32Array(computeMajorGridPoints(left, right, top, bottom));
+    const majorGridData = new Float32Array(majorGridPoints(left, right, top, bottom));
     let majorGridDataBufferLength = getBufferLength(majorGridData);
     const majorGridDataBuffer = createBufferWithData(majorGridData)
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
@@ -193,7 +193,7 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
 
     // Start and end points for per-instance data minor grid
-    const minorGridData = new Float32Array(computeMinorGridPoints(left, right, top, bottom));
+    const minorGridData = new Float32Array(minorGridPoints(left, right, top, bottom));
     let minorGridDataBufferLength = getBufferLength(minorGridData);
     const minorGridDataBuffer = createBufferWithData(minorGridData)
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
@@ -204,7 +204,7 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionAxes)
 
     // Start and end points for per-instance data minor grid
-    const axesPoints = new Float32Array(computeAxesPoints(left, right, top, bottom));
+    const axesPoints = new Float32Array(axesPoints(left, right, top, bottom));
     let axesPointsBufferLength = getBufferLength(axesPoints);
     const axesDataBuffer = createBufferWithData(axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
@@ -342,19 +342,19 @@ const main = () => {
 
         panningStartPosition = mousePosition
 
-        const graphPoints = updateGraph(left, right, resolution, translation, f);
+        const graphPoints = translatedGraphPoints(left, right, resolution, translation, f);
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
 
-        const majorGridData = updateMajorGrid(left, right, top, bottom, translation);
+        const majorGridData = translatedMajorGridPoints(left, right, top, bottom, translation);
         uploadAttributeData(majorGridDataBuffer, majorGridData);
         majorGridDataBufferLength = getBufferLength(majorGridData);
 
-        const minorGridData = updateMinorGrid(left, right, top, bottom, translation);
+        const minorGridData = translatedMinorGridPoints(left, right, top, bottom, translation);
         uploadAttributeData(minorGridDataBuffer, minorGridData);
         minorGridDataBufferLength = getBufferLength(minorGridData);
         
-        const axesPoints = updateAxes(left, right, top, bottom, translation);
+        const axesPoints = translatedAxesPoints(left, right, top, bottom, translation);
         uploadAttributeData(axesDataBuffer, axesPoints);
         axesPointsBufferLength = getBufferLength(axesPoints);
 
@@ -448,19 +448,19 @@ const main = () => {
     const updateOrthographicDimensions = () => {
         computeViewProjectionMatrix()
 
-        let graphPoints = updateGraph(left, right, resolution, translation, f);
+        let graphPoints = translatedGraphPoints(left, right, resolution, translation, f);
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
 
-        let majorGridData = updateMajorGrid(left, right, top, bottom, translation);
+        let majorGridData = translatedMajorGridPoints(left, right, top, bottom, translation);
         uploadAttributeData(majorGridDataBuffer, majorGridData);
         majorGridDataBufferLength = getBufferLength(majorGridData);
 
-        let minorGridData = updateMinorGrid(left, right, top, bottom, translation);
+        let minorGridData = translatedMinorGridPoints(left, right, top, bottom, translation);
         uploadAttributeData(minorGridDataBuffer, minorGridData);
         minorGridDataBufferLength = getBufferLength(minorGridData);
 
-        let axesPoints = updateAxes(left, right, top, bottom, translation);
+        let axesPoints = translatedAxesPoints(left, right, top, bottom, translation);
         uploadAttributeData(axesDataBuffer, axesPoints);
         minorGridDataBufferLength = getBufferLength(axesPoints);
 
@@ -475,11 +475,8 @@ const main = () => {
 
     canvas.addEventListener('wheel', event => {
         // Determine zoom direction
-        if (event.deltaY > 0) {
-            zoom(false, mouseX, mouseY);
-        } else if (event.deltaY < 0) {
-            zoom(true, mouseX, mouseY);
-        }
+        if (event.deltaY === 0) return
+        zoom(event.deltaY < 0, mouseX, mouseY);
     });
 
     // Prevent the page from scrolling when using the mouse wheel on the canvas
@@ -550,8 +547,8 @@ const computeMatrix = (viewProjectionMatrix, translation, xRotation, yRotation, 
     return matrix;
 }
 
-const computeGraphPoints = (start, end, resolution, f) => {
-    const points = [];
+const graphPoints = (start, end, resolution, f) => {
+    let points = [];
 
     const startX = start * resolution;
     const endX = end * resolution;
@@ -564,10 +561,7 @@ const computeGraphPoints = (start, end, resolution, f) => {
 
     for (let xStep = startX; xStep <= endX; xStep++) points.push(...values(xStep))
 
-    points.shift();
-    points.shift();
-    points.pop();
-    points.pop();
+    points = points.slice(2, -2)
     console.log("POINTS:", points)
     return points
 }
@@ -599,7 +593,7 @@ const computeRoundJoinGeometry = resolution => {
     return points
 }
 
-const computeMajorGridPoints = (left, right, top, bottom) => {
+const majorGridPoints = (left, right, top, bottom) => {
     const points = [];
     const xRange = Math.abs(right - left);
     const yRange = Math.abs(top - bottom);
@@ -622,7 +616,7 @@ const computeMajorGridPoints = (left, right, top, bottom) => {
     return points
 }
 
-const computeMinorGridPoints = (left, right, top, bottom) => {
+const minorGridPoints = (left, right, top, bottom) => {
     const points = [];
 
     const xRange = Math.abs(right - left);
@@ -652,7 +646,7 @@ const computeMinorGridPoints = (left, right, top, bottom) => {
     return points;
 }
 
-const computeAxesPoints = (left, right, bottom, top) => {
+const axesPoints = (left, right, bottom, top) => {
     const points = [];
 
     if (left < right) {
@@ -684,42 +678,39 @@ const determineGridSize = maxRange => {
     return gridSize;
 }
 
-const getBufferLength = data => {
-    const bufferLength = data.length / 2;
-    return bufferLength;
-}
+const getBufferLength = data => data.length / 2
 
-const updateGraph = (left, right, resolution, translation, f) => {
+const translatedGraphPoints = (left, right, resolution, translation, f) => {
     const translatedLeft = left - translation[0];
     const translatedRight = right - translation[0];
-    const points = new Float32Array(computeGraphPoints(translatedLeft, translatedRight, resolution, f));
+    const points = new Float32Array(graphPoints(translatedLeft, translatedRight, resolution, f));
     return points;
 }
 
-const updateMajorGrid = (left, right, top, bottom, translation) => {
+const translatedMajorGridPoints = (left, right, top, bottom, translation) => {
     const translatedLeft = left - translation[0];
     const translatedRight = right - translation[0];
     const translatedTop = top - translation[1];
     const translatedBottom = bottom - translation[1];
-    const points = new Float32Array(computeMajorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
+    const points = new Float32Array(majorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
     return points
 }
 
-const updateMinorGrid = (left, right, top, bottom, translation) => {
+const translatedMinorGridPoints = (left, right, top, bottom, translation) => {
     const translatedLeft = left - translation[0];
     const translatedRight = right - translation[0];
     const translatedTop = top - translation[1];
     const translatedBottom = bottom - translation[1];
-    const points = new Float32Array(computeMinorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
+    const points = new Float32Array(minorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
     return points
 }
 
-const updateAxes = (left, right, top, bottom, translation) => {
+const translatedAxesPoints = (left, right, top, bottom, translation) => {
     const translatedLeft = left - translation[0];
     const translatedRight = right - translation[0];
     const translatedTop = top - translation[1];
     const translatedBottom = bottom - translation[1];
-    const points = new Float32Array(computeAxesPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
+    const points = new Float32Array(axesPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
     return points
 }
 
