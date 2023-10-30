@@ -161,7 +161,7 @@ const main = () => {
     const f = functionArray[3];
 
     // Points for per-instance data
-    const graphPoints = translatedGraphPoints(resolution, translation, f);
+    const graphPoints = translatedGraphPoints(resolution, f);
     const pointsBuffer = createBufferWithData(graphPoints);
     let graphPointsBufferLength = getBufferLength(graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
@@ -428,7 +428,7 @@ const main = () => {
     }
 
     const updateAllPoints = () => {
-        const graphPoints = translatedGraphPoints(resolution, translation, f);
+        const graphPoints = translatedGraphPoints(resolution, f);
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
         majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
@@ -655,7 +655,7 @@ const determineGridSize = maxRange => {
 
 const getBufferLength = data => data.length / 2
 
-const translatedGraphPoints = (resolution, translation, f) => {
+const translatedGraphPoints = (resolution, f) => {
     const translatedLeft = xMin - translation[0];
     const translatedRight = xMax - translation[0];
     const points = new Float32Array(graphPoints(translatedLeft, translatedRight, resolution, f));
