@@ -153,8 +153,8 @@ const main = () => {
     })()
     yMin = -10;
     yMax = 10;
+    translation = [0, 0, 0];
 
-    const translation = [0, 0, 0];
     const scale = [1, 1, 1];
     let resolution = 100 /* 250 */;
 
@@ -343,13 +343,7 @@ const main = () => {
 
         panningStartPosition = mousePosition
 
-        const graphPoints = translatedGraphPoints(resolution, translation, f);
-        uploadAttributeData(pointsBuffer, graphPoints);
-        graphPointsBufferLength = getBufferLength(graphPoints);
-        majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints)
-        minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints)
-        axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints)
-
+        updateAllPoints()
         drawScene();
     });
 
@@ -428,22 +422,23 @@ const main = () => {
         updateOrthographicDimensions();
     }
 
-    const updatePoints = (pointsBuffer, fn) => {
-        let points = translated(translation, fn);
-        uploadAttributeData(pointsBuffer, points);
+    const updatePoints = (pointsBuffer, points) => {
+        uploadAttributeData(pointsBuffer, new Float32Array(points));
         return getBufferLength(points);    
+    }
+
+    const updateAllPoints = () => {
+        const graphPoints = translatedGraphPoints(resolution, translation, f);
+        uploadAttributeData(pointsBuffer, graphPoints);
+        graphPointsBufferLength = getBufferLength(graphPoints);
+        majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
+        minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints())
+        axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints())
     }
 
     const updateOrthographicDimensions = () => {
         computeViewProjectionMatrix()
-
-        let graphPoints = translatedGraphPoints(resolution, translation, f);
-        uploadAttributeData(pointsBuffer, graphPoints);
-        graphPointsBufferLength = getBufferLength(graphPoints);
-        majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints)
-        minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints)
-        axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints)
-
+        updateAllPoints()
         drawScene();
     }
 
@@ -570,68 +565,71 @@ const computeRoundJoinGeometry = resolution => {
     return points
 }
 
-const majorGridPoints = (left, right, top, bottom) => {
+const majorGridPoints = () => {
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const points = [];
-    const xRange = Math.abs(right - left);
-    const yRange = Math.abs(top - bottom);
+    const xRange = Math.abs(xMax - xMin);
+    const yRange = Math.abs(yMax - yMin);
 
     const maxRange = Math.max(xRange, yRange);
     const gridSize = determineGridSize(maxRange);
 
     // Start points based on grid size
-    const xStart = Math.ceil(left / gridSize) * gridSize;
-    const yStart = Math.ceil(bottom / gridSize) * gridSize;
+    const xStart = Math.ceil(xMin / gridSize) * gridSize;
+    const yStart = Math.ceil(yMin / gridSize) * gridSize;
 
-    for (let x = xStart; x <= right; x += gridSize) {
-        points.push(x, top, x, bottom);
+    for (let x = xStart; x <= xMax; x += gridSize) {
+        points.push(x, yMax, x, yMin);
     }
 
-    for (let y = yStart; y <= top; y += gridSize) {
-        points.push(left, y, right, y);
+    for (let y = yStart; y <= yMax; y += gridSize) {
+        points.push(xMin, y, xMax, y);
     }
 
     return points
 }
 
-const minorGridPoints = (left, right, top, bottom) => {
+const minorGridPoints = () => {
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const points = [];
 
-    const xRange = Math.abs(right - left);
-    const yRange = Math.abs(top - bottom);
+    const xRange = Math.abs(xMax - xMin);
+    const yRange = Math.abs(yMax - yMin);
     const maxRange = Math.max(xRange, yRange);
     const majorGridSize = determineGridSize(maxRange);
 
     const minorGridSize = majorGridSize / 5; // 5 minor lines between major lines
 
-    const xStart = Math.ceil(left / minorGridSize) * minorGridSize;
-    const yStart = Math.ceil(bottom / minorGridSize) * minorGridSize;
+    const xStart = Math.ceil(xMin / minorGridSize) * minorGridSize;
+    const yStart = Math.ceil(yMin / minorGridSize) * minorGridSize;
 
-    for (let x = xStart; x <= right; x += minorGridSize) {
+    for (let x = xStart; x <= xMax; x += minorGridSize) {
         // Skip major grid lines
         if (Math.abs(x % majorGridSize) > 0.0001) { 
-            points.push(x, top, x, bottom);
+            points.push(x, yMax, x, yMin);
         }
     }
 
-    for (let y = yStart; y <= top; y += minorGridSize) {
+    for (let y = yStart; y <= yMax; y += minorGridSize) {
         // Skip major grid lines
         if (Math.abs(y % majorGridSize) > 0.0001) { 
-            points.push(left, y, right, y);
+            points.push(xMin, y, xMax, y);
         }
     }
 
     return points;
 }
 
-const axesPoints = (left, right, bottom, top) => {
+const axesPoints = () => {
+    const [xMin, xMax, , ] = translatedAxisRanges()
     const points = [];
 
-    if (left < right) {
-        for (let x = 0; x < right; x++) {
+    if (xMin < xMax) {
+        for (let x = 0; x < xMax; x++) {
             points.push(x, 0, x, 0);
         }
     } else {
-        for (let i = 0; i > right; i--) {
+        for (let i = 0; i > xMax; i--) {
             points.push(x, 0, x, 0);
         }
     }
@@ -664,6 +662,8 @@ const translatedGraphPoints = (resolution, translation, f) => {
     return points;
 }
 
+const translatedAxisRanges = () => [xMin - translation[0], xMax - translation[0], yMin - translation[1], yMax - translation[1]]
+
 const translated = (translation, fn) => {
     const translatedLeft = xMin - translation[0];
     const translatedRight = xMax - translation[0];
@@ -678,9 +678,8 @@ const uploadAttributeData = (bufferName, data) => {
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
 }
 
-
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("webgl");
 const gl = canvas.getContext("webgl2", { antialias: true });
-let xMin, xMax, yMin, yMax
+let xMin, xMax, yMin, yMax, translation
 main();
