@@ -1,4 +1,5 @@
 import * as webglUtils from './webgl-utils.js';
+import { sub } from "./utils.js";
 import * as m3 from './m3.js';
 import * as m4 from './m4.js';
 
@@ -140,7 +141,7 @@ const main = () => {
     const near = 0;
     const far = 2;
 
-    let translation = [0, 0, 0];
+    const translation = [0, 0, 0];
     const scale = [1, 1, 1];
     // let resolution = 250;
     let resolution = 100;
@@ -367,29 +368,29 @@ const main = () => {
 
     // PANNING
     let isPanning = false;
-    let startX = 0;
-    let startY = 0;
+    let panningStartPosition = [0, 0]
 
     gl.canvas.addEventListener('mousedown', event => {
         isPanning = true;
-        startX = event.clientX;
-        startY = event.clientY;
+        const mousePosition = [event.clientX, event.clientY]
+        panningStartPosition = mousePosition
         gl.canvas.style.cursor = 'grabbing';
     });
 
     gl.canvas.addEventListener('mousemove', event => {
         if (!isPanning) return;
 
-        const dx = event.clientX - startX;
-        const dy = event.clientY - startY;
-        const dxWorld = dx * (right - left) / gl.canvas.clientWidth;
-        const dyWorld = dy * (top - bottom) / gl.canvas.clientHeight;
+        const mousePosition = [event.clientX, event.clientY]
+        const delta = sub(mousePosition, panningStartPosition)
+        const deltaWorld = [
+            delta[0] * (right - left) / gl.canvas.clientWidth,
+            delta[1] * (top - bottom) / gl.canvas.clientHeight
+        ]
 
-        translation[0] += dxWorld;
-        translation[1] -= dyWorld;
+        translation[0] += deltaWorld[0];
+        translation[1] -= deltaWorld[1];
 
-        startX = event.clientX;
-        startY = event.clientY;
+        panningStartPosition = mousePosition
 
         const graphPoints = updateGraph(left, right, resolution, translation, f);
         uploadAttributeData(pointsBuffer, graphPoints);
