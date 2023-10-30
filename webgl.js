@@ -231,12 +231,13 @@ const main = () => {
     const minorGridProgramInfo = programInfo(minorGridProgram, instanceVertexPositionMinorGrid)
     const axesProgramInfo = programInfo(axesProgram, instanceVertexPositionAxes)
 
-    const graphColor = [0, 0, 0, 1];
-    const majorGridColor = [0, 0, 0, 0.2];
-    const minorGridColor = [0, 0, 0, 0.1];
+    const grayscale = (value, alpha) => [value, value, value, alpha ?? 1.0]
+    const graphColor = grayscale(0.2, 1.0)
+    const majorGridColor = grayscale(0.8);
+    const minorGridColor = grayscale(0.9);
     const axesColor = [0, 0, 0, 1];
 
-    let plotLineWidth = 0.1;
+    let plotLineWidth = 0.075;
     let majorGridLineWidth = 0.05;
     let minorGridLineWidth = 0.025;
     let axesLineWidth = 0.15;
@@ -254,7 +255,7 @@ const main = () => {
     const axesUniforms = uniforms(axesColor, axesLineWidth);
 
     const objectsToDraw = [
-        {
+                {
             programInfo: lineProgramInfo,
             vertexArray: lineVAO,
             uniforms: lineUniforms,
