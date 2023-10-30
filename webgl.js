@@ -136,13 +136,6 @@ const main = () => {
         lineWidth: axesLineWidthLocation
     } = getLocations(axesProgram)
 
-    // Line - static geometry
-    const lineBuffer = gl.createBuffer();
-    const lineVAO = gl.createVertexArray();
-    gl.bindVertexArray(lineVAO);
-    gl.enableVertexAttribArray(linePositionAttributeLocation);
-    gl.bindBuffer(gl.ARRAY_BUFFER, lineBuffer);
-
     const lineSegmentInstanceGeometry = new Float32Array([
         0, -0.5,
         1, -0.5,
@@ -151,7 +144,18 @@ const main = () => {
         1, 0.5,
         0, 0.5
     ]);
-    gl.bufferData(gl.ARRAY_BUFFER, lineSegmentInstanceGeometry, gl.DYNAMIC_DRAW);
+
+    // Line - static geometry
+    const lineBuffer = (() => {
+        const buffer = gl.createBuffer();
+        uploadAttributeData(buffer, lineSegmentInstanceGeometry)
+        return buffer
+    })()
+
+    const lineVAO = gl.createVertexArray();
+    gl.bindVertexArray(lineVAO);
+    gl.enableVertexAttribArray(linePositionAttributeLocation);
+
     console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
 
     gl.vertexAttribPointer(linePositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
@@ -160,18 +164,17 @@ const main = () => {
     // Points for per-instance data
     const pointsBuffer = gl.createBuffer();
 
+    const near = 0;
+    const far = 2;
     let aspectRatio = canvas.clientWidth / canvas.clientHeight;
     let left = -10 * aspectRatio;
     let right = 10 * aspectRatio;
     let bottom = -10;
     let top = 10;
-    const near = 0;
-    const far = 2;
 
     const translation = [0, 0, 0];
     const scale = [1, 1, 1];
-    // let resolution = 250;
-    let resolution = 100;
+    let resolution = 100 /* 250 */;
 
     const f = functionArray[3];
 
@@ -272,7 +275,7 @@ const main = () => {
     };
     const roundJoinProgramInfo = {
         program: roundJoinProgram,
-        positionLoc: roundJoinPointsAttributeLocation,
+        positionLoc: roundJoinPositionAttributeLocation,
         colorLoc: roundJoinColorMultLocation,
         matrixLoc: roundJoinMVPLocation,
         lineWidthLoc: roundJoinLineWidthLocation,
@@ -448,7 +451,6 @@ const main = () => {
         canvas.style.cursor = 'default';
     });
 
-
     // ZOOMING
     const ZOOM_FACTOR = 1.05;
     let mouseX = 0, mouseY = 0;
@@ -522,7 +524,6 @@ const main = () => {
 
         updateOrthographicDimensions();
     }
-
 
     const updateOrthographicDimensions = () => {
         orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
