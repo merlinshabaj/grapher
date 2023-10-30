@@ -67,13 +67,37 @@ const functionArray = [
 const main = () => {
     if (!gl) return
 
+    const createBufferWithData = data => {
+        const buffer = gl.createBuffer()
+        uploadAttributeData(buffer, data)
+        return buffer
+    }
+
+    const createAndBindVAO = () => {
+        const vao = gl.createVertexArray();
+        gl.bindVertexArray(vao);    
+        return vao
+    }
+
+    const setupInstanceVertexPosition = location => {
+        gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(location);
+        gl.vertexAttribDivisor(location, 0);    
+    }
+
+    const setupStartAndEndPoints = location => {
+        gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(location);
+        gl.vertexAttribDivisor(location, 1);
+    }
+
+    const getAttribLocations = program => ["a_instanceVertexPosition", "a_startAndEndPoints"].map(name => gl.getAttribLocation(program, name))
+
     const lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
     const majorGridProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const minorGridProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const axesProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
-
-    const getAttribLocations = program => ["a_instanceVertexPosition", "a_startAndEndPoints"].map(name => gl.getAttribLocation(program, name))
 
     // Line locations
     const [
@@ -114,30 +138,6 @@ const main = () => {
         0, 0.5
     ]);
 
-    const createBufferWithData = data => {
-        const buffer = gl.createBuffer()
-        uploadAttributeData(buffer, data)
-        return buffer
-    }
-
-    const createAndBindVAO = () => {
-        const vao = gl.createVertexArray();
-        gl.bindVertexArray(vao);    
-        return vao
-    }
-
-    const setupInstanceVertexPosition = location => {
-        gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(location);
-        gl.vertexAttribDivisor(location, 0);    
-    }
-
-    const setupStartAndEndPoints = location => {
-        gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(location);
-        gl.vertexAttribDivisor(location, 1);
-    }
-
     // Line - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
     const lineVAO = createAndBindVAO()
@@ -147,11 +147,12 @@ const main = () => {
 
     const near = 0;
     const far = 2;
-    let aspectRatio = canvas.clientWidth / canvas.clientHeight;
-    let xMin = -10 * aspectRatio;
-    let xMax = 10 * aspectRatio;
-    let yMin = -10;
-    let yMax = 10;
+    [xMin, xMax] = (() => {
+        const aspectRatio = canvas.clientWidth / canvas.clientHeight;
+        return [-10 * aspectRatio, 10 * aspectRatio]
+    })()
+    yMin = -10;
+    yMax = 10;
 
     const translation = [0, 0, 0];
     const scale = [1, 1, 1];
@@ -160,7 +161,7 @@ const main = () => {
     const f = functionArray[3];
 
     // Points for per-instance data
-    const graphPoints = translatedGraphPoints(xMin, xMax, resolution, translation, f);
+    const graphPoints = translatedGraphPoints(resolution, translation, f);
     const pointsBuffer = createBufferWithData(graphPoints);
     let graphPointsBufferLength = getBufferLength(graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
@@ -342,7 +343,7 @@ const main = () => {
 
         panningStartPosition = mousePosition
 
-        const graphPoints = translatedGraphPoints(xMin, xMax, resolution, translation, f);
+        const graphPoints = translatedGraphPoints(resolution, translation, f);
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
         majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints)
@@ -398,10 +399,10 @@ const main = () => {
         const axesLineWidthScalingFactor = newAxesLineWidth / axesLineWidth;
         const resolutionScalingFactor = newResolution / resolution;
 
-        const leftNew = mouseWorldX - (mouseWorldX - xMin) * widthScalingFactor;
-        const rightNew = mouseWorldX + (xMax - mouseWorldX) * widthScalingFactor;
-        const bottomNew = mouseWorldY - (mouseWorldY - yMin) * heightScalingFactor;
-        const topNew = mouseWorldY + (yMax - mouseWorldY) * heightScalingFactor;
+        const xMinNew = mouseWorldX - (mouseWorldX - xMin) * widthScalingFactor;
+        const xMaxNew = mouseWorldX + (xMax - mouseWorldX) * widthScalingFactor;
+        const yMinNew = mouseWorldY - (mouseWorldY - yMin) * heightScalingFactor;
+        const yMaxNew = mouseWorldY + (yMax - mouseWorldY) * heightScalingFactor;
 
         plotLineWidth = plotLineWidth * plotLineWidthScalingFactor;
         lineUniforms.u_lineWidth = plotLineWidth;
@@ -419,16 +420,16 @@ const main = () => {
         resolution = resolution * resolutionScalingFactor;
         console.log("resolution:", resolution);
 
-        xMin = leftNew;
-        xMax = rightNew;
-        yMin = bottomNew;
-        yMax = topNew;
+        xMin = xMinNew;
+        xMax = xMaxNew;
+        yMin = yMinNew;
+        yMax = yMaxNew;
 
         updateOrthographicDimensions();
     }
 
     const updatePoints = (pointsBuffer, fn) => {
-        let points = translated(xMin, xMax, yMax, yMin, translation, fn);
+        let points = translated(translation, fn);
         uploadAttributeData(pointsBuffer, points);
         return getBufferLength(points);    
     }
@@ -436,7 +437,7 @@ const main = () => {
     const updateOrthographicDimensions = () => {
         computeViewProjectionMatrix()
 
-        let graphPoints = translatedGraphPoints(xMin, xMax, resolution, translation, f);
+        let graphPoints = translatedGraphPoints(resolution, translation, f);
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
         majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints)
@@ -656,18 +657,18 @@ const determineGridSize = maxRange => {
 
 const getBufferLength = data => data.length / 2
 
-const translatedGraphPoints = (left, right, resolution, translation, f) => {
-    const translatedLeft = left - translation[0];
-    const translatedRight = right - translation[0];
+const translatedGraphPoints = (resolution, translation, f) => {
+    const translatedLeft = xMin - translation[0];
+    const translatedRight = xMax - translation[0];
     const points = new Float32Array(graphPoints(translatedLeft, translatedRight, resolution, f));
     return points;
 }
 
-const translated = (left, right, top, bottom, translation, fn) => {
-    const translatedLeft = left - translation[0];
-    const translatedRight = right - translation[0];
-    const translatedTop = top - translation[1];
-    const translatedBottom = bottom - translation[1];
+const translated = (translation, fn) => {
+    const translatedLeft = xMin - translation[0];
+    const translatedRight = xMax - translation[0];
+    const translatedTop = yMax - translation[1];
+    const translatedBottom = yMin - translation[1];
     const points = new Float32Array(fn(translatedLeft, translatedRight, translatedTop, translatedBottom));
     return points
 }
@@ -681,4 +682,5 @@ const uploadAttributeData = (bufferName, data) => {
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("webgl");
 const gl = canvas.getContext("webgl2", { antialias: true });
+let xMin, xMax, yMin, yMax
 main();
