@@ -307,8 +307,14 @@ const main = () => {
     const cameraMatrix = m4.lookAt(cameraPosition, target, up);
     const viewMatrix = m4.inverse(cameraMatrix);
 
-    let orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
-    let viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
+    let viewProjectionMatrix
+    const computeViewProjectionMatrix = () => {
+        const orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
+        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);    
+    }
+
+    computeViewProjectionMatrix()
+    
 
     // PANNING
     let isPanning = false;
@@ -440,8 +446,7 @@ const main = () => {
     }
 
     const updateOrthographicDimensions = () => {
-        orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
-        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);
+        computeViewProjectionMatrix()
 
         let graphPoints = updateGraph(left, right, resolution, translation, f);
         uploadAttributeData(pointsBuffer, graphPoints);
