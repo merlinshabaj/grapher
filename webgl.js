@@ -1,5 +1,5 @@
 import * as webglUtils from './webgl-utils.js';
-import { sub } from "./utils.js";
+import { range, rangeInclusive, sub } from "./utils.js";
 import * as m3 from './m3.js';
 import * as m4 from './m4.js';
 
@@ -204,9 +204,9 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionAxes)
 
     // Start and end points for per-instance data minor grid
-    const axesPoints = new Float32Array(axesPoints(left, right, top, bottom));
-    let axesPointsBufferLength = getBufferLength(axesPoints);
-    const axesDataBuffer = createBufferWithData(axesPoints)
+    const _axesPoints = new Float32Array(axesPoints(left, right, top, bottom));
+    let axesPointsBufferLength = getBufferLength(_axesPoints);
+    const axesDataBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
 
     const programInfo = (program, instanceVertexPositionLocation) => {
@@ -380,23 +380,14 @@ const main = () => {
         const height = top - bottom;
 
         let newWidth, newHeight, newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newAxesLineWidth, newResolution;
-        if (isZoomingIn) {
-            newWidth = width / ZOOM_FACTOR;
-            newHeight = height / ZOOM_FACTOR;
-            newPlotLineWidth = plotLineWidth / ZOOM_FACTOR;
-            newMajorGridLineWidth = majorGridLineWidth / ZOOM_FACTOR;
-            newMinorGridLineWidth = minorGridLineWidth / ZOOM_FACTOR;
-            newAxesLineWidth = axesLineWidth / ZOOM_FACTOR;
-            newResolution = resolution * ZOOM_FACTOR;
-        } else {
-            newWidth = width * ZOOM_FACTOR;
-            newHeight = height * ZOOM_FACTOR;
-            newPlotLineWidth = plotLineWidth * ZOOM_FACTOR;
-            newMajorGridLineWidth = majorGridLineWidth * ZOOM_FACTOR;
-            newMinorGridLineWidth = minorGridLineWidth * ZOOM_FACTOR;
-            newAxesLineWidth = axesLineWidth / ZOOM_FACTOR;
-            newResolution = resolution / ZOOM_FACTOR;
-        }
+        const factor = isZoomingIn ? ZOOM_FACTOR : 1 / ZOOM_FACTOR
+        newWidth = width / factor;
+        newHeight = height / factor;
+        newPlotLineWidth = plotLineWidth / factor;
+        newMajorGridLineWidth = majorGridLineWidth / factor;
+        newMinorGridLineWidth = minorGridLineWidth / factor;
+        newAxesLineWidth = axesLineWidth / factor;
+        newResolution = resolution * factor;
 
         // Convert mouse position from screen space to clip space
         const clipX = (mouseX / canvas.clientWidth) * 2 - 1;
@@ -548,8 +539,6 @@ const computeMatrix = (viewProjectionMatrix, translation, xRotation, yRotation, 
 }
 
 const graphPoints = (start, end, resolution, f) => {
-    let points = [];
-
     const startX = start * resolution;
     const endX = end * resolution;
 
@@ -559,9 +548,8 @@ const graphPoints = (start, end, resolution, f) => {
         return [x, y, x, y];
     }
 
-    for (let xStep = startX; xStep <= endX; xStep++) points.push(...values(xStep))
+    const points = rangeInclusive(startX, endX).flatMap(values).slice(2, -2)
 
-    points = points.slice(2, -2)
     console.log("POINTS:", points)
     return points
 }
