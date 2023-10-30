@@ -148,10 +148,10 @@ const main = () => {
     const near = 0;
     const far = 2;
     let aspectRatio = canvas.clientWidth / canvas.clientHeight;
-    let left = -10 * aspectRatio;
-    let right = 10 * aspectRatio;
-    let bottom = -10;
-    let top = 10;
+    let xMin = -10 * aspectRatio;
+    let xMax = 10 * aspectRatio;
+    let yMin = -10;
+    let yMax = 10;
 
     const translation = [0, 0, 0];
     const scale = [1, 1, 1];
@@ -160,7 +160,7 @@ const main = () => {
     const f = functionArray[3];
 
     // Points for per-instance data
-    const graphPoints = translatedGraphPoints(left, right, resolution, translation, f);
+    const graphPoints = translatedGraphPoints(xMin, xMax, resolution, translation, f);
     const pointsBuffer = createBufferWithData(graphPoints);
     let graphPointsBufferLength = getBufferLength(graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
@@ -182,9 +182,9 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
 
     // Start and end points for per-instace data majorgrid
-    const majorGridData = new Float32Array(majorGridPoints(left, right, top, bottom));
+    const majorGridData = new Float32Array(majorGridPoints(xMin, xMax, yMax, yMin));
     let majorGridDataBufferLength = getBufferLength(majorGridData);
-    const majorGridDataBuffer = createBufferWithData(majorGridData)
+    const majorGridPointsBuffer = createBufferWithData(majorGridData)
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
 
     // Minor grid - static geometry
@@ -193,9 +193,9 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
 
     // Start and end points for per-instance data minor grid
-    const minorGridData = new Float32Array(minorGridPoints(left, right, top, bottom));
+    const minorGridData = new Float32Array(minorGridPoints(xMin, xMax, yMax, yMin));
     let minorGridDataBufferLength = getBufferLength(minorGridData);
-    const minorGridDataBuffer = createBufferWithData(minorGridData)
+    const minorGridPointsBuffer = createBufferWithData(minorGridData)
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
 
     // Axes - static geometry
@@ -204,9 +204,9 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionAxes)
 
     // Start and end points for per-instance data minor grid
-    const _axesPoints = new Float32Array(axesPoints(left, right, top, bottom));
+    const _axesPoints = new Float32Array(axesPoints(xMin, xMax, yMax, yMin));
     let axesPointsBufferLength = getBufferLength(_axesPoints);
-    const axesDataBuffer = createBufferWithData(_axesPoints)
+    const axesPointsBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
 
     const programInfo = (program, instanceVertexPositionLocation) => {
@@ -276,7 +276,7 @@ const main = () => {
             vertexArray: majorGridVAO,
             uniforms: majorGridUniforms,
             primitiveType: gl.TRIANGLES,
-            dataBuffer: majorGridDataBuffer,
+            dataBuffer: majorGridPointsBuffer,
             getCount: 6,
             getInstanceCount: () => majorGridDataBufferLength / 2,
         },
@@ -285,7 +285,7 @@ const main = () => {
             vertexArray: minorGridVAO,
             uniforms: minorGridUniforms,
             primitiveType: gl.TRIANGLES,
-            dataBuffer: minorGridDataBuffer,
+            dataBuffer: minorGridPointsBuffer,
             getCount: 6,
             getInstanceCount: () => minorGridDataBufferLength / 2,
         },
@@ -294,7 +294,7 @@ const main = () => {
             vertexArray: axesVAO,
             uniforms: axesUniforms,
             primitiveType: gl.TRIANGLES,
-            dataBuffer: axesDataBuffer,
+            dataBuffer: axesPointsBuffer,
             getCount: 6,
             getInstanceCount: () => axesPointsBufferLength / 2,
         }
@@ -309,7 +309,7 @@ const main = () => {
 
     let viewProjectionMatrix
     const computeViewProjectionMatrix = () => {
-        const orthographicMatrix = m4.orthographic(left, right, bottom, top, near, far);
+        const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);    
     }
 
@@ -333,8 +333,8 @@ const main = () => {
         const mousePosition = [event.clientX, event.clientY]
         const delta = sub(mousePosition, panningStartPosition)
         const deltaWorld = [
-            delta[0] * (right - left) / canvas.clientWidth,
-            delta[1] * (top - bottom) / canvas.clientHeight
+            delta[0] * (xMax - xMin) / canvas.clientWidth,
+            delta[1] * (yMax - yMin) / canvas.clientHeight
         ]
 
         translation[0] += deltaWorld[0];
@@ -342,21 +342,12 @@ const main = () => {
 
         panningStartPosition = mousePosition
 
-        const graphPoints = translatedGraphPoints(left, right, resolution, translation, f);
+        const graphPoints = translatedGraphPoints(xMin, xMax, resolution, translation, f);
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
-
-        const majorGridData = translated(left, right, top, bottom, translation, majorGridPoints);
-        uploadAttributeData(majorGridDataBuffer, majorGridData);
-        majorGridDataBufferLength = getBufferLength(majorGridData);
-
-        const minorGridData = translated(left, right, top, bottom, translation, minorGridPoints);
-        uploadAttributeData(minorGridDataBuffer, minorGridData);
-        minorGridDataBufferLength = getBufferLength(minorGridData);
-        
-        const _axesPoints = translated(left, right, top, bottom, translation, axesPoints);
-        uploadAttributeData(axesDataBuffer, _axesPoints);
-        axesPointsBufferLength = getBufferLength(_axesPoints);
+        majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints)
+        minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints)
+        axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints)
 
         drawScene();
     });
@@ -376,8 +367,8 @@ const main = () => {
     let mouseX = 0, mouseY = 0;
 
     const zoom = (isZoomingIn, mouseX, mouseY) => {
-        const width = right - left;
-        const height = top - bottom;
+        const width = xMax - xMin;
+        const height = yMax - yMin;
 
         let newWidth, newHeight, newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newAxesLineWidth, newResolution;
         const factor = isZoomingIn ? ZOOM_FACTOR : 1 / ZOOM_FACTOR
@@ -395,8 +386,8 @@ const main = () => {
         console.log("Mouse Clip Space: ", clipX, clipY);
 
         // Calculate mouse position in world space
-        const mouseWorldX = left + (clipX + 1) * 0.5 * width;
-        const mouseWorldY = bottom + (clipY + 1) * 0.5 * height;
+        const mouseWorldX = xMin + (clipX + 1) * 0.5 * width;
+        const mouseWorldY = yMin + (clipY + 1) * 0.5 * height;
         console.log("Mouse World Space: ", mouseWorldX, mouseWorldY);
 
         const widthScalingFactor = newWidth / width;
@@ -407,10 +398,10 @@ const main = () => {
         const axesLineWidthScalingFactor = newAxesLineWidth / axesLineWidth;
         const resolutionScalingFactor = newResolution / resolution;
 
-        const leftNew = mouseWorldX - (mouseWorldX - left) * widthScalingFactor;
-        const rightNew = mouseWorldX + (right - mouseWorldX) * widthScalingFactor;
-        const bottomNew = mouseWorldY - (mouseWorldY - bottom) * heightScalingFactor;
-        const topNew = mouseWorldY + (top - mouseWorldY) * heightScalingFactor;
+        const leftNew = mouseWorldX - (mouseWorldX - xMin) * widthScalingFactor;
+        const rightNew = mouseWorldX + (xMax - mouseWorldX) * widthScalingFactor;
+        const bottomNew = mouseWorldY - (mouseWorldY - yMin) * heightScalingFactor;
+        const topNew = mouseWorldY + (yMax - mouseWorldY) * heightScalingFactor;
 
         plotLineWidth = plotLineWidth * plotLineWidthScalingFactor;
         lineUniforms.u_lineWidth = plotLineWidth;
@@ -428,32 +419,29 @@ const main = () => {
         resolution = resolution * resolutionScalingFactor;
         console.log("resolution:", resolution);
 
-        left = leftNew;
-        right = rightNew;
-        bottom = bottomNew;
-        top = topNew;
+        xMin = leftNew;
+        xMax = rightNew;
+        yMin = bottomNew;
+        yMax = topNew;
 
         updateOrthographicDimensions();
+    }
+
+    const updatePoints = (pointsBuffer, fn) => {
+        let points = translated(xMin, xMax, yMax, yMin, translation, fn);
+        uploadAttributeData(pointsBuffer, points);
+        return getBufferLength(points);    
     }
 
     const updateOrthographicDimensions = () => {
         computeViewProjectionMatrix()
 
-        let graphPoints = translatedGraphPoints(left, right, resolution, translation, f);
+        let graphPoints = translatedGraphPoints(xMin, xMax, resolution, translation, f);
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
-
-        let majorGridData = translated(left, right, top, bottom, translation, majorGridPoints);
-        uploadAttributeData(majorGridDataBuffer, majorGridData);
-        majorGridDataBufferLength = getBufferLength(majorGridData);
-
-        let minorGridData = translated(left, right, top, bottom, translation, minorGridPoints);
-        uploadAttributeData(minorGridDataBuffer, minorGridData);
-        minorGridDataBufferLength = getBufferLength(minorGridData);
-
-        let _axesPoints = translated(left, right, top, bottom, translation, axesPoints);
-        uploadAttributeData(axesDataBuffer, _axesPoints);
-        minorGridDataBufferLength = getBufferLength(_axesPoints);
+        majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints)
+        minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints)
+        axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints)
 
         drawScene();
     }
