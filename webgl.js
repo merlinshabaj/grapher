@@ -664,15 +664,6 @@ const translatedGraphPoints = (resolution, f) => {
 
 const translatedAxisRanges = () => [xMin - translation[0], xMax - translation[0], yMin - translation[1], yMax - translation[1]]
 
-const translated = (translation, fn) => {
-    const translatedLeft = xMin - translation[0];
-    const translatedRight = xMax - translation[0];
-    const translatedTop = yMax - translation[1];
-    const translatedBottom = yMin - translation[1];
-    const points = new Float32Array(fn(translatedLeft, translatedRight, translatedTop, translatedBottom));
-    return points
-}
-
 const uploadAttributeData = (bufferName, data) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferName);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
