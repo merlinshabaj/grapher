@@ -70,43 +70,71 @@ const main = () => {
 
     const lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
-    const majorGridPogram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
+    const majorGridProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const minorGridPogram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const axesProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
 
-    const linePositionAttributeLocation = gl.getAttribLocation(lineProgram, "a_instanceVertexPosition");
-    const pointsAttributeLocation = gl.getAttribLocation(lineProgram, "a_startAndEndPoints");
-    const lineMVPLocation = gl.getUniformLocation(lineProgram, "u_mvp");
-    const lineColorMultLocation = gl.getUniformLocation(lineProgram, "u_colorMult");
-    const lineWidthLocation = gl.getUniformLocation(lineProgram, "u_lineWidth");
+    const getLocations = program => {
+        const getAttribLocation = name => gl.getAttribLocation(program, name)
+        const getUniformLocation = name => gl.getUniformLocation(program, name)
+        const instanceVertexPosition = getAttribLocation("a_instanceVertexPosition");
+        const startAndEndPoints = getAttribLocation("a_startAndEndPoints");;
+        const mvp = getUniformLocation("u_mvp");
+        const colorMult = getUniformLocation("u_colorMult");
+        const lineWidth = getUniformLocation("u_lineWidth");    
+        return {
+            instanceVertexPosition,
+            startAndEndPoints,
+            mvp,
+            colorMult,
+            lineWidth
+        }
+    }
+
+    // Line locations
+    const {
+        instanceVertexPosition: linePositionAttributeLocation,
+        startAndEndPoints: pointsAttributeLocation,
+        mvp: lineMVPLocation,
+        colorMult: lineColorMultLocation,
+        lineWidth: lineWidthLocation
+    } = getLocations(lineProgram)
 
     // Round join locations
-    const roundJoinPositionAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_instanceVertexPosition");
-    const roundJoinPointsAttributeLocation = gl.getAttribLocation(roundJoinProgram, "a_startAndEndPoints");
-    const roundJoinMVPLocation = gl.getUniformLocation(roundJoinProgram, "u_mvp");
-    const roundJoinColorMultLocation = gl.getUniformLocation(roundJoinProgram, "u_colorMult");
-    const roundJoinLineWidthLocation = gl.getUniformLocation(roundJoinProgram, "u_lineWidth");
+    const {
+        instanceVertexPosition: roundJoinPositionAttributeLocation,
+        startAndEndPoints: roundJoinPointsAttributeLocation,
+        mvp: roundJoinMVPLocation,
+        colorMult: roundJoinColorMultLocation,
+        lineWidth: roundJoinLineWidthLocation
+    } = getLocations(roundJoinProgram)
 
     // Major grid locations
-    const majorGridVertexPositionAttributeLocation = gl.getAttribLocation(majorGridPogram, "a_instanceVertexPosition");
-    const majorGridStartAndEndPointsAttributeLocation = gl.getAttribLocation(majorGridPogram, "a_startAndEndPoints");;
-    const majorGridMVPLocation = gl.getUniformLocation(majorGridPogram, "u_mvp");
-    const majorGridColorMultLocation = gl.getUniformLocation(majorGridPogram, "u_colorMult");
-    const majorGridLineWidthLocation = gl.getUniformLocation(majorGridPogram, "u_lineWidth");
+    const {
+        instanceVertexPosition: majorGridVertexPositionAttributeLocation,
+        startAndEndPoints: majorGridStartAndEndPointsAttributeLocation,
+        mvp: majorGridMVPLocation,
+        colorMult: majorGridColorMultLocation,
+        lineWidth: majorGridLineWidthLocation
+    } = getLocations(majorGridProgram)
 
     // Minor grid locations
-    const minorGridVertexPositionAttributeLocation = gl.getAttribLocation(minorGridPogram, "a_instanceVertexPosition");
-    const minorGridStartAndEndPointsAttributeLocation = gl.getAttribLocation(minorGridPogram, "a_startAndEndPoints");;
-    const minorGridMVPLocation = gl.getUniformLocation(minorGridPogram, "u_mvp");
-    const minorGridColorMultLocation = gl.getUniformLocation(minorGridPogram, "u_colorMult");
-    const minorGridLineWidthLocation = gl.getUniformLocation(minorGridPogram, "u_lineWidth");
+    const {
+        instanceVertexPosition: minorGridVertexPositionAttributeLocation,
+        startAndEndPoints: minorGridStartAndEndPointsAttributeLocation,
+        mvp: minorGridMVPLocation,
+        colorMult: minorGridColorMultLocation,
+        lineWidth: minorGridLineWidthLocation
+    } = getLocations(minorGridPogram)
 
     // Axes locations
-    const axesVertexPositionAttributeLocation = gl.getAttribLocation(axesProgram, "a_instanceVertexPosition")
-    const axesStartAndEndPointsAttributeLocation = gl.getAttribLocation(axesProgram, "a_startAndEndPoints");;
-    const axesMVPLocation = gl.getUniformLocation(axesProgram, "u_mvp");
-    const axesColorMultLocation = gl.getUniformLocation(axesProgram, "u_colorMult");
-    const axesLineWidthLocation = gl.getUniformLocation(axesProgram, "u_lineWidth");
+    const {
+        instanceVertexPosition: axesVertexPositionAttributeLocation,
+        startAndEndPoints: axesStartAndEndPointsAttributeLocation,
+        mvp: axesMVPLocation,
+        colorMult: axesColorMultLocation,
+        lineWidth: axesLineWidthLocation
+    } = getLocations(axesProgram)
 
     // Line - static geometry
     const lineBuffer = gl.createBuffer();
@@ -131,7 +159,6 @@ const main = () => {
 
     // Points for per-instance data
     const pointsBuffer = gl.createBuffer();
-
 
     let aspectRatio = canvas.clientWidth / canvas.clientHeight;
     let left = -10 * aspectRatio;
@@ -251,7 +278,7 @@ const main = () => {
         lineWidthLoc: roundJoinLineWidthLocation,
     };
     const majorGridProgramInfo = {
-        program: majorGridPogram,
+        program: majorGridProgram,
         positionLoc: majorGridVertexPositionAttributeLocation,
         colorLoc: majorGridColorMultLocation,
         matrixLoc: majorGridMVPLocation,
