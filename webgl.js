@@ -346,17 +346,17 @@ const main = () => {
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
 
-        const majorGridData = translatedMajorGridPoints(left, right, top, bottom, translation);
+        const majorGridData = translated(left, right, top, bottom, translation, majorGridPoints);
         uploadAttributeData(majorGridDataBuffer, majorGridData);
         majorGridDataBufferLength = getBufferLength(majorGridData);
 
-        const minorGridData = translatedMinorGridPoints(left, right, top, bottom, translation);
+        const minorGridData = translated(left, right, top, bottom, translation, minorGridPoints);
         uploadAttributeData(minorGridDataBuffer, minorGridData);
         minorGridDataBufferLength = getBufferLength(minorGridData);
         
-        const axesPoints = translatedAxesPoints(left, right, top, bottom, translation);
-        uploadAttributeData(axesDataBuffer, axesPoints);
-        axesPointsBufferLength = getBufferLength(axesPoints);
+        const _axesPoints = translated(left, right, top, bottom, translation, axesPoints);
+        uploadAttributeData(axesDataBuffer, _axesPoints);
+        axesPointsBufferLength = getBufferLength(_axesPoints);
 
         drawScene();
     });
@@ -443,17 +443,17 @@ const main = () => {
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
 
-        let majorGridData = translatedMajorGridPoints(left, right, top, bottom, translation);
+        let majorGridData = translated(left, right, top, bottom, translation, majorGridPoints);
         uploadAttributeData(majorGridDataBuffer, majorGridData);
         majorGridDataBufferLength = getBufferLength(majorGridData);
 
-        let minorGridData = translatedMinorGridPoints(left, right, top, bottom, translation);
+        let minorGridData = translated(left, right, top, bottom, translation, minorGridPoints);
         uploadAttributeData(minorGridDataBuffer, minorGridData);
         minorGridDataBufferLength = getBufferLength(minorGridData);
 
-        let axesPoints = translatedAxesPoints(left, right, top, bottom, translation);
-        uploadAttributeData(axesDataBuffer, axesPoints);
-        minorGridDataBufferLength = getBufferLength(axesPoints);
+        let _axesPoints = translated(left, right, top, bottom, translation, axesPoints);
+        uploadAttributeData(axesDataBuffer, _axesPoints);
+        minorGridDataBufferLength = getBufferLength(_axesPoints);
 
         drawScene();
     }
@@ -675,30 +675,12 @@ const translatedGraphPoints = (left, right, resolution, translation, f) => {
     return points;
 }
 
-const translatedMajorGridPoints = (left, right, top, bottom, translation) => {
+const translated = (left, right, top, bottom, translation, fn) => {
     const translatedLeft = left - translation[0];
     const translatedRight = right - translation[0];
     const translatedTop = top - translation[1];
     const translatedBottom = bottom - translation[1];
-    const points = new Float32Array(majorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
-    return points
-}
-
-const translatedMinorGridPoints = (left, right, top, bottom, translation) => {
-    const translatedLeft = left - translation[0];
-    const translatedRight = right - translation[0];
-    const translatedTop = top - translation[1];
-    const translatedBottom = bottom - translation[1];
-    const points = new Float32Array(minorGridPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
-    return points
-}
-
-const translatedAxesPoints = (left, right, top, bottom, translation) => {
-    const translatedLeft = left - translation[0];
-    const translatedRight = right - translation[0];
-    const translatedTop = top - translation[1];
-    const translatedBottom = bottom - translation[1];
-    const points = new Float32Array(axesPoints(translatedLeft, translatedRight, translatedTop, translatedBottom));
+    const points = new Float32Array(fn(translatedLeft, translatedRight, translatedTop, translatedBottom));
     return points
 }
 
