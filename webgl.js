@@ -93,47 +93,47 @@ const main = () => {
 
     // Line locations
     const {
-        instanceVertexPosition: linePositionAttributeLocation,
-        startAndEndPoints: pointsAttributeLocation,
-        mvp: lineMVPLocation,
-        colorMult: lineColorMultLocation,
-        lineWidth: lineWidthLocation
+        instanceVertexPosition: instanceVertexPositionLine,
+        startAndEndPoints: startAndEndPointsLine,
+        mvp: mvpLine,
+        colorMult: colorMultLine,
+        lineWidth: lineWidthLine
     } = getLocations(lineProgram)
 
     // Round join locations
     const {
-        instanceVertexPosition: roundJoinPositionAttributeLocation,
-        startAndEndPoints: roundJoinPointsAttributeLocation,
-        mvp: roundJoinMVPLocation,
-        colorMult: roundJoinColorMultLocation,
-        lineWidth: roundJoinLineWidthLocation
+        instanceVertexPosition: instanceVertexPositionRoundJoin,
+        startAndEndPoints: startAndEndPointsRoundJoin,
+        mvp: mvpRoundJoin,
+        colorMult: colorMultRoundJoin,
+        lineWidth: lineWidthRoundJoin
     } = getLocations(roundJoinProgram)
 
     // Major grid locations
     const {
-        instanceVertexPosition: majorGridVertexPositionAttributeLocation,
-        startAndEndPoints: majorGridStartAndEndPointsAttributeLocation,
-        mvp: majorGridMVPLocation,
-        colorMult: majorGridColorMultLocation,
-        lineWidth: majorGridLineWidthLocation
+        instanceVertexPosition: instanceVertexPositionMajorGrid,
+        startAndEndPoints: startAndEndPointsMajorGrid,
+        mvp: mvpMajorGrid,
+        colorMult: colorMultMajorGrid,
+        lineWidth: lineWidthMajorGrid
     } = getLocations(majorGridProgram)
 
     // Minor grid locations
     const {
-        instanceVertexPosition: minorGridVertexPositionAttributeLocation,
-        startAndEndPoints: minorGridStartAndEndPointsAttributeLocation,
-        mvp: minorGridMVPLocation,
-        colorMult: minorGridColorMultLocation,
-        lineWidth: minorGridLineWidthLocation
+        instanceVertexPosition: instanceVertexPositionMinorGrid,
+        startAndEndPoints: startAndEndPointsMinorGrid,
+        mvp: mvpMinorGrid,
+        colorMult: colorMultMinorGrid,
+        lineWidth: lineWidthMinorGrid
     } = getLocations(minorGridPogram)
 
     // Axes locations
     const {
-        instanceVertexPosition: axesVertexPositionAttributeLocation,
-        startAndEndPoints: axesStartAndEndPointsAttributeLocation,
-        mvp: axesMVPLocation,
-        colorMult: axesColorMultLocation,
-        lineWidth: axesLineWidthLocation
+        instanceVertexPosition: instanceVertexPositionAxes,
+        startAndEndPoints: startAndEndPointsAxes,
+        mvp: mvpAxes,
+        colorMult: colorMultAxes,
+        lineWidth: lineWidthAxes
     } = getLocations(axesProgram)
 
     const lineSegmentInstanceGeometry = new Float32Array([
@@ -160,12 +160,12 @@ const main = () => {
     // Line - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
     const lineVAO = createAndBindVAO()
-    gl.enableVertexAttribArray(linePositionAttributeLocation);
+    gl.enableVertexAttribArray(instanceVertexPositionLine);
 
     console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
 
-    gl.vertexAttribPointer(linePositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(linePositionAttributeLocation, 0);
+    gl.vertexAttribPointer(instanceVertexPositionLine, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(instanceVertexPositionLine, 0);
 
     const near = 0;
     const far = 2;
@@ -181,111 +181,111 @@ const main = () => {
 
     const f = functionArray[3];
 
-    const graphPoints = updateGraph(left, right, resolution, translation, f);
     // Points for per-instance data
+    const graphPoints = updateGraph(left, right, resolution, translation, f);
     const pointsBuffer = createBufferWithData(graphPoints);
     let graphPointsBufferLength = getBufferLength(graphPoints);
 
-    gl.vertexAttribPointer(pointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(pointsAttributeLocation);
-    gl.vertexAttribDivisor(pointsAttributeLocation, 1);
+    gl.vertexAttribPointer(startAndEndPointsLine, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(startAndEndPointsLine);
+    gl.vertexAttribDivisor(startAndEndPointsLine, 1);
 
     // Round join points
     const roundJoinGeometry = computeRoundJoinGeometry(resolution);
     createBufferWithData(new Float32Array(roundJoinGeometry))
     const roundJoinVAO = createAndBindVAO()
-    gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
-    gl.vertexAttribPointer(roundJoinPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(roundJoinPositionAttributeLocation);
-    gl.vertexAttribDivisor(roundJoinPointsAttributeLocation, 0);
+    
+    gl.vertexAttribPointer(instanceVertexPositionRoundJoin, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(instanceVertexPositionRoundJoin);
+    gl.vertexAttribDivisor(instanceVertexPositionRoundJoin, 0);
 
     // Start and End points for per-instance data (graphPoints)
     gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
-    gl.vertexAttribPointer(roundJoinPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(roundJoinPointsAttributeLocation);
-    gl.vertexAttribDivisor(roundJoinPointsAttributeLocation, 1);
+    gl.vertexAttribPointer(startAndEndPointsRoundJoin, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(startAndEndPointsRoundJoin);
+    gl.vertexAttribDivisor(startAndEndPointsRoundJoin, 1);
 
     // Major grid - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
 
     const majorGridVAO = createAndBindVAO()
-    gl.enableVertexAttribArray(majorGridVertexPositionAttributeLocation);
-    gl.vertexAttribPointer(majorGridVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(majorGridVertexPositionAttributeLocation, 0);
+    gl.enableVertexAttribArray(instanceVertexPositionMajorGrid);
+    gl.vertexAttribPointer(instanceVertexPositionMajorGrid, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(instanceVertexPositionMajorGrid, 0);
 
     // Start and end points for per-instace data majorgrid
     const majorGridData = new Float32Array(computeMajorGridPoints(left, right, top, bottom));
     const majorGridDataBuffer = createBufferWithData(majorGridData)
     let majorGridDataBufferLength = getBufferLength(majorGridData);
     
-    gl.enableVertexAttribArray(majorGridStartAndEndPointsAttributeLocation);
-    gl.vertexAttribPointer(majorGridStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(majorGridStartAndEndPointsAttributeLocation, 1);
+    gl.enableVertexAttribArray(startAndEndPointsMajorGrid);
+    gl.vertexAttribPointer(startAndEndPointsMajorGrid, 4, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(startAndEndPointsMajorGrid, 1);
 
     // Minor grid - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
     const minorGridVAO = createAndBindVAO()
-    gl.enableVertexAttribArray(minorGridVertexPositionAttributeLocation);
-    gl.vertexAttribPointer(minorGridVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(minorGridVertexPositionAttributeLocation, 0);
+    gl.enableVertexAttribArray(instanceVertexPositionMinorGrid);
+    gl.vertexAttribPointer(instanceVertexPositionMinorGrid, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(instanceVertexPositionMinorGrid, 0);
 
     // Start and end points for per-instance data minor grid
     const minorGridData = new Float32Array(computeMinorGridPoints(left, right, top, bottom));
     let minorGridDataBufferLength = getBufferLength(minorGridData);
     const minorGridDataBuffer = createBufferWithData(minorGridData)
-    gl.vertexAttribPointer(minorGridStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(minorGridStartAndEndPointsAttributeLocation);
-    gl.vertexAttribDivisor(minorGridStartAndEndPointsAttributeLocation, 1);
+    gl.vertexAttribPointer(startAndEndPointsMinorGrid, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(startAndEndPointsMinorGrid);
+    gl.vertexAttribDivisor(startAndEndPointsMinorGrid, 1);
 
     // Axes - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
     const axesVAO = createAndBindVAO()
-    gl.enableVertexAttribArray(axesVertexPositionAttributeLocation);
-    gl.vertexAttribPointer(axesVertexPositionAttributeLocation, 2, gl.FLOAT, false, 0, 0);
-    gl.vertexAttribDivisor(axesVertexPositionAttributeLocation, 0);
+    gl.enableVertexAttribArray(instanceVertexPositionAxes);
+    gl.vertexAttribPointer(instanceVertexPositionAxes, 2, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(instanceVertexPositionAxes, 0);
 
     // Start and end points for per-instance data minor grid
     const axesPoints = new Float32Array(computeAxesPoints(left, right, top, bottom));
     let axesPointsBufferLength = getBufferLength(axesPoints);
     const axesDataBuffer = createBufferWithData(axesPoints)
-    gl.vertexAttribPointer(axesStartAndEndPointsAttributeLocation, 4, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(axesStartAndEndPointsAttributeLocation);
-    gl.vertexAttribDivisor(axesStartAndEndPointsAttributeLocation, 1);
+    gl.vertexAttribPointer(startAndEndPointsAxes, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(startAndEndPointsAxes);
+    gl.vertexAttribDivisor(startAndEndPointsAxes, 1);
 
     const lineProgramInfo = {
         program: lineProgram,
-        positionLoc: linePositionAttributeLocation,
-        colorLoc: lineColorMultLocation,
-        matrixLoc: lineMVPLocation,
-        lineWidthLoc: lineWidthLocation,
+        positionLoc: instanceVertexPositionLine,
+        colorLoc: colorMultLine,
+        matrixLoc: mvpLine,
+        lineWidthLoc: lineWidthLine,
     };
     const roundJoinProgramInfo = {
         program: roundJoinProgram,
-        positionLoc: roundJoinPositionAttributeLocation,
-        colorLoc: roundJoinColorMultLocation,
-        matrixLoc: roundJoinMVPLocation,
-        lineWidthLoc: roundJoinLineWidthLocation,
+        positionLoc: instanceVertexPositionRoundJoin,
+        colorLoc: colorMultRoundJoin,
+        matrixLoc: mvpRoundJoin,
+        lineWidthLoc: lineWidthRoundJoin,
     };
     const majorGridProgramInfo = {
         program: majorGridProgram,
-        positionLoc: majorGridVertexPositionAttributeLocation,
-        colorLoc: majorGridColorMultLocation,
-        matrixLoc: majorGridMVPLocation,
-        lineWidthLoc: majorGridLineWidthLocation,
+        positionLoc: instanceVertexPositionMajorGrid,
+        colorLoc: colorMultMajorGrid,
+        matrixLoc: mvpMajorGrid,
+        lineWidthLoc: lineWidthMajorGrid,
     };
     const minorGridProgramInfo = {
         program: minorGridPogram,
-        positionLoc: minorGridVertexPositionAttributeLocation,
-        colorLoc: minorGridColorMultLocation,
-        matrixLoc: minorGridMVPLocation,
-        lineWidthLoc: minorGridLineWidthLocation,
+        positionLoc: instanceVertexPositionMinorGrid,
+        colorLoc: colorMultMinorGrid,
+        matrixLoc: mvpMinorGrid,
+        lineWidthLoc: lineWidthMinorGrid,
     };
     const axesProgramInfo = {
         program: axesProgram,
-        positionLoc: axesVertexPositionAttributeLocation,
-        colorLoc: axesColorMultLocation,
-        matrixLoc: axesMVPLocation,
-        lineWidthLoc: axesLineWidthLocation,
+        positionLoc: instanceVertexPositionAxes,
+        colorLoc: colorMultAxes,
+        matrixLoc: mvpAxes,
+        lineWidthLoc: lineWidthAxes,
     };
 
     const graphColor = [0, 0, 0, 1];
