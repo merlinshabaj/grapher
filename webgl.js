@@ -74,71 +74,33 @@ const main = () => {
     const minorGridProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const axesProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
 
-    const getLocations = program => {
-        const getAttribLocation = name => gl.getAttribLocation(program, name)
-        const getUniformLocation = name => gl.getUniformLocation(program, name)
-        const mvp = getUniformLocation("u_mvp");
-        const colorMult = getUniformLocation("u_colorMult");
-        const lineWidth = getUniformLocation("u_lineWidth");    
-        return {
-            mvp,
-            colorMult,
-            lineWidth
-        }
-    }
-
     const getAttribLocations = program => ["a_instanceVertexPosition", "a_startAndEndPoints"].map(name => gl.getAttribLocation(program, name))
 
     // Line locations
-    const {
-        mvp: mvpLine,
-        colorMult: colorMultLine,
-        lineWidth: lineWidthLine
-    } = getLocations(lineProgram)
     const [
         instanceVertexPositionLine,
         startAndEndPointsLine,
     ] = getAttribLocations(lineProgram)
 
     // Round join locations
-    const {
-        mvp: mvpRoundJoin,
-        colorMult: colorMultRoundJoin,
-        lineWidth: lineWidthRoundJoin
-    } = getLocations(roundJoinProgram)
     const [
         instanceVertexPositionRoundJoin,
         startAndEndPointsRoundJoin,
     ] = getAttribLocations(roundJoinProgram)
 
     // Major grid locations
-    const {
-        mvp: mvpMajorGrid,
-        colorMult: colorMultMajorGrid,
-        lineWidth: lineWidthMajorGrid
-    } = getLocations(majorGridProgram)
     const [
         instanceVertexPositionMajorGrid,
         startAndEndPointsMajorGrid,
     ] = getAttribLocations(majorGridProgram)
 
     // Minor grid locations
-    const {
-        mvp: mvpMinorGrid,
-        colorMult: colorMultMinorGrid,
-        lineWidth: lineWidthMinorGrid
-    } = getLocations(minorGridProgram)
     const [
         instanceVertexPositionMinorGrid,
         startAndEndPointsMinorGrid,
     ] = getAttribLocations(minorGridProgram)
 
     // Axes locations
-    const {
-        mvp: mvpAxes,
-        colorMult: colorMultAxes,
-        lineWidth: lineWidthAxes
-    } = getLocations(axesProgram)
     const [
         instanceVertexPositionAxes,
         startAndEndPointsAxes,
@@ -248,41 +210,26 @@ const main = () => {
     const axesDataBuffer = createBufferWithData(axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
 
-    const lineProgramInfo = {
-        program: lineProgram,
-        positionLoc: instanceVertexPositionLine,
-        colorLoc: colorMultLine,
-        matrixLoc: mvpLine,
-        lineWidthLoc: lineWidthLine,
-    };
-    const roundJoinProgramInfo = {
-        program: roundJoinProgram,
-        positionLoc: instanceVertexPositionRoundJoin,
-        colorLoc: colorMultRoundJoin,
-        matrixLoc: mvpRoundJoin,
-        lineWidthLoc: lineWidthRoundJoin,
-    };
-    const majorGridProgramInfo = {
-        program: majorGridProgram,
-        positionLoc: instanceVertexPositionMajorGrid,
-        colorLoc: colorMultMajorGrid,
-        matrixLoc: mvpMajorGrid,
-        lineWidthLoc: lineWidthMajorGrid,
-    };
-    const minorGridProgramInfo = {
-        program: minorGridProgram,
-        positionLoc: instanceVertexPositionMinorGrid,
-        colorLoc: colorMultMinorGrid,
-        matrixLoc: mvpMinorGrid,
-        lineWidthLoc: lineWidthMinorGrid,
-    };
-    const axesProgramInfo = {
-        program: axesProgram,
-        positionLoc: instanceVertexPositionAxes,
-        colorLoc: colorMultAxes,
-        matrixLoc: mvpAxes,
-        lineWidthLoc: lineWidthAxes,
-    };
+    const programInfo = (program, instanceVertexPositionLocation) => {
+        const getUniformLocation = name => gl.getUniformLocation(program, name)
+        const mvp = getUniformLocation("u_mvp");
+        const colorMult = getUniformLocation("u_colorMult");
+        const lineWidth = getUniformLocation("u_lineWidth");
+        
+        return {
+            program,
+            positionLoc: instanceVertexPositionLocation,
+            colorLoc: colorMult,
+            matrixLoc: mvp,
+            lineWidthLoc: lineWidth,
+        }
+    }
+
+    const lineProgramInfo = programInfo(lineProgram, instanceVertexPositionLine)
+    const roundJoinProgramInfo = programInfo(roundJoinProgram, instanceVertexPositionRoundJoin)
+    const majorGridProgramInfo = programInfo(majorGridProgram, instanceVertexPositionMajorGrid)
+    const minorGridProgramInfo = programInfo(minorGridProgram, instanceVertexPositionMinorGrid)
+    const axesProgramInfo = programInfo(axesProgram, instanceVertexPositionAxes)
 
     const graphColor = [0, 0, 0, 1];
     const majorGridColor = [0, 0, 0, 0.2];
