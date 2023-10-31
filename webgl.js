@@ -140,9 +140,6 @@ const main = () => {
     const setupMouseEventListeners = () => {
         let panningStartPosition = null
 
-        // ZOOMING
-        const ZOOM_FACTOR = 1.05;
-
         canvas.addEventListener('mousedown', event => {
             const mousePosition = [event.clientX, event.clientY]
             panningStartPosition = mousePosition
@@ -180,23 +177,24 @@ const main = () => {
     
         canvas.addEventListener('wheel', event => {
             const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
+            const rectOrigin = [rect.left, rect.top]
+            const mousePosition = [event.clientX, event.clientY]
+            const mousePositionRelativeToCanvas = sub(mousePosition, rectOrigin)
 
             // Determine zoom direction
             if (event.deltaY === 0) return
-            zoom(event.deltaY < 0, mouseX, mouseY);
+            zoom(event.deltaY < 0, mousePositionRelativeToCanvas);
         });
     
         // Prevent the page from scrolling when using the mouse wheel on the canvas
         canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
 
-        const zoom = (isZoomingIn, mouseX, mouseY) => {
+        const zoom = (isZoomingIn, [mouseX, mouseY]) => {
             const width = xMax - xMin;
             const height = yMax - yMin;
 
             let newWidth, newHeight, newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newAxesLineWidth, newResolution;
-            const factor = isZoomingIn ? ZOOM_FACTOR : 1 / ZOOM_FACTOR
+            const factor = isZoomingIn ? zoomFactor : 1 / zoomFactor
             newWidth = width / factor;
             newHeight = height / factor;
             newPlotLineWidth = plotLineWidth / factor;
@@ -687,9 +685,11 @@ const initializeGlobalVariables = () => {
     minorGridLineWidth = 0.025;
     axesLineWidth = 0.15;
 }
+
 /** @type {HTMLCanvasElement} */
 let canvas
 let gl, near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
 let plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
+const zoomFactor = 1.05;
 initializeGlobalVariables()
 main();
