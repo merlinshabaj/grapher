@@ -35,7 +35,7 @@ const scaleCanvas = () => {
     }
 }
 
-const lineVertexShaderSource = `#version 300 es
+const graphVertexShaderSource = `#version 300 es
 precision highp float;
 
 in vec2 a_instanceVertexPosition;
@@ -148,14 +148,14 @@ const main = () => {
 
         const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
 
-        const lineUniforms = uniforms(graphColor, plotLineWidth);
-        const roundJoinUniforms = uniforms(graphColor, plotLineWidth);
+        const graphUniforms = uniforms(graphColor, graphLineWidth);
+        const roundJoinUniforms = uniforms(graphColor, graphLineWidth);
         const majorGridUniforms = uniforms(majorGridColor, majorGridLineWidth);
         const minorGridUniforms = uniforms(minorGridColor, minorGridLineWidth);
         const axesUniforms = uniforms(axesColor, axesLineWidth);
 
         return {
-            lineUniforms,
+            graphUniforms,
             roundJoinUniforms,
             majorGridUniforms,
             minorGridUniforms,
@@ -223,15 +223,15 @@ const main = () => {
             const recalculate = something => something / factor
             const updateLineWidths = () => {
                 const updateLineWidthOnUniforms = () => {
-                    lineUniforms.u_lineWidth = plotLineWidth;
-                    roundJoinUniforms.u_lineWidth = plotLineWidth;
+                    graphUniforms.u_lineWidth = graphLineWidth;
+                    roundJoinUniforms.u_lineWidth = graphLineWidth;
                     majorGridUniforms.u_lineWidth = majorGridLineWidth;
                     minorGridUniforms.u_lineWidth = minorGridLineWidth;
                     axesUniforms.u_lineWidth = axesLineWidth;    
                 }
                 const updateLineWidths = () => {
                     const recalculateEach = somethings => somethings.map(recalculate);
-                    [plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth] = recalculateEach([plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
+                    [graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth] = recalculateEach([graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
                 }
              
                 updateLineWidths()
@@ -308,7 +308,7 @@ const main = () => {
         }
         const updateMVPMatrices = () => {
             const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-            lineUniforms.u_mvp = mvpMatrix
+            graphUniforms.u_mvp = mvpMatrix
             roundJoinUniforms.u_mvp = mvpMatrix;
             majorGridUniforms.u_mvp = mvpMatrix;
             minorGridUniforms.u_mvp = mvpMatrix;
@@ -330,17 +330,17 @@ const main = () => {
             ]
             return webglUtils.createProgram(gl, shaders);
         }
-        const createDuplicateProgram = () => createProgram({ vertexShaderSource: lineVertexShaderSource, fragmentShaderSource: fragmentShaderSource })
+        const createDuplicateProgram = () => createProgram({ vertexShaderSource: graphVertexShaderSource, fragmentShaderSource: fragmentShaderSource })
         const createRoundJoinProgram = () => createProgram({ vertexShaderSource: roundJoinShaderSource,  fragmentShaderSource: fragmentShaderSource })
 
-        const lineProgram = createDuplicateProgram()
+        const graphProgram = createDuplicateProgram()
         const roundJoinProgram = createRoundJoinProgram()
         const majorGridProgram = createDuplicateProgram()
         const minorGridProgram = createDuplicateProgram()
         const axesProgram = createDuplicateProgram()
 
         return {
-            lineProgram,
+            graphProgram,
             roundJoinProgram,
             majorGridProgram,
             minorGridProgram,
@@ -358,7 +358,7 @@ const main = () => {
     ])
 
     const {
-        lineProgram,
+        graphProgram,
         roundJoinProgram,
         majorGridProgram,
         minorGridProgram,
@@ -368,9 +368,9 @@ const main = () => {
     const [
         instanceVertexPositionLine,
         startAndEndPointsLine,
-    ] = getAttribLocations(lineProgram)
+    ] = getAttribLocations(graphProgram)
     createBufferWithData(lineSegmentInstanceGeometry)
-    const lineVAO = createAndBindVAO()
+    const graphVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionLine)
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
     const _graphPoints = new Float32Array(graphPoints());
@@ -425,14 +425,14 @@ const main = () => {
     const axesPointsBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
 
-    const lineProgramInfo = programInfo(lineProgram)
+    const graphProgramInfo = programInfo(graphProgram)
     const roundJoinProgramInfo = programInfo(roundJoinProgram)
     const majorGridProgramInfo = programInfo(majorGridProgram)
     const minorGridProgramInfo = programInfo(minorGridProgram)
     const axesProgramInfo = programInfo(axesProgram)
 
     const {
-        lineUniforms,
+        graphUniforms,
         roundJoinUniforms,
         majorGridUniforms,
         minorGridUniforms,
@@ -441,9 +441,9 @@ const main = () => {
 
     const objectsToDraw = [
         {
-            programInfo: lineProgramInfo,
-            vertexArray: lineVAO,
-            uniforms: lineUniforms,
+            programInfo: graphProgramInfo,
+            vertexArray: graphVAO,
+            uniforms: graphUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
             dataBuffer: graphPointsBuffer,
             count: 6 ,
@@ -666,7 +666,7 @@ const initializeGlobalVariables = () => {
     resolution = 100 /* 250 */;
     currentFn = functions[3];
 
-    plotLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
+    graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
     minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
     axesLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
@@ -677,7 +677,7 @@ let canvas
 /** @type {WebGL2RenderingContext} */
 let gl
 let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
-let plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
+let graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
 const zoomFactor = 1.05;
 initializeGlobalVariables()
 main();
