@@ -1,6 +1,5 @@
 import * as webglUtils from './webgl-utils.js';
 import { rangeInclusive, vsub, expect, vmul, vdiv, vadd } from './utils.js';
-import * as m3 from './m3.js';
 import * as m4 from './m4.js';
 
 const flipY = vec2 => [vec2[0], -vec2[1]]
@@ -112,25 +111,21 @@ const main = () => {
         uploadAttributeData(buffer, data)
         return buffer
     }
-
     const createAndBindVAO = () => {
         const vao = gl.createVertexArray();
         gl.bindVertexArray(vao);    
         return vao
     }
-
     const setupInstanceVertexPosition = location => {
         gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(location);
         gl.vertexAttribDivisor(location, 0);    
     }
-
     const setupStartAndEndPoints = location => {
         gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(location);
         gl.vertexAttribDivisor(location, 1);
     }
-
     const programInfo = (program) => {
         const getUniformLocation = name => gl.getUniformLocation(program, name)
         const mvpLocation = getUniformLocation('u_mvp');
@@ -144,7 +139,6 @@ const main = () => {
             lineWidthLocation,
         }
     }
-
     const uniforms = () => {
         const uniforms = (u_color, u_lineWidth) => ({
             u_color,
@@ -168,7 +162,6 @@ const main = () => {
             axesUniforms,
         }
     }
-
     const setupMouseEventListeners = () => {
         let panningPosition = null
 
@@ -266,25 +259,21 @@ const main = () => {
             renderWithNewOrthographicDimensions();
         }
     }
-
     const updatePoints = (pointsBuffer, points) => {
         uploadAttributeData(pointsBuffer, new Float32Array(points));
         return getBufferLength(points);    
     }
-
     const updateAllPoints = () => {
         graphPointsBufferLength = updatePoints(graphPointsBuffer, graphPoints())
         majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
         minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints())
         axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints())
     }
-
     const renderWithNewOrthographicDimensions = () => {
         computeViewProjectionMatrix()
         updateAllPoints()
         drawScene();
     }
-
     const drawScene = () => {
         const drawObject = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
@@ -332,40 +321,61 @@ const main = () => {
         updateMVPMatrices()
         drawEachObject()
     }
-
     const getAttribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
+    const programs = () => {
+        const createProgram = ({ vertexShaderSource, fragmentShaderSource }) => {
+            const shaders = [
+                webglUtils.loadShader(gl, vertexShaderSource, gl.VERTEX_SHADER),
+                webglUtils.loadShader(gl, fragmentShaderSource, gl.FRAGMENT_SHADER),
+            ]
+            return webglUtils.createProgram(gl, shaders);
+        }
+        const createDuplicateProgram = () => createProgram({ vertexShaderSource: lineVertexShaderSource, fragmentShaderSource: fragmentShaderSource })
+        const createRoundJoinProgram = () => createProgram({ vertexShaderSource: roundJoinShaderSource,  fragmentShaderSource: fragmentShaderSource })
 
-    const lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
-    const roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
-    const majorGridProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
-    const minorGridProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
-    const axesProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
+        const lineProgram = createDuplicateProgram()
+        const roundJoinProgram = createRoundJoinProgram()
+        const majorGridProgram = createDuplicateProgram()
+        const minorGridProgram = createDuplicateProgram()
+        const axesProgram = createDuplicateProgram()
 
-    // Line locations
+        return {
+            lineProgram,
+            roundJoinProgram,
+            majorGridProgram,
+            minorGridProgram,
+            axesProgram,
+        }
+    }
+
+    const {
+        lineProgram,
+        roundJoinProgram,
+        majorGridProgram,
+        minorGridProgram,
+        axesProgram,
+    } = programs()
+
     const [
         instanceVertexPositionLine,
         startAndEndPointsLine,
     ] = getAttribLocations(lineProgram)
 
-    // Round join locations
     const [
         instanceVertexPositionRoundJoin,
         startAndEndPointsRoundJoin,
     ] = getAttribLocations(roundJoinProgram)
 
-    // Major grid locations
     const [
         instanceVertexPositionMajorGrid,
         startAndEndPointsMajorGrid,
     ] = getAttribLocations(majorGridProgram)
 
-    // Minor grid locations
     const [
         instanceVertexPositionMinorGrid,
         startAndEndPointsMinorGrid,
     ] = getAttribLocations(minorGridProgram)
 
-    // Axes locations
     const [
         instanceVertexPositionAxes,
         startAndEndPointsAxes,
@@ -687,7 +697,9 @@ const initializeGlobalVariables = () => {
 
 /** @type {HTMLCanvasElement} */
 let canvas
-let gl, near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
+/** @type {WebGL2RenderingContext} */
+let gl
+let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
 let plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
 const zoomFactor = 1.05;
 initializeGlobalVariables()

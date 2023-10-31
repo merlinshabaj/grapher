@@ -209,4 +209,5 @@ export {
     createProgram,
     createProgramFromScripts,
     createProgramFromSources,
+    loadShader,
 };
