@@ -229,14 +229,6 @@ const main = () => {
             newAxesLineWidth = axesLineWidth / factor;
             newResolution = resolution * factor;
 
-            // const mousePositionClip = positionVector(mousePosition).screenToClipSpace()
-            // const [clipX, clipY] = mousePositionClip
-            // console.log('Mouse clip space: ', clipX, clipY);
-
-            // Calculate mouse position in world space
-
-            // vmul(delta, worldSize)
-
             const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
             const [mouseWorldX, mouseWorldY] = mousePositionWorld
             console.log('Mouse world space: ', mouseWorldX, mouseWorldY);
