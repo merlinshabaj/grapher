@@ -590,10 +590,6 @@ const axesPoints = () => {
         for (let x = 0; x < xMax; x++) {
             points.push(x, 0, x, 0);
         }
-    } else {
-        for (let i = 0; i > xMax; i--) {
-            points.push(x, 0, x, 0);
-        }
     }
 
     return points
@@ -634,7 +630,7 @@ const initializeGlobalVariables = () => {
 
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
-    currentFn = functions[4];
+    currentFn = functions[1];
 
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
