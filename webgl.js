@@ -398,8 +398,8 @@ const main = () => {
         instanceVertexPositionLine,
         startAndEndPointsLine,
     ] = attribLocations(graphProgram)
-    createBufferWithData(lineSegmentInstanceGeometry)
     const graphVAO = createAndBindVAO()
+    createBufferWithData(lineSegmentInstanceGeometry)
     setupInstanceVertexPosition(instanceVertexPositionLine)
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
     const graphPointsBuffer = createManagedBuffer(graphPoints())
@@ -409,9 +409,9 @@ const main = () => {
         instanceVertexPositionRoundJoin,
         startAndEndPointsRoundJoin,
     ] = attribLocations(roundJoinProgram)
+    const roundJoinVAO = createAndBindVAO()
     const roundJoinGeometry = computeRoundJoinGeometry();
     createBufferWithData(roundJoinGeometry)
-    const roundJoinVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionRoundJoin)
     gl.bindBuffer(gl.ARRAY_BUFFER, graphPointsBuffer.buffer);
     setupStartAndEndPoints(startAndEndPointsRoundJoin)
@@ -420,8 +420,8 @@ const main = () => {
         instanceVertexPositionMajorGrid,
         startAndEndPointsMajorGrid,
     ] = attribLocations(majorGridProgram)
-    createBufferWithData(lineSegmentInstanceGeometry)
     const majorGridVAO = createAndBindVAO()
+    createBufferWithData(lineSegmentInstanceGeometry)
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
     const majorGridPointsBuffer = createManagedBuffer(majorGridPoints())
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
@@ -430,8 +430,8 @@ const main = () => {
         instanceVertexPositionMinorGrid,
         startAndEndPointsMinorGrid,
     ] = attribLocations(minorGridProgram)
-    createBufferWithData(lineSegmentInstanceGeometry)
     const minorGridVAO = createAndBindVAO()
+    createBufferWithData(lineSegmentInstanceGeometry)
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
     const minorGridPointsBuffer = createManagedBuffer(minorGridPoints())
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
@@ -440,8 +440,8 @@ const main = () => {
         instanceVertexPositionAxes,
         startAndEndPointsAxes,
     ] = attribLocations(axesProgram)
-    createBufferWithData(lineSegmentInstanceGeometry)
     const axesVAO = createAndBindVAO()
+    createBufferWithData(lineSegmentInstanceGeometry)
     setupInstanceVertexPosition(instanceVertexPositionAxes)
     const axesPointsBuffer = createManagedBuffer(axesPoints())
     setupStartAndEndPoints(startAndEndPointsAxes)
