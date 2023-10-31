@@ -106,55 +106,6 @@ const colors = () => {
 }
 
 const main = () => {
-    const bindArrayBuffer = buffer => gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-    const createAndBindVAO = () => {
-        const vao = gl.createVertexArray();
-        gl.bindVertexArray(vao);    
-        return vao
-    }
-    const setupInstanceVertexPosition = location => {
-        gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(location);
-        gl.vertexAttribDivisor(location, 0);    
-    }
-    const setupStartAndEndPoints = location => {
-        gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(location);
-        gl.vertexAttribDivisor(location, 1);
-    }
-    const programInfo = (program) => {
-        const getUniformLocation = name => gl.getUniformLocation(program, name)
-        const mvpLocation = getUniformLocation('u_mvp');
-        const colorLocation = getUniformLocation('u_color');
-        const lineWidthLocation = getUniformLocation('u_lineWidth');
-        
-        return {
-            program,
-            colorLocation,
-            mvpLocation,
-            lineWidthLocation,
-        }
-    }
-    const uniforms = ({ color, width }) => ({
-        u_color: color,
-        u_mvp: m4.identity(),
-        u_lineWidth: width,
-    })
-    const uniformsGrouped = () => {
-        const graphUniforms = uniforms({ color: graphColor, width: graphLineWidth});
-        const roundJoinUniforms = uniforms({ color: graphColor, width: graphLineWidth });
-        const majorGridUniforms = uniforms({ color: majorGridColor, width: majorGridLineWidth });
-        const minorGridUniforms = uniforms({ color: minorGridColor, width: minorGridLineWidth });
-        const axesUniforms = uniforms({ color: axesColor, width: axesLineWidth });
-
-        return {
-            graphUniforms,
-            roundJoinUniforms,
-            majorGridUniforms,
-            minorGridUniforms,
-            axesUniforms,
-        }
-    }
     const setupMouseEventListeners = () => {
         let panningPosition = null
 
@@ -183,7 +134,7 @@ const main = () => {
             panningPosition = mousePosition
     
             updateAllPoints()
-            drawScene();
+            render();
         });
     
         canvas.addEventListener('mouseup', () => {
@@ -245,6 +196,11 @@ const main = () => {
                 xMax = maxNew[0];
                 yMax = maxNew[1];
             }
+            const renderWithNewOrthographicDimensions = () => {
+                computeViewProjectionMatrix()
+                updateAllPoints()
+                render();
+            }
 
             updateLineWidths()
             updateResolution()
@@ -258,12 +214,7 @@ const main = () => {
         minorGridPointsBuffer.updateData(minorGridPoints())
         axesPointsBuffer.updateData(axesPoints())
     }
-    const renderWithNewOrthographicDimensions = () => {
-        computeViewProjectionMatrix()
-        updateAllPoints()
-        drawScene();
-    }
-    const drawScene = () => {
+    const render = () => {
         const drawObject = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
             const setUniforms = () => {
@@ -326,21 +277,6 @@ const main = () => {
             createRoundJoinProgram,
         }
     }
-    const programs = () => {
-        const graphProgram = createLineProgram()
-        const roundJoinProgram = createRoundJoinProgram()
-        const majorGridProgram = createLineProgram()
-        const minorGridProgram = createLineProgram()
-        const axesProgram = createLineProgram()
-
-        return {
-            graphProgram,
-            roundJoinProgram,
-            majorGridProgram,
-            minorGridProgram,
-            axesProgram,
-        }
-    }
     const computeViewProjectionMatrix = () => {
         const viewMatrix = () => {
             const cameraPosition = [0, 0, 1];
@@ -354,40 +290,43 @@ const main = () => {
         const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
-    const createBuffer = initialData => {
-        const createBufferWithData = data => {
-            const buffer = gl.createBuffer()
-            uploadBufferData(buffer, data)
-            return buffer
-        }
-        const uploadBufferData = (buffer, data) => {
-            bindArrayBuffer(buffer)
-            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW)
-        }
-
-        let _length = initialData.length
-        const buffer = createBufferWithData(initialData)
-        const updateData = newData => {
-            _length = newData.length
-            uploadBufferData(buffer, newData)
-        }
-        const length = () => _length
-        const bind = () => bindArrayBuffer(buffer)
-
-        return {
-            buffer,
-            length,
-            updateData,
-            bind,
-        }
-    }
     const buffers = () => {
-        const lineSegmentBuffer = createBuffer(lineSegmentInstanceGeometry)
-        const graphPointsBuffer = createBuffer(graphPoints())
-        const roundJoinGeometryBuffer = createBuffer(computeRoundJoinGeometry())
-        const majorGridPointsBuffer = createBuffer(majorGridPoints())
-        const minorGridPointsBuffer = createBuffer(minorGridPoints())
-        const axesPointsBuffer = createBuffer(axesPoints())
+        const buffer = initialData => {
+            const bindArrayBuffer = buffer => gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+            const createBufferWithData = data => {
+                const buffer = gl.createBuffer()
+                uploadBufferData(buffer, data)
+                return buffer
+            }
+            const uploadBufferData = (buffer, data) => {
+                bindArrayBuffer(buffer)
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW)
+            }
+    
+            let _length = initialData.length
+            const buffer = createBufferWithData(initialData)
+            const updateData = newData => {
+                _length = newData.length
+                uploadBufferData(buffer, newData)
+            }
+            const length = () => _length
+            const bind = () => bindArrayBuffer(buffer)
+    
+            return {
+                buffer,
+                length,
+                updateData,
+                bind,
+            }
+        }
+
+        const lineSegmentBuffer = buffer(lineSegmentInstanceGeometry)
+        const graphPointsBuffer = buffer(graphPoints())
+        const roundJoinGeometryBuffer = buffer(computeRoundJoinGeometry())
+        const majorGridPointsBuffer = buffer(majorGridPoints())
+        const minorGridPointsBuffer = buffer(minorGridPoints())
+        const axesPointsBuffer = buffer(axesPoints())
+
         return {
             lineSegmentBuffer,
             graphPointsBuffer,
@@ -397,18 +336,6 @@ const main = () => {
             axesPointsBuffer,
         }
     }
-    const setupVAO = (program, instanceVertexPositionBuffer, startAndEndPointsBuffer) => {
-        const [
-            instanceVertexPosition,
-            startAndEndPoints,
-        ] = attribLocations(program)
-        const vao = createAndBindVAO()
-        instanceVertexPositionBuffer.bind()
-        setupInstanceVertexPosition(instanceVertexPosition)
-        startAndEndPointsBuffer.bind()
-        setupStartAndEndPoints(startAndEndPoints)
-        return vao
-    }
     const component = ({
         createProgramFunction,
         instanceVertexPositionBuffer,
@@ -417,6 +344,52 @@ const main = () => {
         width,
         primitiveType,
     }) => {
+        const setupVAO = (program, instanceVertexPositionBuffer, startAndEndPointsBuffer) => {
+            const [
+                instanceVertexPosition,
+                startAndEndPoints,
+            ] = attribLocations(program)
+            const vao = createAndBindVAO()
+            instanceVertexPositionBuffer.bind()
+            setupInstanceVertexPosition(instanceVertexPosition)
+            startAndEndPointsBuffer.bind()
+            setupStartAndEndPoints(startAndEndPoints)
+            return vao
+        }
+        const uniforms = ({ color, width }) => ({
+            u_color: color,
+            u_mvp: m4.identity(),
+            u_lineWidth: width,
+        })
+        const createAndBindVAO = () => {
+            const vao = gl.createVertexArray();
+            gl.bindVertexArray(vao);    
+            return vao
+        }
+        const setupInstanceVertexPosition = location => {
+            gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(location);
+            gl.vertexAttribDivisor(location, 0);    
+        }
+        const setupStartAndEndPoints = location => {
+            gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(location);
+            gl.vertexAttribDivisor(location, 1);
+        }
+        const programInfo = (program) => {
+            const getUniformLocation = name => gl.getUniformLocation(program, name)
+            const mvpLocation = getUniformLocation('u_mvp');
+            const colorLocation = getUniformLocation('u_color');
+            const lineWidthLocation = getUniformLocation('u_lineWidth');
+            
+            return {
+                program,
+                colorLocation,
+                mvpLocation,
+                lineWidthLocation,
+            }
+        }    
+        
         const program = createProgramFunction()
         const vao = setupVAO(program, instanceVertexPositionBuffer, startAndEndPointsBuffer)
         const _programInfo = programInfo(program)
@@ -507,7 +480,7 @@ const main = () => {
 
     setupMouseEventListeners()
     computeViewProjectionMatrix()
-    drawScene();
+    render();
 }
 
 const computeMVPMatrix = (viewProjectionMatrix, translation, xRotation, yRotation, scale) => {
