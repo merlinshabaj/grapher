@@ -353,17 +353,17 @@ const main = () => {
 
     const bufferLength = data => data.length
     const updateBufferData = (buffer, data) => {
-        uploadBufferData(buffer, new Float32Array(data));
+        uploadBufferData(buffer, data);
         return bufferLength(data);
     }
     const createBufferWithData = data => {
         const buffer = gl.createBuffer()
-        uploadBufferData(buffer, new Float32Array(data))
+        uploadBufferData(buffer, data)
         return buffer
     }
-    const uploadBufferData = (bufferName, data) => {
-        gl.bindBuffer(gl.ARRAY_BUFFER, bufferName);
-        gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    const uploadBufferData = (buffer, data) => {
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW)
     }
     // const createManagedBuffer = initialData => {
     //     const buffer = createBufferWithData(new Float32Array(initialData))
