@@ -261,7 +261,7 @@ const main = () => {
     }
     const updatePoints = (pointsBuffer, points) => {
         uploadAttributeData(pointsBuffer, new Float32Array(points));
-        return getBufferLength(points);    
+        return bufferLength(points);    
     }
     const updateAllPoints = () => {
         graphPointsBufferLength = updatePoints(graphPointsBuffer, graphPoints())
@@ -303,7 +303,6 @@ const main = () => {
             gl.viewport(0, 0, canvas.width, canvas.height);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            // gl.enable(gl.CULL_FACE);
             gl.enable(gl.DEPTH_TEST);    
         }
         const updateMVPMatrices = () => {
@@ -321,7 +320,7 @@ const main = () => {
         updateMVPMatrices()
         drawEachObject()
     }
-    const getAttribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
+    const attribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
     const programs = () => {
         const createProgram = ({ vertexShaderSource, fragmentShaderSource }) => {
             const shaders = [
@@ -381,20 +380,20 @@ const main = () => {
     const [
         instanceVertexPositionLine,
         startAndEndPointsLine,
-    ] = getAttribLocations(graphProgram)
+    ] = attribLocations(graphProgram)
     createBufferWithData(lineSegmentInstanceGeometry)
     const graphVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionLine)
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
     const _graphPoints = new Float32Array(graphPoints());
     const graphPointsBuffer = createBufferWithData(_graphPoints);
-    let graphPointsBufferLength = getBufferLength(_graphPoints);
+    let graphPointsBufferLength = bufferLength(_graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
 
     const [
         instanceVertexPositionRoundJoin,
         startAndEndPointsRoundJoin,
-    ] = getAttribLocations(roundJoinProgram)
+    ] = attribLocations(roundJoinProgram)
     const roundJoinGeometry = computeRoundJoinGeometry();
     createBufferWithData(new Float32Array(roundJoinGeometry))
     const roundJoinVAO = createAndBindVAO()
@@ -405,36 +404,36 @@ const main = () => {
     const [
         instanceVertexPositionMajorGrid,
         startAndEndPointsMajorGrid,
-    ] = getAttribLocations(majorGridProgram)
+    ] = attribLocations(majorGridProgram)
     createBufferWithData(lineSegmentInstanceGeometry)
     const majorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
     const majorGridData = new Float32Array(majorGridPoints());
-    let majorGridDataBufferLength = getBufferLength(majorGridData);
+    let majorGridDataBufferLength = bufferLength(majorGridData);
     const majorGridPointsBuffer = createBufferWithData(majorGridData)
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
 
     const [
         instanceVertexPositionMinorGrid,
         startAndEndPointsMinorGrid,
-    ] = getAttribLocations(minorGridProgram)
+    ] = attribLocations(minorGridProgram)
     createBufferWithData(lineSegmentInstanceGeometry)
     const minorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
     const minorGridData = new Float32Array(minorGridPoints());
-    let minorGridDataBufferLength = getBufferLength(minorGridData);
+    let minorGridDataBufferLength = bufferLength(minorGridData);
     const minorGridPointsBuffer = createBufferWithData(minorGridData)
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
 
     const [
         instanceVertexPositionAxes,
         startAndEndPointsAxes,
-    ] = getAttribLocations(axesProgram)
+    ] = attribLocations(axesProgram)
     createBufferWithData(lineSegmentInstanceGeometry)
     const axesVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionAxes)
     const _axesPoints = new Float32Array(axesPoints());
-    let axesPointsBufferLength = getBufferLength(_axesPoints);
+    let axesPointsBufferLength = bufferLength(_axesPoints);
     const axesPointsBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
 
@@ -640,7 +639,7 @@ const determineGridSize = maxRange => {
     return gridSize;
 }
 
-const getBufferLength = data => data.length / 2
+const bufferLength = data => data.length / 2
 
 const translatedAxisRanges = () => [xMin - translation[0], xMax - translation[0], yMin - translation[1], yMax - translation[1]]
 
