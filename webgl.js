@@ -283,29 +283,27 @@ const main = () => {
 
     const drawScene = () => {
         const drawObject = object => {
-            const drawArraysInstanced = () => gl.drawArraysInstanced(primitiveType, offset, verticesPerInstance, instanceCount);
-            const drawArrays = () => gl.drawArrays(primitiveType, offset, verticesPerInstance);
-            const draw = () => object.getInstanceCount ? drawArraysInstanced() : drawArrays()
+            const useObjectProgram = () => gl.useProgram(object.programInfo.program)
+            const setUniforms = () => {
+                gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, object.uniforms.u_mvp)
+                gl.uniform4fv(object.programInfo.colorLocation, object.uniforms.u_color)
+                gl.uniform1f(object.programInfo.lineWidthLocation, object.uniforms.u_lineWidth)
+            }
+            const bindVertexArray = () => gl.bindVertexArray(object.vertexArray)
+            const draw = () => {
+                const drawArraysInstanced = () => gl.drawArraysInstanced(primitiveType, offset, verticesPerInstance, object.instanceCount())
+                const drawArrays = () => gl.drawArrays(primitiveType, offset, verticesPerInstance)
+                
+                const primitiveType = object.primitiveType
+                const offset = 0
+                const verticesPerInstance = object.count
 
-            const program = object.programInfo.program;
-            console.log('Current program:', program);
-            gl.useProgram(program);
-            gl.bindVertexArray(object.vertexArray);
+                object.instanceCount ? drawArraysInstanced() : drawArrays()
+            }
 
-            // Set the uniforms.
-            gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, object.uniforms.u_mvp);
-            gl.uniform4fv(object.programInfo.colorLocation, object.uniforms.u_color);
-            object.programInfo.lineWidthLocation ? gl.uniform1f(object.programInfo.lineWidthLocation, object.uniforms.u_lineWidth) : {};
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, object.dataBuffer); // Watch this 
-
-            // Draw
-            const primitiveType = object.primitiveType;
-            const offset = 0;
-            const verticesPerInstance = object.count;
-            const instanceCount = object.getInstanceCount();
-            console.log('FINAL COUNT:', verticesPerInstance);
-
+            useObjectProgram()
+            bindVertexArray()
+            setUniforms()
             draw()
         }
 
@@ -455,7 +453,7 @@ const main = () => {
             primitiveType: gl.TRIANGLE_STRIP,
             dataBuffer: pointsBuffer,
             count: 6 ,
-            getInstanceCount: () => graphPointsBufferLength / 2,
+            instanceCount: () => graphPointsBufferLength / 2,
         },
         {
             programInfo: roundJoinProgramInfo,
@@ -464,7 +462,7 @@ const main = () => {
             primitiveType: gl.TRIANGLE_STRIP,
             dataBuffer: pointsBuffer,
             count: roundJoinGeometry.length / 2,
-            getInstanceCount: () => graphPointsBufferLength / 2,
+            instanceCount: () => graphPointsBufferLength / 2,
         },
         {
             programInfo: majorGridProgramInfo,
@@ -473,7 +471,7 @@ const main = () => {
             primitiveType: gl.TRIANGLES,
             dataBuffer: majorGridPointsBuffer,
             count: 6,
-            getInstanceCount: () => majorGridDataBufferLength / 2,
+            instanceCount: () => majorGridDataBufferLength / 2,
         },
         {
             programInfo: minorGridProgramInfo,
@@ -482,7 +480,7 @@ const main = () => {
             primitiveType: gl.TRIANGLES,
             dataBuffer: minorGridPointsBuffer,
             count: 6,
-            getInstanceCount: () => minorGridDataBufferLength / 2,
+            instanceCount: () => minorGridDataBufferLength / 2,
         },
         {
             programInfo: axesProgramInfo,
@@ -491,7 +489,7 @@ const main = () => {
             primitiveType: gl.TRIANGLES,
             dataBuffer: axesPointsBuffer,
             count: 6,
-            getInstanceCount: () => axesPointsBufferLength / 2,
+            instanceCount: () => axesPointsBufferLength / 2,
         }
     ];
 
