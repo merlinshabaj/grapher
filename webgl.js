@@ -11,12 +11,8 @@ const max = () => [xMax, yMax]
 
 const translationVector = vector => {
     // How many world space coordinates do we travel for one pixel? (this could also be a transformation matrix instead)
-    const transformationVector = flipY(vdiv(worldSize(), canvasSize()))
-
-    return {
-        screenToWorldSpace: () => vmul(vector, transformationVector),
-        worldToScreenSpace: () => vdiv(vector, transformationVector),
-    }
+    const transformationVector = () => flipY(vdiv(worldSize(), canvasSize()))
+    return { screenToWorldSpace: () => vmul(vector, transformationVector()) }
 }
 
 const positionVector = vector => {
