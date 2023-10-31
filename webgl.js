@@ -71,12 +71,12 @@ const fragmentShaderSource = `#version 300 es
 // to pick one. highp is a good default. It means "high precision"
 precision highp float;
 
-uniform vec4 u_colorMult;
+uniform vec4 u_color;
 
 out vec4 outColor;
 
 void main() {
-    outColor = u_colorMult;
+    outColor = u_color;
 }
 `;
 
@@ -122,25 +122,24 @@ const main = () => {
         gl.vertexAttribDivisor(location, 1);
     }
 
-    const programInfo = (program, instanceVertexPositionLocation) => {
+    const programInfo = (program) => {
         const getUniformLocation = name => gl.getUniformLocation(program, name)
-        const mvp = getUniformLocation('u_mvp');
-        const colorMult = getUniformLocation('u_colorMult');
-        const lineWidth = getUniformLocation('u_lineWidth');
+        const mvpLocation = getUniformLocation('u_mvp');
+        const colorLocation = getUniformLocation('u_color');
+        const lineWidthLocation = getUniformLocation('u_lineWidth');
         
         return {
             program,
-            positionLoc: instanceVertexPositionLocation,
-            colorLoc: colorMult,
-            matrixLoc: mvp,
-            lineWidthLoc: lineWidth,
+            colorLocation,
+            mvpLocation,
+            lineWidthLocation,
         }
     }
 
     const uniforms = () => {
-        const uniforms = (u_colorMult, u_lineWidth) => ({
-            u_colorMult,
-            u_matrix: m4.identity(),
+        const uniforms = (u_color, u_lineWidth) => ({
+            u_color,
+            u_mvp: m4.identity(),
             u_lineWidth,
         })
 
@@ -286,9 +285,9 @@ const main = () => {
             gl.bindVertexArray(object.vertexArray);
 
             // Set the uniforms.
-            gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
-            gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
-            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
+            gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, object.uniforms.u_mvp);
+            gl.uniform4fv(object.programInfo.colorLocation, object.uniforms.u_color);
+            object.programInfo.lineWidthLocation ? gl.uniform1f(object.programInfo.lineWidthLocation, object.uniforms.u_lineWidth) : {};
 
             gl.bindBuffer(gl.ARRAY_BUFFER, object.dataBuffer); // Watch this 
 
@@ -313,11 +312,11 @@ const main = () => {
 
         const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
 
-        lineUniforms.u_matrix = mvpMatrix
-        roundJoinUniforms.u_matrix = mvpMatrix;
-        majorGridUniforms.u_matrix = mvpMatrix;
-        minorGridUniforms.u_matrix = mvpMatrix;
-        axesUniforms.u_matrix = mvpMatrix;
+        lineUniforms.u_mvp = mvpMatrix
+        roundJoinUniforms.u_mvp = mvpMatrix;
+        majorGridUniforms.u_mvp = mvpMatrix;
+        minorGridUniforms.u_mvp = mvpMatrix;
+        axesUniforms.u_mvp = mvpMatrix;
 
         objectsToDraw.forEach(drawObject);
     }
@@ -426,11 +425,11 @@ const main = () => {
     const axesPointsBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
 
-    const lineProgramInfo = programInfo(lineProgram, instanceVertexPositionLine)
-    const roundJoinProgramInfo = programInfo(roundJoinProgram, instanceVertexPositionRoundJoin)
-    const majorGridProgramInfo = programInfo(majorGridProgram, instanceVertexPositionMajorGrid)
-    const minorGridProgramInfo = programInfo(minorGridProgram, instanceVertexPositionMinorGrid)
-    const axesProgramInfo = programInfo(axesProgram, instanceVertexPositionAxes)
+    const lineProgramInfo = programInfo(lineProgram)
+    const roundJoinProgramInfo = programInfo(roundJoinProgram)
+    const majorGridProgramInfo = programInfo(majorGridProgram)
+    const minorGridProgramInfo = programInfo(minorGridProgram)
+    const axesProgramInfo = programInfo(axesProgram)
 
     const {
         lineUniforms,
