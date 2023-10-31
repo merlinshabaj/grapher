@@ -630,9 +630,11 @@ const determineGridSize = maxRange => {
 
     const rangeGridMultiple = maxRange / gridSize;
 
-    if (rangeGridMultiple < 5) {
+    const threshold = 0.5
+
+    if (rangeGridMultiple < 5 * threshold) {
         gridSize /= 5;
-    } else if (rangeGridMultiple < 10) {
+    } else if (rangeGridMultiple < 10 * threshold) {
         gridSize /= 2;
     }
 
@@ -662,16 +664,15 @@ const initializeGlobalVariables = () => {
     far = 2;
     [xMin, xMax] = (() => {
         const aspectRatio = canvas.clientWidth / canvas.clientHeight;
-        return [-10 * aspectRatio, 10 * aspectRatio]
+        return [-5 * aspectRatio, 5 * aspectRatio]
     })()
-    yMin = -10;
-    yMax = 10;
+    yMin = -5;
+    yMax = 5;
     translation = [0, 0, 0];
 
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
     currentFn = functions[3];
-
 
     plotLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
