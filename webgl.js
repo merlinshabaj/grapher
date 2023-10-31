@@ -217,38 +217,48 @@ const main = () => {
 
         const zoom = (zoomingIn, mousePosition) => {
             const factor = zoomingIn ? zoomFactor : 1 / zoomFactor
+
             const recalculate = something => something / factor
-            const recalculateAll = somethings => somethings.map(recalculate)
+            const updateLineWidths = () => {
+                const updateUniformLineWidths = () => {
+                    lineUniforms.u_lineWidth = plotLineWidth;
+                    roundJoinUniforms.u_lineWidth = plotLineWidth;
+                    majorGridUniforms.u_lineWidth = majorGridLineWidth;
+                    minorGridUniforms.u_lineWidth = minorGridLineWidth;
+                    axesUniforms.u_lineWidth = axesLineWidth;    
+                }
 
-            const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
-            console.log('Mouse world space: ', mousePositionWorld[0], mousePositionWorld[1]);
+                const recalculateEach = somethings => somethings.map(recalculate)
+    
+                ;[
+                    plotLineWidth,
+                    majorGridLineWidth,
+                    minorGridLineWidth,
+                    axesLineWidth
+                ] = recalculateEach([plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
+                
+             
+                updateUniformLineWidths()
+            }
+            const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
+            const updateWorldMinAndMax = () => {
+                const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
+                console.log('Mouse world space: ', mousePositionWorld[0], mousePositionWorld[1]);
+    
+                const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), factor))
+                
+                const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), factor))
+    
+                xMin = minNew[0];
+                yMin = minNew[1];
+    
+                xMax = maxNew[0];
+                yMax = maxNew[1];
+            }
 
-            const min = [xMin, yMin]
-            const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min), factor))
-            
-            const max = [xMax, yMax]
-            const maxNew = vadd(mousePositionWorld, vdiv(vsub(max, mousePositionWorld), factor))
-
-            ;[
-                plotLineWidth,
-                majorGridLineWidth,
-                minorGridLineWidth,
-                axesLineWidth
-            ] = recalculateAll([plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
-            resolution = 1 / recalculate(1 / resolution)
-
-            lineUniforms.u_lineWidth = plotLineWidth;
-            roundJoinUniforms.u_lineWidth = plotLineWidth;
-            majorGridUniforms.u_lineWidth = majorGridLineWidth;
-            minorGridUniforms.u_lineWidth = minorGridLineWidth;
-            axesUniforms.u_lineWidth = axesLineWidth;
-
-            xMin = minNew[0];
-            yMin = minNew[1];
-
-            xMax = maxNew[0];
-            yMax = maxNew[1];
-
+            updateLineWidths()
+            updateResolution()
+            updateWorldMinAndMax()
             renderWithNewOrthographicDimensions();
         }
     }
