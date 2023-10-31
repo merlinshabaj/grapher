@@ -216,7 +216,7 @@ const main = () => {
             const recalculate = something => something / factor
             const updateLineWidths = () => {
                 const updateLineWidthOnUniforms = () => {
-                    graphUniforms.u_lineWidth = graphLineWidth;
+                    graphComponent.updateWidth(graphLineWidth)
                     roundJoinUniforms.u_lineWidth = graphLineWidth;
                     majorGridUniforms.u_lineWidth = majorGridLineWidth;
                     minorGridUniforms.u_lineWidth = minorGridLineWidth;
@@ -267,9 +267,10 @@ const main = () => {
         const drawObject = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
             const setUniforms = () => {
-                gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, object.uniforms.u_mvp)
-                gl.uniform4fv(object.programInfo.colorLocation, object.uniforms.u_color)
-                gl.uniform1f(object.programInfo.lineWidthLocation, object.uniforms.u_lineWidth)
+                const _uniforms = object.uniforms()
+                gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, _uniforms.u_mvp)
+                gl.uniform4fv(object.programInfo.colorLocation, _uniforms.u_color)
+                gl.uniform1f(object.programInfo.lineWidthLocation, _uniforms.u_lineWidth)
             }
             const bindVertexArray = () => gl.bindVertexArray(object.vertexArray)
             const draw = () => {
@@ -296,7 +297,7 @@ const main = () => {
         }
         const updateMVPMatrices = () => {
             const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-            graphUniforms.u_mvp = mvpMatrix
+            graphComponent.updateMVPMatrix(mvpMatrix)
             roundJoinUniforms.u_mvp = mvpMatrix;
             majorGridUniforms.u_mvp = mvpMatrix;
             minorGridUniforms.u_mvp = mvpMatrix;
@@ -445,19 +446,23 @@ const main = () => {
         const program = createProgramFunction()
         const vao = setupVAO(program, instanceVertexPositionBuffer, startAndEndPointsBuffer)
         const _programInfo = programInfo(program)
-        const _uniforms = uniforms({ color, width})
+        const _uniforms = uniforms({ color, width })
+        const updateMVPMatrix = mvp => _uniforms.u_mvp = mvp
+        const updateWidth = width => _uniforms.u_lineWidth = width
         return {
             programInfo: _programInfo,
             vertexArray: vao,
-            uniforms: _uniforms,
+            uniforms: () => _uniforms,
             primitiveType,
             count: instanceVertexPositionBuffer.length() / 2,
             instanceCount: () => startAndEndPointsBuffer.length() / 4,
+            updateMVPMatrix,
+            updateWidth,
         }
     }
 
     // graph
-    component({
+    const graphComponent = component({
         createProgramFunction: createLineProgram,
         instanceVertexPositionBuffer: lineSegmentBuffer,
         startAndEndPointsBuffer: graphPointsBuffer,
@@ -497,7 +502,7 @@ const main = () => {
     const graph = {
         programInfo: graphProgramInfo,
         vertexArray: graphVAO,
-        uniforms: graphUniforms,
+        uniforms: () => graphUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
         count: lineSegmentBuffer.length() / 2,
         instanceCount: () => graphPointsBuffer.length() / 4,
@@ -505,7 +510,7 @@ const main = () => {
     const roundJoin = {
         programInfo: roundJoinProgramInfo,
         vertexArray: roundJoinVAO,
-        uniforms: roundJoinUniforms,
+        uniforms: () => roundJoinUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
         count: roundJoinGeometryBuffer.length() / 2,
         instanceCount: () => graphPointsBuffer.length() / 4,
@@ -513,7 +518,7 @@ const main = () => {
     const majorGrid = {
         programInfo: majorGridProgramInfo,
         vertexArray: majorGridVAO,
-        uniforms: majorGridUniforms,
+        uniforms: () => majorGridUniforms,
         primitiveType: gl.TRIANGLES,
         count: lineSegmentBuffer.length() / 2,
         instanceCount: () => majorGridPointsBuffer.length() / 4,
@@ -521,7 +526,7 @@ const main = () => {
     const minorGrid = {
         programInfo: minorGridProgramInfo,
         vertexArray: minorGridVAO,
-        uniforms: minorGridUniforms,
+        uniforms: () => minorGridUniforms,
         primitiveType: gl.TRIANGLES,
         count: lineSegmentBuffer.length() / 2,
         instanceCount: () => minorGridPointsBuffer.length() / 4,
@@ -529,13 +534,18 @@ const main = () => {
     const axes = {
         programInfo: axesProgramInfo,
         vertexArray: axesVAO,
-        uniforms: axesUniforms,
+        uniforms: () => axesUniforms,
         primitiveType: gl.TRIANGLES,
         count: lineSegmentBuffer.length() / 2,
         instanceCount: () => axesPointsBuffer.length() / 4,
     }
 
     let viewProjectionMatrix
+
+    console.warn(graph)
+    console.warn(graph.uniforms())
+    console.warn(graphComponent)
+    console.warn(graphComponent.uniforms())
 
     const objectsToDraw = [graph, roundJoin, majorGrid, minorGrid, axes]
 
