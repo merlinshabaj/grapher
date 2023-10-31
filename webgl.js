@@ -255,14 +255,10 @@ const main = () => {
         }
     }
     const updateAllPoints = () => {
-        const updateBufferData = (buffer, data) => {
-            uploadBufferData(buffer, data)
-            return data.length
-        }
         graphPointsBuffer.updateData(graphPoints())
-        majorGridDataBufferLength = updateBufferData(majorGridPointsBuffer, majorGridPoints())
-        minorGridDataBufferLength = updateBufferData(minorGridPointsBuffer, minorGridPoints())
-        axesPointsBufferLength = updateBufferData(axesPointsBuffer, axesPoints())
+        majorGridPointsBuffer.updateData(majorGridPoints())
+        minorGridPointsBuffer.updateData(minorGridPoints())
+        axesPointsBuffer.updateData(axesPoints())
     }
     const renderWithNewOrthographicDimensions = () => {
         computeViewProjectionMatrix()
@@ -426,9 +422,7 @@ const main = () => {
     createBufferWithData(lineSegmentInstanceGeometry)
     const majorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
-    const majorGridData = majorGridPoints()
-    let majorGridDataBufferLength = majorGridData.length;
-    const majorGridPointsBuffer = createBufferWithData(majorGridData)
+    const majorGridPointsBuffer = createManagedBuffer(majorGridPoints())
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
 
     const [
@@ -438,9 +432,7 @@ const main = () => {
     createBufferWithData(lineSegmentInstanceGeometry)
     const minorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
-    const minorGridData = minorGridPoints()
-    let minorGridDataBufferLength = minorGridData.length;
-    const minorGridPointsBuffer = createBufferWithData(minorGridData)
+    const minorGridPointsBuffer = createManagedBuffer(minorGridPoints())
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
 
     const [
@@ -450,9 +442,7 @@ const main = () => {
     createBufferWithData(lineSegmentInstanceGeometry)
     const axesVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionAxes)
-    const _axesPoints = axesPoints()
-    let axesPointsBufferLength = _axesPoints.length;
-    const axesPointsBuffer = createBufferWithData(_axesPoints)
+    const axesPointsBuffer = createManagedBuffer(axesPoints())
     setupStartAndEndPoints(startAndEndPointsAxes)
 
     const graphProgramInfo = programInfo(graphProgram)
@@ -492,27 +482,27 @@ const main = () => {
         vertexArray: majorGridVAO,
         uniforms: majorGridUniforms,
         primitiveType: gl.TRIANGLES,
-        dataBuffer: majorGridPointsBuffer,
+        dataBuffer: majorGridPointsBuffer.buffer,
         count: lineSegmentInstanceGeometry.length / 2,
-        instanceCount: () => majorGridDataBufferLength / 4,
+        instanceCount: () => majorGridPointsBuffer.length() / 4,
     }
     const minorGrid = {
         programInfo: minorGridProgramInfo,
         vertexArray: minorGridVAO,
         uniforms: minorGridUniforms,
         primitiveType: gl.TRIANGLES,
-        dataBuffer: minorGridPointsBuffer,
+        dataBuffer: minorGridPointsBuffer.buffer,
         count: lineSegmentInstanceGeometry.length / 2,
-        instanceCount: () => minorGridDataBufferLength / 4,
+        instanceCount: () => minorGridPointsBuffer.length() / 4,
     }
     const axes = {
         programInfo: axesProgramInfo,
         vertexArray: axesVAO,
         uniforms: axesUniforms,
         primitiveType: gl.TRIANGLES,
-        dataBuffer: axesPointsBuffer,
+        dataBuffer: axesPointsBuffer.buffer,
         count: lineSegmentInstanceGeometry.length / 2,
-        instanceCount: () => axesPointsBufferLength / 4,
+        instanceCount: () => axesPointsBuffer.length() / 4,
     }
 
     let viewProjectionMatrix
