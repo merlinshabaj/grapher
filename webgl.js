@@ -135,20 +135,17 @@ const main = () => {
             lineWidthLocation,
         }
     }
-    const uniforms = () => {
-        const uniforms = (u_color, u_lineWidth) => ({
-            u_color,
-            u_mvp: m4.identity(),
-            u_lineWidth,
-        })
-
-        const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
-
-        const graphUniforms = uniforms(graphColor, graphLineWidth);
-        const roundJoinUniforms = uniforms(graphColor, graphLineWidth);
-        const majorGridUniforms = uniforms(majorGridColor, majorGridLineWidth);
-        const minorGridUniforms = uniforms(minorGridColor, minorGridLineWidth);
-        const axesUniforms = uniforms(axesColor, axesLineWidth);
+    const uniforms = ({ color, width }) => ({
+        u_color: color,
+        u_mvp: m4.identity(),
+        u_lineWidth: width,
+    })
+    const uniformsGrouped = () => {
+        const graphUniforms = uniforms({ color: graphColor, width: graphLineWidth});
+        const roundJoinUniforms = uniforms({ color: graphColor, width: graphLineWidth });
+        const majorGridUniforms = uniforms({ color: majorGridColor, width: majorGridLineWidth });
+        const minorGridUniforms = uniforms({ color: minorGridColor, width: minorGridLineWidth });
+        const axesUniforms = uniforms({ color: axesColor, width: axesLineWidth });
 
         return {
             graphUniforms,
@@ -430,14 +427,44 @@ const main = () => {
         axesPointsBuffer,
     } = buffers()
 
+    const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
+
     const {
         createLineProgram,
         createRoundJoinProgram,
     } = createProgramFunctions()
 
-    const component = () => {
-
+    const component = ({
+        createProgramFunction,
+        instanceVertexPositionBuffer,
+        startAndEndPointsBuffer,
+        color,
+        width,
+        primitiveType,
+    }) => {
+        const program = createProgramFunction()
+        const vao = setupVAO(program, instanceVertexPositionBuffer, startAndEndPointsBuffer)
+        const _programInfo = programInfo(program)
+        const _uniforms = uniforms({ color, width})
+        return {
+            programInfo: _programInfo,
+            vertexArray: vao,
+            uniforms: _uniforms,
+            primitiveType,
+            count: instanceVertexPositionBuffer.length() / 2,
+            instanceCount: () => startAndEndPointsBuffer.length() / 4,
+        }
     }
+
+    // graph
+    component({
+        createProgramFunction: createLineProgram,
+        instanceVertexPositionBuffer: lineSegmentBuffer,
+        startAndEndPointsBuffer: graphPointsBuffer,
+        color: graphColor,
+        width: graphLineWidth,
+        primitiveType: gl.TRIANGLE_STRIP,
+    })
 
     const {
         graphProgram,
@@ -465,14 +492,13 @@ const main = () => {
         majorGridUniforms,
         minorGridUniforms,
         axesUniforms,
-    } = uniforms()
+    } = uniformsGrouped()
 
     const graph = {
         programInfo: graphProgramInfo,
         vertexArray: graphVAO,
         uniforms: graphUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
-        dataBuffer: graphPointsBuffer.buffer,
         count: lineSegmentBuffer.length() / 2,
         instanceCount: () => graphPointsBuffer.length() / 4,
     }
@@ -481,7 +507,6 @@ const main = () => {
         vertexArray: roundJoinVAO,
         uniforms: roundJoinUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
-        dataBuffer: graphPointsBuffer.buffer,
         count: roundJoinGeometryBuffer.length() / 2,
         instanceCount: () => graphPointsBuffer.length() / 4,
     }
@@ -490,7 +515,6 @@ const main = () => {
         vertexArray: majorGridVAO,
         uniforms: majorGridUniforms,
         primitiveType: gl.TRIANGLES,
-        dataBuffer: majorGridPointsBuffer.buffer,
         count: lineSegmentBuffer.length() / 2,
         instanceCount: () => majorGridPointsBuffer.length() / 4,
     }
@@ -499,7 +523,6 @@ const main = () => {
         vertexArray: minorGridVAO,
         uniforms: minorGridUniforms,
         primitiveType: gl.TRIANGLES,
-        dataBuffer: minorGridPointsBuffer.buffer,
         count: lineSegmentBuffer.length() / 2,
         instanceCount: () => minorGridPointsBuffer.length() / 4,
     }
@@ -508,7 +531,6 @@ const main = () => {
         vertexArray: axesVAO,
         uniforms: axesUniforms,
         primitiveType: gl.TRIANGLES,
-        dataBuffer: axesPointsBuffer.buffer,
         count: lineSegmentBuffer.length() / 2,
         instanceCount: () => axesPointsBuffer.length() / 4,
     }
