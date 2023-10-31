@@ -27,6 +27,15 @@ const positionVector = vector => {
     }
 }
 
+const scaleCanvas = () => {
+    const width = canvas.clientWidth * devicePixelRatio
+    const height = canvas.clientHeight * devicePixelRatio
+    if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
+    }
+}
+
 const lineVertexShaderSource = `#version 300 es
 precision highp float;
 
@@ -220,33 +229,25 @@ const main = () => {
 
             const recalculate = something => something / factor
             const updateLineWidths = () => {
-                const updateUniformLineWidths = () => {
+                const updateLineWidthOnUniforms = () => {
                     lineUniforms.u_lineWidth = plotLineWidth;
                     roundJoinUniforms.u_lineWidth = plotLineWidth;
                     majorGridUniforms.u_lineWidth = majorGridLineWidth;
                     minorGridUniforms.u_lineWidth = minorGridLineWidth;
                     axesUniforms.u_lineWidth = axesLineWidth;    
                 }
-
-                const recalculateEach = somethings => somethings.map(recalculate)
-    
-                ;[
-                    plotLineWidth,
-                    majorGridLineWidth,
-                    minorGridLineWidth,
-                    axesLineWidth
-                ] = recalculateEach([plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
-                
+                const updateLineWidths = () => {
+                    const recalculateEach = somethings => somethings.map(recalculate);
+                    [plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth] = recalculateEach([plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
+                }
              
-                updateUniformLineWidths()
+                updateLineWidths()
+                updateLineWidthOnUniforms()
             }
             const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
             const updateWorldMinAndMax = () => {
                 const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
-                console.log('Mouse world space: ', mousePositionWorld[0], mousePositionWorld[1]);
-    
                 const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), factor))
-                
                 const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), factor))
     
                 xMin = minNew[0];
@@ -306,25 +307,27 @@ const main = () => {
             setUniforms()
             draw()
         }
+        const setupRenderingContext = () => {
+            gl.viewport(0, 0, canvas.width, canvas.height);
+            gl.clearColor(0, 0, 0, 0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            // gl.enable(gl.CULL_FACE);
+            gl.enable(gl.DEPTH_TEST);    
+        }
+        const updateMVPMatrices = () => {
+            const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
+            lineUniforms.u_mvp = mvpMatrix
+            roundJoinUniforms.u_mvp = mvpMatrix;
+            majorGridUniforms.u_mvp = mvpMatrix;
+            minorGridUniforms.u_mvp = mvpMatrix;
+            axesUniforms.u_mvp = mvpMatrix;    
+        }
+        const drawEachObject = () => objectsToDraw.forEach(drawObject)
 
-        webglUtils.resizeCanvasToDisplaySize(canvas, devicePixelRatio);
-        gl.viewport(0, 0, canvas.width, canvas.height);
-
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // gl.enable(gl.CULL_FACE);
-        gl.enable(gl.DEPTH_TEST);
-
-        const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-
-        lineUniforms.u_mvp = mvpMatrix
-        roundJoinUniforms.u_mvp = mvpMatrix;
-        majorGridUniforms.u_mvp = mvpMatrix;
-        minorGridUniforms.u_mvp = mvpMatrix;
-        axesUniforms.u_mvp = mvpMatrix;
-
-        objectsToDraw.forEach(drawObject);
+        scaleCanvas()
+        setupRenderingContext()
+        updateMVPMatrices()
+        drawEachObject()
     }
 
     const getAttribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
