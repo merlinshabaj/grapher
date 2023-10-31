@@ -250,7 +250,7 @@ const main = () => {
                     const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
                     const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), factor))
                     const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), factor))
-                    [minNew, maxNew]    
+                    return [minNew, maxNew]
                 }
 
                 const [minNew, maxNew] = recalculateWorldMinAndMax()
@@ -273,7 +273,7 @@ const main = () => {
     }
 
     const updateAllPoints = () => {
-        graphPointsBufferLength = updatePoints(pointsBuffer, graphPoints())
+        graphPointsBufferLength = updatePoints(graphPointsBuffer, graphPoints())
         majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
         minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints())
         axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints())
@@ -389,7 +389,7 @@ const main = () => {
 
     // Points for per-instance data
     const _graphPoints = new Float32Array(graphPoints());
-    const pointsBuffer = createBufferWithData(_graphPoints);
+    const graphPointsBuffer = createBufferWithData(_graphPoints);
     let graphPointsBufferLength = getBufferLength(_graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
 
@@ -400,7 +400,7 @@ const main = () => {
     setupInstanceVertexPosition(instanceVertexPositionRoundJoin)
 
     // Start and End points for per-instance data (graphPoints)
-    gl.bindBuffer(gl.ARRAY_BUFFER, pointsBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, graphPointsBuffer);
     setupStartAndEndPoints(startAndEndPointsRoundJoin)
 
     // Major grid - static geometry
@@ -457,7 +457,7 @@ const main = () => {
             vertexArray: lineVAO,
             uniforms: lineUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
-            dataBuffer: pointsBuffer,
+            dataBuffer: graphPointsBuffer,
             count: 6 ,
             instanceCount: () => graphPointsBufferLength / 2,
         },
@@ -466,7 +466,7 @@ const main = () => {
             vertexArray: roundJoinVAO,
             uniforms: roundJoinUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
-            dataBuffer: pointsBuffer,
+            dataBuffer: graphPointsBuffer,
             count: roundJoinGeometry.length / 2,
             instanceCount: () => graphPointsBufferLength / 2,
         },
