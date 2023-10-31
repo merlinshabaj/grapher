@@ -397,70 +397,32 @@ const main = () => {
         axesProgram,
     } = programs()
 
-    const setupVAO = (program, ) => {
-        const [
-            instanceVertexPosition,
-            startAndEndPoints,
-        ] = attribLocations(program)
-    }
-
     const lineSegmentBuffer = createBuffer(lineSegmentInstanceGeometry)
+
     const graphPointsBuffer = createBuffer(graphPoints())
     const roundJoinGeometryBuffer = createBuffer(computeRoundJoinGeometry())
     const majorGridPointsBuffer = createBuffer(majorGridPoints())
     const minorGridPointsBuffer = createBuffer(minorGridPoints())
     const axesPointsBuffer = createBuffer(axesPoints())
 
-    const [
-        instanceVertexPositionLine,
-        startAndEndPointsLine,
-    ] = attribLocations(graphProgram)
-    const graphVAO = createAndBindVAO()
-    lineSegmentBuffer.bind()
-    setupInstanceVertexPosition(instanceVertexPositionLine)
-    console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
-    graphPointsBuffer.bind()
-    setupStartAndEndPoints(startAndEndPointsLine)
+    const setupVAO = (program, instanceVertexPositionBuffer, startAndEndPointsBuffer) => {
+        const [
+            instanceVertexPosition,
+            startAndEndPoints,
+        ] = attribLocations(program)
+        const vao = createAndBindVAO()
+        instanceVertexPositionBuffer.bind()
+        setupInstanceVertexPosition(instanceVertexPosition)
+        startAndEndPointsBuffer.bind()
+        setupStartAndEndPoints(startAndEndPoints)
+        return vao
+    }
 
-    const [
-        instanceVertexPositionRoundJoin,
-        startAndEndPointsRoundJoin,
-    ] = attribLocations(roundJoinProgram)
-    const roundJoinVAO = createAndBindVAO()
-    roundJoinGeometryBuffer.bind()
-    setupInstanceVertexPosition(instanceVertexPositionRoundJoin)
-    graphPointsBuffer.bind()
-    setupStartAndEndPoints(startAndEndPointsRoundJoin)
-
-    const [
-        instanceVertexPositionMajorGrid,
-        startAndEndPointsMajorGrid,
-    ] = attribLocations(majorGridProgram)
-    const majorGridVAO = createAndBindVAO()
-    lineSegmentBuffer.bind()
-    setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
-    majorGridPointsBuffer.bind()
-    setupStartAndEndPoints(startAndEndPointsMajorGrid)
-
-    const [
-        instanceVertexPositionMinorGrid,
-        startAndEndPointsMinorGrid,
-    ] = attribLocations(minorGridProgram)
-    const minorGridVAO = createAndBindVAO()
-    lineSegmentBuffer.bind()
-    setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
-    minorGridPointsBuffer.bind()
-    setupStartAndEndPoints(startAndEndPointsMinorGrid)
-
-    const [
-        instanceVertexPositionAxes,
-        startAndEndPointsAxes,
-    ] = attribLocations(axesProgram)
-    const axesVAO = createAndBindVAO()
-    createBuffer(lineSegmentInstanceGeometry)
-    setupInstanceVertexPosition(instanceVertexPositionAxes)
-    axesPointsBuffer.bind()
-    setupStartAndEndPoints(startAndEndPointsAxes)
+    const graphVAO = setupVAO(graphProgram, lineSegmentBuffer, graphPointsBuffer)
+    const roundJoinVAO = setupVAO(roundJoinProgram, roundJoinGeometryBuffer, graphPointsBuffer)
+    const majorGridVAO = setupVAO(majorGridProgram, lineSegmentBuffer, majorGridPointsBuffer)
+    const minorGridVAO = setupVAO(minorGridProgram, lineSegmentBuffer, minorGridPointsBuffer)
+    const axesVAO = setupVAO(axesProgram, lineSegmentBuffer, axesPointsBuffer)
 
     const graphProgramInfo = programInfo(graphProgram)
     const roundJoinProgramInfo = programInfo(roundJoinProgram)
