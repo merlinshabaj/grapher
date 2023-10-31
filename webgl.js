@@ -5,6 +5,7 @@ import * as m4 from './m4.js';
 
 const flipY = vec2 => [vec2[0], -vec2[1]]
 const canvasSize = () => [canvas.clientWidth, canvas.clientHeight]
+const worldSize = () => [xMax - xMin, yMax - yMin]
 
 const lineVertexShaderSource = `#version 300 es
 precision highp float;
@@ -154,8 +155,9 @@ const main = () => {
     
             const mousePosition = [event.clientX, event.clientY]
             const delta = vsub(mousePosition, panningStartPosition)
-            const size = [xMax - xMin, yMax - yMin]
-            const deltaWorld = flipY(vdiv(vmul(delta, size), canvasSize()))
+            const screenToClipSpace = vec2 => vadd(vmul(flipY(vdiv(vec2, canvasSize())), 2), [-1, 1])
+            const deltaWorld = flipY(vdiv(vmul(delta, worldSize()), canvasSize()))
+            // const deltaWorld = screenToClipSpace(delta)
             const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
             translation[0] = newTranslation[0]
             translation[1] = newTranslation[1]
@@ -191,13 +193,12 @@ const main = () => {
         canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
 
         const zoom = (isZoomingIn, mousePosition) => {
-            const width = xMax - xMin;
-            const height = yMax - yMin;
+            const [worldWidth, worldHeight] = worldSize()
 
             let newWidth, newHeight, newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newAxesLineWidth, newResolution;
             const factor = isZoomingIn ? zoomFactor : 1 / zoomFactor
-            newWidth = width / factor;
-            newHeight = height / factor;
+            newWidth = worldWidth / factor;
+            newHeight = worldHeight / factor;
             newPlotLineWidth = plotLineWidth / factor;
             newMajorGridLineWidth = majorGridLineWidth / factor;
             newMinorGridLineWidth = minorGridLineWidth / factor;
@@ -206,17 +207,21 @@ const main = () => {
 
             const screenToClipSpace = vec2 => vadd(vmul(flipY(vdiv(vec2, canvasSize())), 2), [-1, 1])
 
-            const [clipX, clipY] = screenToClipSpace(mousePosition)
+            const mousePositionClip = screenToClipSpace(mousePosition)
+            const [clipX, clipY] = mousePositionClip
 
-            console.log('Mouse Clip Space: ', clipX, clipY);
+            console.log('Mouse clip space: ', clipX, clipY);
 
             // Calculate mouse position in world space
-            const mouseWorldX = xMin + (clipX + 1) * 0.5 * width;
-            const mouseWorldY = yMin + (clipY + 1) * 0.5 * height;
-            console.log('Mouse World Space: ', mouseWorldX, mouseWorldY);
 
-            const widthScalingFactor = newWidth / width;
-            const heightScalingFactor = newHeight / height;
+            // vmul(delta, worldSize)
+
+            const mousePositionWorld = vadd([xMin, yMin], vmul(vadd(mousePositionClip, 1), 1/2, worldSize()))
+            const [mouseWorldX, mouseWorldY] = mousePositionWorld
+            console.log('Mouse world dpace: ', mouseWorldX, mouseWorldY);
+
+            const widthScalingFactor = newWidth / worldWidth;
+            const heightScalingFactor = newHeight / worldHeight;
             const plotLineWidthScalingFactor = newPlotLineWidth / plotLineWidth;
             const majorGridLineWidthScalingFactor = newMajorGridLineWidth / majorGridLineWidth;
             const minorGridLineWidthScalingFactor = newMinorGridLineWidth / minorGridLineWidth;
