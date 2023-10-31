@@ -470,11 +470,12 @@ const main = () => {
         // gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
-        lineUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-        roundJoinUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-        majorGridUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-        minorGridUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-        axesUniforms.u_matrix = computeMatrix(viewProjectionMatrix, translation, 0, 0, scale);
+        const mvp = computeMVP(viewProjectionMatrix, translation, 0, 0, scale);
+        lineUniforms.u_matrix = mvp
+        roundJoinUniforms.u_matrix = mvp;
+        majorGridUniforms.u_matrix = mvp;
+        minorGridUniforms.u_matrix = mvp;
+        axesUniforms.u_matrix = mvp;
 
         objectsToDraw.forEach(function (object) {
             const program = object.programInfo.program;
@@ -512,7 +513,7 @@ const main = () => {
     drawScene();
 }
 
-const computeMatrix = (viewProjectionMatrix, translation, xRotation, yRotation, scale) => {
+const computeMVP = (viewProjectionMatrix, translation, xRotation, yRotation, scale) => {
     let matrix = m4.translate(viewProjectionMatrix,
         translation[0],
         translation[1],
