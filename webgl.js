@@ -137,6 +137,61 @@ const main = () => {
         }
     }
 
+    const setupMouseEventListeners = () => {
+        canvas.addEventListener('mousedown', event => {
+            isPanning = true;
+            const mousePosition = [event.clientX, event.clientY]
+            panningStartPosition = mousePosition
+            canvas.style.cursor = 'grabbing';
+        });
+    
+        canvas.addEventListener('mousemove', event => {
+            if (!isPanning) return;
+    
+            const mousePosition = [event.clientX, event.clientY]
+            const delta = sub(mousePosition, panningStartPosition)
+            const deltaWorld = [
+                delta[0] * (xMax - xMin) / canvas.clientWidth,
+                delta[1] * (yMax - yMin) / canvas.clientHeight
+            ]
+    
+            translation[0] += deltaWorld[0];
+            translation[1] -= deltaWorld[1];
+    
+            panningStartPosition = mousePosition
+    
+            updateAllPoints()
+            drawScene();
+        });
+    
+        canvas.addEventListener('mouseup', () => {
+            isPanning = false;
+            canvas.style.cursor = 'grab';
+        });
+    
+        canvas.addEventListener('mouseleave', () => {
+            isPanning = false;
+            canvas.style.cursor = 'default';
+        });
+
+        canvas.addEventListener('mousemove', event => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = event.clientX - rect.left;
+            mouseY = event.clientY - rect.top;
+        });
+    
+        canvas.addEventListener('wheel', event => {
+            // Determine zoom direction
+            if (event.deltaY === 0) return
+            zoom(event.deltaY < 0, mouseX, mouseY);
+        });
+    
+        // Prevent the page from scrolling when using the mouse wheel on the canvas
+        canvas.addEventListener('wheel', event => {
+            event.preventDefault();
+        }, { passive: false });
+    }
+
     const getAttribLocations = program => ["a_instanceVertexPosition", "a_startAndEndPoints"].map(name => gl.getAttribLocation(program, name))
 
     const lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
@@ -323,42 +378,6 @@ const main = () => {
     let isPanning = false;
     let panningStartPosition = [0, 0]
 
-    canvas.addEventListener('mousedown', event => {
-        isPanning = true;
-        const mousePosition = [event.clientX, event.clientY]
-        panningStartPosition = mousePosition
-        canvas.style.cursor = 'grabbing';
-    });
-
-    canvas.addEventListener('mousemove', event => {
-        if (!isPanning) return;
-
-        const mousePosition = [event.clientX, event.clientY]
-        const delta = sub(mousePosition, panningStartPosition)
-        const deltaWorld = [
-            delta[0] * (xMax - xMin) / canvas.clientWidth,
-            delta[1] * (yMax - yMin) / canvas.clientHeight
-        ]
-
-        translation[0] += deltaWorld[0];
-        translation[1] -= deltaWorld[1];
-
-        panningStartPosition = mousePosition
-
-        updateAllPoints()
-        drawScene();
-    });
-
-    canvas.addEventListener('mouseup', () => {
-        isPanning = false;
-        canvas.style.cursor = 'grab';
-    });
-
-    canvas.addEventListener('mouseleave', () => {
-        isPanning = false;
-        canvas.style.cursor = 'default';
-    });
-
     // ZOOMING
     const ZOOM_FACTOR = 1.05;
     let mouseX = 0, mouseY = 0;
@@ -444,22 +463,7 @@ const main = () => {
         drawScene();
     }
 
-    canvas.addEventListener('mousemove', event => {
-        const rect = canvas.getBoundingClientRect();
-        mouseX = event.clientX - rect.left;
-        mouseY = event.clientY - rect.top;
-    });
-
-    canvas.addEventListener('wheel', event => {
-        // Determine zoom direction
-        if (event.deltaY === 0) return
-        zoom(event.deltaY < 0, mouseX, mouseY);
-    });
-
-    // Prevent the page from scrolling when using the mouse wheel on the canvas
-    canvas.addEventListener('wheel', event => {
-        event.preventDefault();
-    }, { passive: false });
+    setupMouseEventListeners()
 
     const drawScene = () => {
         webglUtils.resizeCanvasToDisplaySize(canvas, devicePixelRatio);
