@@ -7,6 +7,20 @@ const flipY = vec2 => [vec2[0], -vec2[1]]
 const canvasSize = () => [canvas.clientWidth, canvas.clientHeight]
 const worldSize = () => [xMax - xMin, yMax - yMin]
 
+const translationVector = vector => ({
+    screenToWorldSpace: () => {
+        // How many world space coordinates do we travel for one pixel? (this could also be a transformation matrix instead)
+        const transformationVector = flipY(vdiv(worldSize(), canvasSize()))
+        return vmul(vector, transformationVector)
+    },
+})
+
+const positionVector = vector => ({
+    screenToClipSpace: () => vadd(vmul(flipY(vdiv(vector, canvasSize())), 2), [-1, 1]),
+    clipToWorldSpace: () => vadd([xMin, yMin], vmul(vadd(vector, 1), 1/2, worldSize())),
+    screenToWorldSpace: () => clipToWorldSpace(screenToClipSpace(vector))
+})
+
 const lineVertexShaderSource = `#version 300 es
 precision highp float;
 
@@ -156,11 +170,9 @@ const main = () => {
             const mousePosition = [event.clientX, event.clientY]
 
             const updateTranslation = () => {
-                const delta = vsub(mousePosition, panningPosition)
-                const screenToClipSpace = vec2 => vadd(vmul(flipY(vdiv(vec2, canvasSize())), 2), [-1, 1])
-                const deltaClip = screenToClipSpace(delta)
-                // const deltaWorld = vadd([xMin, yMin], vmul(vadd(deltaClip, 1), 1/2, worldSize()))
-                const deltaWorld = flipY(vdiv(vmul(delta, worldSize()), canvasSize()))
+                const deltaScreen = vsub(mousePosition, panningPosition)
+                const deltaWorld = translationVector(deltaScreen).screenToWorldSpace()
+
                 const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
                 translation[0] = newTranslation[0]
                 translation[1] = newTranslation[1]    
@@ -211,9 +223,7 @@ const main = () => {
             newAxesLineWidth = axesLineWidth / factor;
             newResolution = resolution * factor;
 
-            const screenToClipSpace = vec2 => vadd(vmul(flipY(vdiv(vec2, canvasSize())), 2), [-1, 1])
-
-            const mousePositionClip = screenToClipSpace(mousePosition)
+            const mousePositionClip = positionVector(mousePosition).screenToClipSpace()
             const [clipX, clipY] = mousePositionClip
 
             console.log('Mouse clip space: ', clipX, clipY);
@@ -222,7 +232,7 @@ const main = () => {
 
             // vmul(delta, worldSize)
 
-            const mousePositionWorld = vadd([xMin, yMin], vmul(vadd(mousePositionClip, 1), 1/2, worldSize()))
+            const mousePositionWorld = positionVector(mousePositionClip).clipToWorldSpace()
             const [mouseWorldX, mouseWorldY] = mousePositionWorld
             console.log('Mouse world space: ', mouseWorldX, mouseWorldY);
 
