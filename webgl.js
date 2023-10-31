@@ -280,6 +280,33 @@ const main = () => {
     }
 
     const drawScene = () => {
+        const drawObject = object => {
+            const drawArraysInstanced = () => gl.drawArraysInstanced(primitiveType, offset, verticesPerInstance, instanceCount);
+            const drawArrays = () => gl.drawArrays(primitiveType, offset, verticesPerInstance);
+            const draw = () => object.getInstanceCount ? drawArraysInstanced() : drawArrays()
+
+            const program = object.programInfo.program;
+            console.log('Current program:', program);
+            gl.useProgram(program);
+            gl.bindVertexArray(object.vertexArray);
+
+            // Set the uniforms.
+            gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
+            gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
+            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, object.dataBuffer); // Watch this 
+
+            // Draw
+            const primitiveType = object.primitiveType;
+            const offset = 0;
+            const verticesPerInstance = object.count;
+            const instanceCount = object.getInstanceCount();
+            console.log('FINAL COUNT:', verticesPerInstance);
+
+            draw()
+        }
+
         webglUtils.resizeCanvasToDisplaySize(canvas, devicePixelRatio);
         gl.viewport(0, 0, canvas.width, canvas.height);
 
@@ -289,44 +316,15 @@ const main = () => {
         // gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
 
-        const mvp = computeMVP(viewProjectionMatrix, translation, 0, 0, scale);
-        lineUniforms.u_matrix = mvp
-        roundJoinUniforms.u_matrix = mvp;
-        majorGridUniforms.u_matrix = mvp;
-        minorGridUniforms.u_matrix = mvp;
-        axesUniforms.u_matrix = mvp;
+        const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
+        
+        lineUniforms.u_matrix = mvpMatrix
+        roundJoinUniforms.u_matrix = mvpMatrix;
+        majorGridUniforms.u_matrix = mvpMatrix;
+        minorGridUniforms.u_matrix = mvpMatrix;
+        axesUniforms.u_matrix = mvpMatrix;
 
-        objectsToDraw.forEach(function (object) {
-            const program = object.programInfo.program;
-            console.log('Current Program:', program);
-            const vertexArray = object.vertexArray;
-            gl.useProgram(program);
-            gl.bindVertexArray(vertexArray);
-
-            // Set the uniforms.
-            gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
-            gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
-            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, object.dataBuffer); // Watch this 
-            // Draw
-            const primitiveType = object.primitiveType;
-            const offset = 0;
-            const count = object.count;
-            const instanceCount = object.getInstanceCount();
-            console.log('FINAL COUNT:', count);
-
-            if (object.getInstanceCount) {
-                gl.drawArraysInstanced(
-                    primitiveType,
-                    offset,             // offset
-                    count,   // num vertices per instance
-                    instanceCount,  // num instances
-                );
-            } else {
-                gl.drawArrays(primitiveType, offset, count);
-            }
-        });
+        objectsToDraw.forEach(drawObject);
     }
 
     const getAttribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
@@ -514,7 +512,7 @@ const main = () => {
     drawScene();
 }
 
-const computeMVP = (viewProjectionMatrix, translation, xRotation, yRotation, scale) => {
+const computeMVPMatrix = (viewProjectionMatrix, translation, xRotation, yRotation, scale) => {
     let matrix = m4.translate(viewProjectionMatrix,
         translation[0],
         translation[1],
