@@ -15,11 +15,17 @@ const translationVector = vector => ({
     },
 })
 
-const positionVector = vector => ({
-    screenToClipSpace: () => vadd(vmul(flipY(vdiv(vector, canvasSize())), 2), [-1, 1]),
-    clipToWorldSpace: () => vadd([xMin, yMin], vmul(vadd(vector, 1), 1/2, worldSize())),
-    screenToWorldSpace: () => clipToWorldSpace(screenToClipSpace(vector))
-})
+const positionVector = vector => {
+    const screenToClipSpace = vector => () => vadd(vmul(flipY(vdiv(vector, canvasSize())), 2), [-1, 1])
+    const clipToWorldSpace = vector => () => vadd([xMin, yMin], vmul(vadd(vector, 1), 1/2, worldSize()))
+    const screenToWorldSpace = () => clipToWorldSpace(screenToClipSpace(vector)())()
+
+    return {
+        screenToClipSpace: screenToClipSpace(vector),
+        clipToWorldSpace: clipToWorldSpace(vector),
+        screenToWorldSpace,
+    }
+}
 
 const lineVertexShaderSource = `#version 300 es
 precision highp float;
@@ -223,16 +229,15 @@ const main = () => {
             newAxesLineWidth = axesLineWidth / factor;
             newResolution = resolution * factor;
 
-            const mousePositionClip = positionVector(mousePosition).screenToClipSpace()
-            const [clipX, clipY] = mousePositionClip
-
-            console.log('Mouse clip space: ', clipX, clipY);
+            // const mousePositionClip = positionVector(mousePosition).screenToClipSpace()
+            // const [clipX, clipY] = mousePositionClip
+            // console.log('Mouse clip space: ', clipX, clipY);
 
             // Calculate mouse position in world space
 
             // vmul(delta, worldSize)
 
-            const mousePositionWorld = positionVector(mousePositionClip).clipToWorldSpace()
+            const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
             const [mouseWorldX, mouseWorldY] = mousePositionWorld
             console.log('Mouse world space: ', mouseWorldX, mouseWorldY);
 
