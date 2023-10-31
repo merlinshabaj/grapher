@@ -153,11 +153,11 @@ const main = () => {
             const delta = sub(mousePosition, panningStartPosition)
             const deltaWorld = [
                 delta[0] * (xMax - xMin) / canvas.clientWidth,
-                delta[1] * (yMax - yMin) / canvas.clientHeight
+                -delta[1] * (yMax - yMin) / canvas.clientHeight
             ]
     
             translation[0] += deltaWorld[0];
-            translation[1] -= deltaWorld[1];
+            translation[1] += deltaWorld[1];
     
             panningStartPosition = mousePosition
     
@@ -189,7 +189,7 @@ const main = () => {
         // Prevent the page from scrolling when using the mouse wheel on the canvas
         canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
 
-        const zoom = (isZoomingIn, [mouseX, mouseY]) => {
+        const zoom = (isZoomingIn, mousePosition) => {
             const width = xMax - xMin;
             const height = yMax - yMin;
 
@@ -203,9 +203,14 @@ const main = () => {
             newAxesLineWidth = axesLineWidth / factor;
             newResolution = resolution * factor;
 
-            // Convert mouse position from screen space to clip space
-            const clipX = (mouseX / canvas.clientWidth) * 2 - 1;
-            const clipY = -((mouseY / canvas.clientHeight) * 2 - 1);
+            const screenToClipSpace = vec2 => {
+                const x = vec2[0] / canvas.clientWidth * 2 - 1;
+                const y = -vec2[1] / canvas.clientHeight * 2 + 1;
+                return [x, y]
+            }
+
+            const [clipX, clipY] = screenToClipSpace(mousePosition)
+
             console.log('Mouse Clip Space: ', clipX, clipY);
 
             // Calculate mouse position in world space
