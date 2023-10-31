@@ -93,6 +93,7 @@ const functions = [
     x => Math.sin(x),
     x => x,
     x => x * x,
+    x => x * x * x,
     x => Math.log1p(x),
 ];
 
@@ -633,7 +634,7 @@ const initializeGlobalVariables = () => {
 
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
-    currentFn = functions[3];
+    currentFn = functions[4];
 
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
