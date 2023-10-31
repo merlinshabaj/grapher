@@ -9,13 +9,15 @@ const worldSize = () => [xMax - xMin, yMax - yMin]
 const min = () => [xMin, yMin]
 const max = () => [xMax, yMax]
 
-const translationVector = vector => ({
-    screenToWorldSpace: () => {
-        // How many world space coordinates do we travel for one pixel? (this could also be a transformation matrix instead)
-        const transformationVector = flipY(vdiv(worldSize(), canvasSize()))
-        return vmul(vector, transformationVector)
-    },
-})
+const translationVector = vector => {
+    // How many world space coordinates do we travel for one pixel? (this could also be a transformation matrix instead)
+    const transformationVector = flipY(vdiv(worldSize(), canvasSize()))
+
+    return {
+        screenToWorldSpace: () => vmul(vector, transformationVector),
+        worldToScreenSpace: () => vdiv(vector, transformationVector),
+    }
+}
 
 const positionVector = vector => {
     const screenToClipSpace = vector => () => vadd(vmul(flipY(vdiv(vector, canvasSize())), 2), [-1, 1])
@@ -92,8 +94,8 @@ const functions = [
 
 const colors = () => {
     const grayscale = (value, alpha) => [value, value, value, alpha ?? 1.0]
-    const graphColor = grayscale(0.2, 1.0)
-    const majorGridColor = grayscale(0.8);
+    const graphColor = grayscale(0.25, 1.0)
+    const majorGridColor = grayscale(0.75);
     const minorGridColor = grayscale(0.9);
     const axesColor = [0, 0, 0, 1];
     return { graphColor, majorGridColor, minorGridColor, axesColor }
@@ -537,17 +539,6 @@ const graphPoints = (start, end, resolution, f) => {
     return points
 }
 
-// [
-//     x0, y0, x0, y0,
-//     x1, y1, x1, y1,
-//     x2, y2, x2, y2
-// ]
-// [
-//     x0, y0,
-//     x1, y1, x1, y1,
-//     x2, y2,
-// ]
-
 const computeRoundJoinGeometry = resolution => {
     resolution = 100
     const points = [];
@@ -685,10 +676,11 @@ const initializeGlobalVariables = () => {
     resolution = 100 /* 250 */;
     currentFn = functions[3];
 
-    plotLineWidth = 0.075;
-    majorGridLineWidth = 0.05;
-    minorGridLineWidth = 0.025;
-    axesLineWidth = 0.15;
+
+    plotLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
+    majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
+    minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
+    axesLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
 }
 
 /** @type {HTMLCanvasElement} */
