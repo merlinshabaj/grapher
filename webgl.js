@@ -216,11 +216,11 @@ const main = () => {
             const recalculate = something => something / factor
             const updateLineWidths = () => {
                 const updateLineWidthOnUniforms = () => {
-                    graphComponent.updateWidth(graphLineWidth)
-                    roundJoinUniforms.u_lineWidth = graphLineWidth;
-                    majorGridUniforms.u_lineWidth = majorGridLineWidth;
-                    minorGridUniforms.u_lineWidth = minorGridLineWidth;
-                    axesUniforms.u_lineWidth = axesLineWidth;    
+                    graph.updateWidth(graphLineWidth)
+                    roundJoin.updateWidth(graphLineWidth)
+                    majorGrid.updateWidth(majorGridLineWidth)
+                    minorGrid.updateWidth(minorGridLineWidth)
+                    axes.updateWidth(axesLineWidth)
                 }
                 const updateLineWidths = () => {
                     const recalculateEach = somethings => somethings.map(recalculate);
@@ -297,13 +297,13 @@ const main = () => {
         }
         const updateMVPMatrices = () => {
             const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-            graphComponent.updateMVPMatrix(mvpMatrix)
-            roundJoinUniforms.u_mvp = mvpMatrix;
-            majorGridUniforms.u_mvp = mvpMatrix;
-            minorGridUniforms.u_mvp = mvpMatrix;
-            axesUniforms.u_mvp = mvpMatrix;    
+            graph.updateMVPMatrix(mvpMatrix)
+            roundJoin.updateMVPMatrix(mvpMatrix)
+            majorGrid.updateMVPMatrix(mvpMatrix)
+            minorGrid.updateMVPMatrix(mvpMatrix)
+            axes.updateMVPMatrix(mvpMatrix)
         }
-        const drawEachObject = () => objectsToDraw.forEach(drawObject)
+        const drawEachObject = () => components.forEach(drawObject)
 
         scaleCanvas()
         setupRenderingContext()
@@ -409,32 +409,6 @@ const main = () => {
         setupStartAndEndPoints(startAndEndPoints)
         return vao
     }
-
-    const lineSegmentInstanceGeometry = [
-        0, -0.5,
-        1, -0.5,
-        1, 0.5,
-        0, -0.5,
-        1, 0.5,
-        0, 0.5
-    ]
-
-    const {
-        lineSegmentBuffer,
-        graphPointsBuffer,
-        roundJoinGeometryBuffer,
-        majorGridPointsBuffer,
-        minorGridPointsBuffer,
-        axesPointsBuffer,
-    } = buffers()
-
-    const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
-
-    const {
-        createLineProgram,
-        createRoundJoinProgram,
-    } = createProgramFunctions()
-
     const component = ({
         createProgramFunction,
         instanceVertexPositionBuffer,
@@ -461,8 +435,32 @@ const main = () => {
         }
     }
 
-    // graph
-    const graphComponent = component({
+    const lineSegmentInstanceGeometry = [
+        0, -0.5,
+        1, -0.5,
+        1, 0.5,
+        0, -0.5,
+        1, 0.5,
+        0, 0.5
+    ]
+
+    const {
+        lineSegmentBuffer,
+        graphPointsBuffer,
+        roundJoinGeometryBuffer,
+        majorGridPointsBuffer,
+        minorGridPointsBuffer,
+        axesPointsBuffer,
+    } = buffers()
+
+    const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
+
+    const {
+        createLineProgram,
+        createRoundJoinProgram,
+    } = createProgramFunctions()
+
+    const graph = component({
         createProgramFunction: createLineProgram,
         instanceVertexPositionBuffer: lineSegmentBuffer,
         startAndEndPointsBuffer: graphPointsBuffer,
@@ -470,84 +468,42 @@ const main = () => {
         width: graphLineWidth,
         primitiveType: gl.TRIANGLE_STRIP,
     })
-
-    const {
-        graphProgram,
-        roundJoinProgram,
-        majorGridProgram,
-        minorGridProgram,
-        axesProgram,
-    } = programs()
-
-    const graphVAO = setupVAO(graphProgram, lineSegmentBuffer, graphPointsBuffer)
-    const roundJoinVAO = setupVAO(roundJoinProgram, roundJoinGeometryBuffer, graphPointsBuffer)
-    const majorGridVAO = setupVAO(majorGridProgram, lineSegmentBuffer, majorGridPointsBuffer)
-    const minorGridVAO = setupVAO(minorGridProgram, lineSegmentBuffer, minorGridPointsBuffer)
-    const axesVAO = setupVAO(axesProgram, lineSegmentBuffer, axesPointsBuffer)
-
-    const graphProgramInfo = programInfo(graphProgram)
-    const roundJoinProgramInfo = programInfo(roundJoinProgram)
-    const majorGridProgramInfo = programInfo(majorGridProgram)
-    const minorGridProgramInfo = programInfo(minorGridProgram)
-    const axesProgramInfo = programInfo(axesProgram)
-
-    const {
-        graphUniforms,
-        roundJoinUniforms,
-        majorGridUniforms,
-        minorGridUniforms,
-        axesUniforms,
-    } = uniformsGrouped()
-
-    const graph = {
-        programInfo: graphProgramInfo,
-        vertexArray: graphVAO,
-        uniforms: () => graphUniforms,
+    const roundJoin = component({
+        createProgramFunction: createRoundJoinProgram,
+        instanceVertexPositionBuffer: roundJoinGeometryBuffer,
+        startAndEndPointsBuffer: graphPointsBuffer,
+        color: graphColor,
+        width: graphLineWidth,
         primitiveType: gl.TRIANGLE_STRIP,
-        count: lineSegmentBuffer.length() / 2,
-        instanceCount: () => graphPointsBuffer.length() / 4,
-    }
-    const roundJoin = {
-        programInfo: roundJoinProgramInfo,
-        vertexArray: roundJoinVAO,
-        uniforms: () => roundJoinUniforms,
-        primitiveType: gl.TRIANGLE_STRIP,
-        count: roundJoinGeometryBuffer.length() / 2,
-        instanceCount: () => graphPointsBuffer.length() / 4,
-    }
-    const majorGrid = {
-        programInfo: majorGridProgramInfo,
-        vertexArray: majorGridVAO,
-        uniforms: () => majorGridUniforms,
+    })
+    const majorGrid = component({
+        createProgramFunction: createLineProgram,
+        instanceVertexPositionBuffer: lineSegmentBuffer,
+        startAndEndPointsBuffer: majorGridPointsBuffer,
+        color: majorGridColor,
+        width: majorGridLineWidth,
         primitiveType: gl.TRIANGLES,
-        count: lineSegmentBuffer.length() / 2,
-        instanceCount: () => majorGridPointsBuffer.length() / 4,
-    }
-    const minorGrid = {
-        programInfo: minorGridProgramInfo,
-        vertexArray: minorGridVAO,
-        uniforms: () => minorGridUniforms,
+    })
+    const minorGrid = component({
+        createProgramFunction: createLineProgram,
+        instanceVertexPositionBuffer: lineSegmentBuffer,
+        startAndEndPointsBuffer: minorGridPointsBuffer,
+        color: minorGridColor,
+        width: minorGridLineWidth,
         primitiveType: gl.TRIANGLES,
-        count: lineSegmentBuffer.length() / 2,
-        instanceCount: () => minorGridPointsBuffer.length() / 4,
-    }
-    const axes = {
-        programInfo: axesProgramInfo,
-        vertexArray: axesVAO,
-        uniforms: () => axesUniforms,
+    })
+    const axes = component({
+        createProgramFunction: createLineProgram,
+        instanceVertexPositionBuffer: lineSegmentBuffer,
+        startAndEndPointsBuffer: axesPointsBuffer,
+        color: axesColor,
+        width: axesLineWidth,
         primitiveType: gl.TRIANGLES,
-        count: lineSegmentBuffer.length() / 2,
-        instanceCount: () => axesPointsBuffer.length() / 4,
-    }
+    })
 
     let viewProjectionMatrix
 
-    console.warn(graph)
-    console.warn(graph.uniforms())
-    console.warn(graphComponent)
-    console.warn(graphComponent.uniforms())
-
-    const objectsToDraw = [graph, roundJoin, majorGrid, minorGrid, axes]
+    const components = [graph, roundJoin, majorGrid, minorGrid, axes]
 
     setupMouseEventListeners()
     computeViewProjectionMatrix()
