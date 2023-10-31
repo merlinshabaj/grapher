@@ -106,11 +106,6 @@ const colors = () => {
 }
 
 const main = () => {
-    const createBufferWithData = data => {
-        const buffer = gl.createBuffer()
-        uploadAttributeData(buffer, data)
-        return buffer
-    }
     const createAndBindVAO = () => {
         const vao = gl.createVertexArray();
         gl.bindVertexArray(vao);    
@@ -259,15 +254,11 @@ const main = () => {
             renderWithNewOrthographicDimensions();
         }
     }
-    const updatePoints = (pointsBuffer, points) => {
-        uploadAttributeData(pointsBuffer, new Float32Array(points));
-        return bufferLength(points);    
-    }
     const updateAllPoints = () => {
-        graphPointsBufferLength = updatePoints(graphPointsBuffer, graphPoints())
-        majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
-        minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints())
-        axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints())
+        graphPointsBufferLength = updateBufferData(graphPointsBuffer, graphPoints())
+        majorGridDataBufferLength = updateBufferData(majorGridPointsBuffer, majorGridPoints())
+        minorGridDataBufferLength = updateBufferData(minorGridPointsBuffer, minorGridPoints())
+        axesPointsBufferLength = updateBufferData(axesPointsBuffer, axesPoints())
     }
     const renderWithNewOrthographicDimensions = () => {
         computeViewProjectionMatrix()
@@ -359,6 +350,32 @@ const main = () => {
         const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
+
+    const bufferLength = data => data.length
+    const updateBufferData = (buffer, data) => {
+        uploadBufferData(buffer, new Float32Array(data));
+        return bufferLength(data);
+    }
+    const createBufferWithData = data => {
+        const buffer = gl.createBuffer()
+        uploadBufferData(buffer, data)
+        return buffer
+    }
+    const uploadBufferData = (bufferName, data) => {
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferName);
+        gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
+    }
+    // const createManagedBuffer = initialData => {
+    //     const buffer = createBufferWithData(new Float32Array(initialData))
+    //     const updateData = newData => updateBufferData(buffer, newData)
+    //     const length = () => 
+
+    //     return {
+    //         buffer,
+    //         length,
+    //         updateData,
+    //     }
+    // }
 
     const lineSegmentInstanceGeometry = new Float32Array([
         0, -0.5,
@@ -457,8 +474,8 @@ const main = () => {
         uniforms: graphUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
         dataBuffer: graphPointsBuffer,
-        count: 6 ,
-        instanceCount: () => graphPointsBufferLength / 2,
+        count: lineSegmentInstanceGeometry.length / 2,
+        instanceCount: () => graphPointsBufferLength / 4,
     }
     const roundJoin = {
         programInfo: roundJoinProgramInfo,
@@ -467,7 +484,7 @@ const main = () => {
         primitiveType: gl.TRIANGLE_STRIP,
         dataBuffer: graphPointsBuffer,
         count: roundJoinGeometry.length / 2,
-        instanceCount: () => graphPointsBufferLength / 2,
+        instanceCount: () => graphPointsBufferLength / 4,
     }
     const majorGrid = {
         programInfo: majorGridProgramInfo,
@@ -475,8 +492,8 @@ const main = () => {
         uniforms: majorGridUniforms,
         primitiveType: gl.TRIANGLES,
         dataBuffer: majorGridPointsBuffer,
-        count: 6,
-        instanceCount: () => majorGridDataBufferLength / 2,
+        count: lineSegmentInstanceGeometry.length / 2,
+        instanceCount: () => majorGridDataBufferLength / 4,
     }
     const minorGrid = {
         programInfo: minorGridProgramInfo,
@@ -484,8 +501,8 @@ const main = () => {
         uniforms: minorGridUniforms,
         primitiveType: gl.TRIANGLES,
         dataBuffer: minorGridPointsBuffer,
-        count: 6,
-        instanceCount: () => minorGridDataBufferLength / 2,
+        count: lineSegmentInstanceGeometry.length / 2,
+        instanceCount: () => minorGridDataBufferLength / 4,
     }
     const axes = {
         programInfo: axesProgramInfo,
@@ -493,8 +510,8 @@ const main = () => {
         uniforms: axesUniforms,
         primitiveType: gl.TRIANGLES,
         dataBuffer: axesPointsBuffer,
-        count: 6,
-        instanceCount: () => axesPointsBufferLength / 2,
+        count: lineSegmentInstanceGeometry.length / 2,
+        instanceCount: () => axesPointsBufferLength / 4,
     }
 
     let viewProjectionMatrix
@@ -639,14 +656,7 @@ const determineGridSize = maxRange => {
     return gridSize;
 }
 
-const bufferLength = data => data.length / 2
-
 const translatedAxisRanges = () => [xMin - translation[0], xMax - translation[0], yMin - translation[1], yMax - translation[1]]
-
-const uploadAttributeData = (bufferName, data) => {
-    gl.bindBuffer(gl.ARRAY_BUFFER, bufferName);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
-}
 
 const initializeGlobalVariables = () => {
     canvas = document.getElementById('webgl');
