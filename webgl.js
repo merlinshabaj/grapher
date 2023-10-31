@@ -259,7 +259,7 @@ const main = () => {
             uploadBufferData(buffer, data)
             return data.length
         }
-        graphPointsBufferLength = updateBufferData(graphPointsBuffer, graphPoints())
+        graphPointsBuffer.updateData(graphPoints())
         majorGridDataBufferLength = updateBufferData(majorGridPointsBuffer, majorGridPoints())
         minorGridDataBufferLength = updateBufferData(minorGridPointsBuffer, minorGridPoints())
         axesPointsBufferLength = updateBufferData(axesPointsBuffer, axesPoints())
@@ -405,9 +405,7 @@ const main = () => {
     const graphVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionLine)
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
-    const _graphPoints = graphPoints()
-    const graphPointsBuffer = createBufferWithData(_graphPoints);
-    let graphPointsBufferLength = _graphPoints.length;
+    const graphPointsBuffer = createManagedBuffer(graphPoints())
     setupStartAndEndPoints(startAndEndPointsLine)
 
     const [
@@ -418,7 +416,7 @@ const main = () => {
     createBufferWithData(roundJoinGeometry)
     const roundJoinVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionRoundJoin)
-    gl.bindBuffer(gl.ARRAY_BUFFER, graphPointsBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, graphPointsBuffer.buffer);
     setupStartAndEndPoints(startAndEndPointsRoundJoin)
 
     const [
@@ -476,18 +474,18 @@ const main = () => {
         vertexArray: graphVAO,
         uniforms: graphUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
-        dataBuffer: graphPointsBuffer,
+        dataBuffer: graphPointsBuffer.buffer,
         count: lineSegmentInstanceGeometry.length / 2,
-        instanceCount: () => graphPointsBufferLength / 4,
+        instanceCount: () => graphPointsBuffer.length() / 4,
     }
     const roundJoin = {
         programInfo: roundJoinProgramInfo,
         vertexArray: roundJoinVAO,
         uniforms: roundJoinUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
-        dataBuffer: graphPointsBuffer,
+        dataBuffer: graphPointsBuffer.buffer,
         count: roundJoinGeometry.length / 2,
-        instanceCount: () => graphPointsBufferLength / 4,
+        instanceCount: () => graphPointsBuffer.length() / 4,
     }
     const majorGrid = {
         programInfo: majorGridProgramInfo,
