@@ -1,5 +1,5 @@
 import * as webglUtils from './webgl-utils.js';
-import { range, rangeInclusive, sub } from "./utils.js";
+import { rangeInclusive, sub, expect } from "./utils.js";
 import * as m3 from './m3.js';
 import * as m4 from './m4.js';
 
@@ -56,7 +56,7 @@ void main() {
 }
 `;
 
-const functionArray = [
+const functions = [
     x => Math.cos(x),
     x => Math.sin(x),
     x => x,
@@ -64,9 +64,16 @@ const functionArray = [
     x => Math.log1p(x),
 ];
 
-const main = () => {
-    if (!gl) return
+const colors = () => {
+    const grayscale = (value, alpha) => [value, value, value, alpha ?? 1.0]
+    const graphColor = grayscale(0.2, 1.0)
+    const majorGridColor = grayscale(0.8);
+    const minorGridColor = grayscale(0.9);
+    const axesColor = [0, 0, 0, 1];
+    return { graphColor, majorGridColor, minorGridColor, axesColor }
+}
 
+const main = () => {
     const createBufferWithData = data => {
         const buffer = gl.createBuffer()
         uploadAttributeData(buffer, data)
@@ -89,6 +96,45 @@ const main = () => {
         gl.vertexAttribPointer(location, 4, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(location);
         gl.vertexAttribDivisor(location, 1);
+    }
+
+    const programInfo = (program, instanceVertexPositionLocation) => {
+        const getUniformLocation = name => gl.getUniformLocation(program, name)
+        const mvp = getUniformLocation("u_mvp");
+        const colorMult = getUniformLocation("u_colorMult");
+        const lineWidth = getUniformLocation("u_lineWidth");
+        
+        return {
+            program,
+            positionLoc: instanceVertexPositionLocation,
+            colorLoc: colorMult,
+            matrixLoc: mvp,
+            lineWidthLoc: lineWidth,
+        }
+    }
+
+    const uniforms = () => {
+        const uniforms = (u_colorMult, u_lineWidth) => ({
+            u_colorMult,
+            u_matrix: m4.identity(),
+            u_lineWidth,
+        })
+
+        const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
+
+        const lineUniforms = uniforms(graphColor, plotLineWidth);
+        const roundJoinUniforms = uniforms(graphColor, plotLineWidth);
+        const majorGridUniforms = uniforms(majorGridColor, majorGridLineWidth);
+        const minorGridUniforms = uniforms(minorGridColor, minorGridLineWidth);
+        const axesUniforms = uniforms(axesColor, axesLineWidth);
+
+        return {
+            lineUniforms,
+            roundJoinUniforms,
+            majorGridUniforms,
+            minorGridUniforms,
+            axesUniforms,
+        }
     }
 
     const getAttribLocations = program => ["a_instanceVertexPosition", "a_startAndEndPoints"].map(name => gl.getAttribLocation(program, name))
@@ -145,23 +191,8 @@ const main = () => {
 
     console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
 
-    const near = 0;
-    const far = 2;
-    [xMin, xMax] = (() => {
-        const aspectRatio = canvas.clientWidth / canvas.clientHeight;
-        return [-10 * aspectRatio, 10 * aspectRatio]
-    })()
-    yMin = -10;
-    yMax = 10;
-    translation = [0, 0, 0];
-
-    const scale = [1, 1, 1];
-    let resolution = 100 /* 250 */;
-
-    const f = functionArray[3];
-
     // Points for per-instance data
-    const graphPoints = translatedGraphPoints(resolution, f);
+    const graphPoints = translatedGraphPoints(resolution, currentFn);
     const pointsBuffer = createBufferWithData(graphPoints);
     let graphPointsBufferLength = getBufferLength(graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
@@ -210,58 +241,28 @@ const main = () => {
     const axesPointsBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
 
-    const programInfo = (program, instanceVertexPositionLocation) => {
-        const getUniformLocation = name => gl.getUniformLocation(program, name)
-        const mvp = getUniformLocation("u_mvp");
-        const colorMult = getUniformLocation("u_colorMult");
-        const lineWidth = getUniformLocation("u_lineWidth");
-        
-        return {
-            program,
-            positionLoc: instanceVertexPositionLocation,
-            colorLoc: colorMult,
-            matrixLoc: mvp,
-            lineWidthLoc: lineWidth,
-        }
-    }
-
     const lineProgramInfo = programInfo(lineProgram, instanceVertexPositionLine)
     const roundJoinProgramInfo = programInfo(roundJoinProgram, instanceVertexPositionRoundJoin)
     const majorGridProgramInfo = programInfo(majorGridProgram, instanceVertexPositionMajorGrid)
     const minorGridProgramInfo = programInfo(minorGridProgram, instanceVertexPositionMinorGrid)
     const axesProgramInfo = programInfo(axesProgram, instanceVertexPositionAxes)
 
-    const grayscale = (value, alpha) => [value, value, value, alpha ?? 1.0]
-    const graphColor = grayscale(0.2, 1.0)
-    const majorGridColor = grayscale(0.8);
-    const minorGridColor = grayscale(0.9);
-    const axesColor = [0, 0, 0, 1];
-
-    let plotLineWidth = 0.075;
-    let majorGridLineWidth = 0.05;
-    let minorGridLineWidth = 0.025;
-    let axesLineWidth = 0.15;
-
-    const uniforms = (u_colorMult, u_lineWidth) => ({
-        u_colorMult,
-        u_matrix: m4.identity(),
-        u_lineWidth,
-    })
-
-    const lineUniforms = uniforms(graphColor, plotLineWidth);
-    const roundJoinUniforms = uniforms(graphColor, plotLineWidth);
-    const majorGridUniforms = uniforms(majorGridColor, majorGridLineWidth);
-    const minorGridUniforms = uniforms(minorGridColor, minorGridLineWidth);
-    const axesUniforms = uniforms(axesColor, axesLineWidth);
+    const {
+        lineUniforms,
+        roundJoinUniforms,
+        majorGridUniforms,
+        minorGridUniforms,
+        axesUniforms,
+    } = uniforms()
 
     const objectsToDraw = [
-                {
+        {
             programInfo: lineProgramInfo,
             vertexArray: lineVAO,
             uniforms: lineUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
             dataBuffer: pointsBuffer,
-            getCount: 6 ,
+            count: 6 ,
             getInstanceCount: () => graphPointsBufferLength / 2,
         },
         {
@@ -270,7 +271,7 @@ const main = () => {
             uniforms: roundJoinUniforms,
             primitiveType: gl.TRIANGLE_STRIP,
             dataBuffer: pointsBuffer,
-            getCount: roundJoinGeometry.length / 2,
+            count: roundJoinGeometry.length / 2,
             getInstanceCount: () => graphPointsBufferLength / 2,
         },
         {
@@ -279,7 +280,7 @@ const main = () => {
             uniforms: majorGridUniforms,
             primitiveType: gl.TRIANGLES,
             dataBuffer: majorGridPointsBuffer,
-            getCount: 6,
+            count: 6,
             getInstanceCount: () => majorGridDataBufferLength / 2,
         },
         {
@@ -288,7 +289,7 @@ const main = () => {
             uniforms: minorGridUniforms,
             primitiveType: gl.TRIANGLES,
             dataBuffer: minorGridPointsBuffer,
-            getCount: 6,
+            count: 6,
             getInstanceCount: () => minorGridDataBufferLength / 2,
         },
         {
@@ -297,7 +298,7 @@ const main = () => {
             uniforms: axesUniforms,
             primitiveType: gl.TRIANGLES,
             dataBuffer: axesPointsBuffer,
-            getCount: 6,
+            count: 6,
             getInstanceCount: () => axesPointsBufferLength / 2,
         }
     ];
@@ -429,7 +430,7 @@ const main = () => {
     }
 
     const updateAllPoints = () => {
-        const graphPoints = translatedGraphPoints(resolution, f);
+        const graphPoints = translatedGraphPoints(resolution, currentFn);
         uploadAttributeData(pointsBuffer, graphPoints);
         graphPointsBufferLength = getBufferLength(graphPoints);
         majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
@@ -493,7 +494,7 @@ const main = () => {
             // Draw
             const primitiveType = object.primitiveType;
             const offset = 0;
-            const count = object.getCount;
+            const count = object.count;
             const instanceCount = object.getInstanceCount();
             console.log('FINAL COUNT:', count);
 
@@ -671,8 +672,31 @@ const uploadAttributeData = (bufferName, data) => {
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.DYNAMIC_DRAW);
 }
 
+const initializeGlobalVariables = () => {
+    canvas = document.getElementById("webgl");
+    gl = expect(canvas.getContext("webgl2", { antialias: true }), 'could not get webgl2 context');
+    near = 0;
+    far = 2;
+    [xMin, xMax] = (() => {
+        const aspectRatio = canvas.clientWidth / canvas.clientHeight;
+        return [-10 * aspectRatio, 10 * aspectRatio]
+    })()
+    yMin = -10;
+    yMax = 10;
+    translation = [0, 0, 0];
+
+    scale = [1, 1, 1];
+    resolution = 100 /* 250 */;
+    currentFn = functions[3];
+
+    plotLineWidth = 0.075;
+    majorGridLineWidth = 0.05;
+    minorGridLineWidth = 0.025;
+    axesLineWidth = 0.15;
+}
 /** @type {HTMLCanvasElement} */
-const canvas = document.getElementById("webgl");
-const gl = canvas.getContext("webgl2", { antialias: true });
-let xMin, xMax, yMin, yMax, translation
+let canvas
+let gl, near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
+let plotLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
+initializeGlobalVariables()
 main();
