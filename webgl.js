@@ -138,23 +138,19 @@ const main = () => {
     }
 
     const setupMouseEventListeners = () => {
-        // PANNING
-        let isPanning = false;
-        let panningStartPosition = [0, 0]
+        let panningStartPosition = null
 
         // ZOOMING
         const ZOOM_FACTOR = 1.05;
-        let mouseX = 0, mouseY = 0;
 
         canvas.addEventListener('mousedown', event => {
-            isPanning = true;
             const mousePosition = [event.clientX, event.clientY]
             panningStartPosition = mousePosition
             canvas.style.cursor = 'grabbing';
         });
     
         canvas.addEventListener('mousemove', event => {
-            if (!isPanning) return;
+            if (!panningStartPosition) return;
     
             const mousePosition = [event.clientX, event.clientY]
             const delta = sub(mousePosition, panningStartPosition)
@@ -173,22 +169,20 @@ const main = () => {
         });
     
         canvas.addEventListener('mouseup', () => {
-            isPanning = false;
+            panningStartPosition = null;
             canvas.style.cursor = 'grab';
         });
     
         canvas.addEventListener('mouseleave', () => {
-            isPanning = false;
+            panningStartPosition = null;
             canvas.style.cursor = 'default';
-        });
-
-        canvas.addEventListener('mousemove', event => {
-            const rect = canvas.getBoundingClientRect();
-            mouseX = event.clientX - rect.left;
-            mouseY = event.clientY - rect.top;
         });
     
         canvas.addEventListener('wheel', event => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
             // Determine zoom direction
             if (event.deltaY === 0) return
             zoom(event.deltaY < 0, mouseX, mouseY);
@@ -317,7 +311,7 @@ const main = () => {
         gl.enable(gl.DEPTH_TEST);
 
         const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-        
+
         lineUniforms.u_matrix = mvpMatrix
         roundJoinUniforms.u_matrix = mvpMatrix;
         majorGridUniforms.u_matrix = mvpMatrix;
@@ -493,22 +487,23 @@ const main = () => {
         }
     ];
 
-    const cameraPosition = [0, 0, 1];
-    const target = [0, 0, 0];
-    const up = [0, 1, 0];
-
-    const cameraMatrix = m4.lookAt(cameraPosition, target, up);
-    const viewMatrix = m4.inverse(cameraMatrix);
-
     let viewProjectionMatrix
     const computeViewProjectionMatrix = () => {
+        const viewMatrix = () => {
+            const cameraPosition = [0, 0, 1];
+            const target = [0, 0, 0];
+            const up = [0, 1, 0];
+        
+            const cameraMatrix = m4.lookAt(cameraPosition, target, up);
+            return m4.inverse(cameraMatrix);
+        }
+
         const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
-        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix);    
+        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
 
-    computeViewProjectionMatrix()
-
     setupMouseEventListeners()
+    computeViewProjectionMatrix()
     drawScene();
 }
 
