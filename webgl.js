@@ -106,6 +106,7 @@ const colors = () => {
 }
 
 const main = () => {
+    const bindArrayBuffer = buffer => gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
     const createAndBindVAO = () => {
         const vao = gl.createVertexArray();
         gl.bindVertexArray(vao);    
@@ -357,7 +358,7 @@ const main = () => {
         return buffer
     }
     const uploadBufferData = (buffer, data) => {
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        bindArrayBuffer(buffer)
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW)
     }
     const createManagedBuffer = initialData => {
