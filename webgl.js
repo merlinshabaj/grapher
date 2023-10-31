@@ -246,13 +246,16 @@ const main = () => {
             }
             const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
             const updateWorldMinAndMax = () => {
-                const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
-                const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), factor))
-                const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), factor))
-    
+                const recalculateWorldMinAndMax = () => {
+                    const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
+                    const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), factor))
+                    const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), factor))
+                    [minNew, maxNew]    
+                }
+
+                const [minNew, maxNew] = recalculateWorldMinAndMax()
                 xMin = minNew[0];
                 yMin = minNew[1];
-    
                 xMax = maxNew[0];
                 yMax = maxNew[1];
             }
