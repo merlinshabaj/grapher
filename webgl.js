@@ -348,6 +348,15 @@ const main = () => {
         }
     }
 
+    const lineSegmentInstanceGeometry = new Float32Array([
+        0, -0.5,
+        1, -0.5,
+        1, 0.5,
+        0, -0.5,
+        1, 0.5,
+        0, 0.5
+    ])
+
     const {
         lineProgram,
         roundJoinProgram,
@@ -381,15 +390,6 @@ const main = () => {
         startAndEndPointsAxes,
     ] = getAttribLocations(axesProgram)
 
-    const lineSegmentInstanceGeometry = new Float32Array([
-        0, -0.5,
-        1, -0.5,
-        1, 0.5,
-        0, -0.5,
-        1, 0.5,
-        0, 0.5
-    ]);
-
     // Line - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
     const lineVAO = createAndBindVAO()
@@ -404,7 +404,7 @@ const main = () => {
     setupStartAndEndPoints(startAndEndPointsLine)
 
     // Round join points
-    const roundJoinGeometry = computeRoundJoinGeometry(resolution);
+    const roundJoinGeometry = computeRoundJoinGeometry();
     createBufferWithData(new Float32Array(roundJoinGeometry))
     const roundJoinVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionRoundJoin)
@@ -557,7 +557,7 @@ const graphPoints = () => {
     return points
 }
 
-const computeRoundJoinGeometry = resolution => {
+const computeRoundJoinGeometry = () => {
     resolution = 100
     const points = [];
     for (let i = 0; i < resolution; i++) {
@@ -569,7 +569,6 @@ const computeRoundJoinGeometry = resolution => {
         points.push(0.5 * Math.cos(theta1), 0.5 * Math.sin(theta1));
     }
 
-    console.log('Round Join points:', points)
     return points
 }
 
