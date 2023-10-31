@@ -1,5 +1,5 @@
 import * as webglUtils from './webgl-utils.js';
-import { rangeInclusive, sub, expect } from "./utils.js";
+import { rangeInclusive, sub, expect } from './utils.js';
 import * as m3 from './m3.js';
 import * as m4 from './m4.js';
 
@@ -100,9 +100,9 @@ const main = () => {
 
     const programInfo = (program, instanceVertexPositionLocation) => {
         const getUniformLocation = name => gl.getUniformLocation(program, name)
-        const mvp = getUniformLocation("u_mvp");
-        const colorMult = getUniformLocation("u_colorMult");
-        const lineWidth = getUniformLocation("u_lineWidth");
+        const mvp = getUniformLocation('u_mvp');
+        const colorMult = getUniformLocation('u_colorMult');
+        const lineWidth = getUniformLocation('u_lineWidth');
         
         return {
             program,
@@ -138,6 +138,14 @@ const main = () => {
     }
 
     const setupMouseEventListeners = () => {
+        // PANNING
+        let isPanning = false;
+        let panningStartPosition = [0, 0]
+
+        // ZOOMING
+        const ZOOM_FACTOR = 1.05;
+        let mouseX = 0, mouseY = 0;
+
         canvas.addEventListener('mousedown', event => {
             isPanning = true;
             const mousePosition = [event.clientX, event.clientY]
@@ -187,12 +195,141 @@ const main = () => {
         });
     
         // Prevent the page from scrolling when using the mouse wheel on the canvas
-        canvas.addEventListener('wheel', event => {
-            event.preventDefault();
-        }, { passive: false });
+        canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
+
+        const zoom = (isZoomingIn, mouseX, mouseY) => {
+            const width = xMax - xMin;
+            const height = yMax - yMin;
+
+            let newWidth, newHeight, newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newAxesLineWidth, newResolution;
+            const factor = isZoomingIn ? ZOOM_FACTOR : 1 / ZOOM_FACTOR
+            newWidth = width / factor;
+            newHeight = height / factor;
+            newPlotLineWidth = plotLineWidth / factor;
+            newMajorGridLineWidth = majorGridLineWidth / factor;
+            newMinorGridLineWidth = minorGridLineWidth / factor;
+            newAxesLineWidth = axesLineWidth / factor;
+            newResolution = resolution * factor;
+
+            // Convert mouse position from screen space to clip space
+            const clipX = (mouseX / canvas.clientWidth) * 2 - 1;
+            const clipY = -((mouseY / canvas.clientHeight) * 2 - 1);
+            console.log('Mouse Clip Space: ', clipX, clipY);
+
+            // Calculate mouse position in world space
+            const mouseWorldX = xMin + (clipX + 1) * 0.5 * width;
+            const mouseWorldY = yMin + (clipY + 1) * 0.5 * height;
+            console.log('Mouse World Space: ', mouseWorldX, mouseWorldY);
+
+            const widthScalingFactor = newWidth / width;
+            const heightScalingFactor = newHeight / height;
+            const plotLineWidthScalingFactor = newPlotLineWidth / plotLineWidth;
+            const majorGridLineWidthScalingFactor = newMajorGridLineWidth / majorGridLineWidth;
+            const minorGridLineWidthScalingFactor = newMinorGridLineWidth / minorGridLineWidth;
+            const axesLineWidthScalingFactor = newAxesLineWidth / axesLineWidth;
+            const resolutionScalingFactor = newResolution / resolution;
+
+            const xMinNew = mouseWorldX - (mouseWorldX - xMin) * widthScalingFactor;
+            const xMaxNew = mouseWorldX + (xMax - mouseWorldX) * widthScalingFactor;
+            const yMinNew = mouseWorldY - (mouseWorldY - yMin) * heightScalingFactor;
+            const yMaxNew = mouseWorldY + (yMax - mouseWorldY) * heightScalingFactor;
+
+            plotLineWidth = plotLineWidth * plotLineWidthScalingFactor;
+            lineUniforms.u_lineWidth = plotLineWidth;
+            roundJoinUniforms.u_lineWidth = plotLineWidth;
+
+            majorGridLineWidth = majorGridLineWidth * majorGridLineWidthScalingFactor;
+            majorGridUniforms.u_lineWidth = majorGridLineWidth;
+
+            minorGridLineWidth = minorGridLineWidth * minorGridLineWidthScalingFactor;
+            minorGridUniforms.u_lineWidth = minorGridLineWidth;
+
+            axesLineWidth = axesLineWidth * axesLineWidthScalingFactor;
+            axesUniforms.u_lineWidth = axesLineWidth;
+
+            resolution = resolution * resolutionScalingFactor;
+            console.log('resolution:', resolution);
+
+            xMin = xMinNew;
+            xMax = xMaxNew;
+            yMin = yMinNew;
+            yMax = yMaxNew;
+
+            renderWithNewOrthographicDimensions();
+        }
     }
 
-    const getAttribLocations = program => ["a_instanceVertexPosition", "a_startAndEndPoints"].map(name => gl.getAttribLocation(program, name))
+    const updatePoints = (pointsBuffer, points) => {
+        uploadAttributeData(pointsBuffer, new Float32Array(points));
+        return getBufferLength(points);    
+    }
+
+    const updateAllPoints = () => {
+        const graphPoints = translatedGraphPoints(resolution, currentFn);
+        uploadAttributeData(pointsBuffer, graphPoints);
+        graphPointsBufferLength = getBufferLength(graphPoints);
+        majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
+        minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints())
+        axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints())
+    }
+
+    const renderWithNewOrthographicDimensions = () => {
+        computeViewProjectionMatrix()
+        updateAllPoints()
+        drawScene();
+    }
+
+    const drawScene = () => {
+        webglUtils.resizeCanvasToDisplaySize(canvas, devicePixelRatio);
+        gl.viewport(0, 0, canvas.width, canvas.height);
+
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        // gl.enable(gl.CULL_FACE);
+        gl.enable(gl.DEPTH_TEST);
+
+        const mvp = computeMVP(viewProjectionMatrix, translation, 0, 0, scale);
+        lineUniforms.u_matrix = mvp
+        roundJoinUniforms.u_matrix = mvp;
+        majorGridUniforms.u_matrix = mvp;
+        minorGridUniforms.u_matrix = mvp;
+        axesUniforms.u_matrix = mvp;
+
+        objectsToDraw.forEach(function (object) {
+            const program = object.programInfo.program;
+            console.log('Current Program:', program);
+            const vertexArray = object.vertexArray;
+            gl.useProgram(program);
+            gl.bindVertexArray(vertexArray);
+
+            // Set the uniforms.
+            gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
+            gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
+            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
+
+            gl.bindBuffer(gl.ARRAY_BUFFER, object.dataBuffer); // Watch this 
+            // Draw
+            const primitiveType = object.primitiveType;
+            const offset = 0;
+            const count = object.count;
+            const instanceCount = object.getInstanceCount();
+            console.log('FINAL COUNT:', count);
+
+            if (object.getInstanceCount) {
+                gl.drawArraysInstanced(
+                    primitiveType,
+                    offset,             // offset
+                    count,   // num vertices per instance
+                    instanceCount,  // num instances
+                );
+            } else {
+                gl.drawArrays(primitiveType, offset, count);
+            }
+        });
+    }
+
+    const getAttribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
 
     const lineProgram = webglUtils.createProgramFromSources(gl, [lineVertexShaderSource, fragmentShaderSource]);
     const roundJoinProgram = webglUtils.createProgramFromSources(gl, [roundJoinShaderSource, fragmentShaderSource]);
@@ -244,7 +381,7 @@ const main = () => {
     const lineVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionLine)
 
-    console.log("Buffersize instance geo:", gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
+    console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
 
     // Points for per-instance data
     const graphPoints = translatedGraphPoints(resolution, currentFn);
@@ -372,149 +509,8 @@ const main = () => {
     }
 
     computeViewProjectionMatrix()
-    
-
-    // PANNING
-    let isPanning = false;
-    let panningStartPosition = [0, 0]
-
-    // ZOOMING
-    const ZOOM_FACTOR = 1.05;
-    let mouseX = 0, mouseY = 0;
-
-    const zoom = (isZoomingIn, mouseX, mouseY) => {
-        const width = xMax - xMin;
-        const height = yMax - yMin;
-
-        let newWidth, newHeight, newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newAxesLineWidth, newResolution;
-        const factor = isZoomingIn ? ZOOM_FACTOR : 1 / ZOOM_FACTOR
-        newWidth = width / factor;
-        newHeight = height / factor;
-        newPlotLineWidth = plotLineWidth / factor;
-        newMajorGridLineWidth = majorGridLineWidth / factor;
-        newMinorGridLineWidth = minorGridLineWidth / factor;
-        newAxesLineWidth = axesLineWidth / factor;
-        newResolution = resolution * factor;
-
-        // Convert mouse position from screen space to clip space
-        const clipX = (mouseX / canvas.clientWidth) * 2 - 1;
-        const clipY = -((mouseY / canvas.clientHeight) * 2 - 1);
-        console.log("Mouse Clip Space: ", clipX, clipY);
-
-        // Calculate mouse position in world space
-        const mouseWorldX = xMin + (clipX + 1) * 0.5 * width;
-        const mouseWorldY = yMin + (clipY + 1) * 0.5 * height;
-        console.log("Mouse World Space: ", mouseWorldX, mouseWorldY);
-
-        const widthScalingFactor = newWidth / width;
-        const heightScalingFactor = newHeight / height;
-        const plotLineWidthScalingFactor = newPlotLineWidth / plotLineWidth;
-        const majorGridLineWidthScalingFactor = newMajorGridLineWidth / majorGridLineWidth;
-        const minorGridLineWidthScalingFactor = newMinorGridLineWidth / minorGridLineWidth;
-        const axesLineWidthScalingFactor = newAxesLineWidth / axesLineWidth;
-        const resolutionScalingFactor = newResolution / resolution;
-
-        const xMinNew = mouseWorldX - (mouseWorldX - xMin) * widthScalingFactor;
-        const xMaxNew = mouseWorldX + (xMax - mouseWorldX) * widthScalingFactor;
-        const yMinNew = mouseWorldY - (mouseWorldY - yMin) * heightScalingFactor;
-        const yMaxNew = mouseWorldY + (yMax - mouseWorldY) * heightScalingFactor;
-
-        plotLineWidth = plotLineWidth * plotLineWidthScalingFactor;
-        lineUniforms.u_lineWidth = plotLineWidth;
-        roundJoinUniforms.u_lineWidth = plotLineWidth;
-
-        majorGridLineWidth = majorGridLineWidth * majorGridLineWidthScalingFactor;
-        majorGridUniforms.u_lineWidth = majorGridLineWidth;
-
-        minorGridLineWidth = minorGridLineWidth * minorGridLineWidthScalingFactor;
-        minorGridUniforms.u_lineWidth = minorGridLineWidth;
-
-        axesLineWidth = axesLineWidth * axesLineWidthScalingFactor;
-        axesUniforms.u_lineWidth = axesLineWidth;
-
-        resolution = resolution * resolutionScalingFactor;
-        console.log("resolution:", resolution);
-
-        xMin = xMinNew;
-        xMax = xMaxNew;
-        yMin = yMinNew;
-        yMax = yMaxNew;
-
-        updateOrthographicDimensions();
-    }
-
-    const updatePoints = (pointsBuffer, points) => {
-        uploadAttributeData(pointsBuffer, new Float32Array(points));
-        return getBufferLength(points);    
-    }
-
-    const updateAllPoints = () => {
-        const graphPoints = translatedGraphPoints(resolution, currentFn);
-        uploadAttributeData(pointsBuffer, graphPoints);
-        graphPointsBufferLength = getBufferLength(graphPoints);
-        majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
-        minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints())
-        axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints())
-    }
-
-    const updateOrthographicDimensions = () => {
-        computeViewProjectionMatrix()
-        updateAllPoints()
-        drawScene();
-    }
 
     setupMouseEventListeners()
-
-    const drawScene = () => {
-        webglUtils.resizeCanvasToDisplaySize(canvas, devicePixelRatio);
-        gl.viewport(0, 0, canvas.width, canvas.height);
-
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // gl.enable(gl.CULL_FACE);
-        gl.enable(gl.DEPTH_TEST);
-
-        const mvp = computeMVP(viewProjectionMatrix, translation, 0, 0, scale);
-        lineUniforms.u_matrix = mvp
-        roundJoinUniforms.u_matrix = mvp;
-        majorGridUniforms.u_matrix = mvp;
-        minorGridUniforms.u_matrix = mvp;
-        axesUniforms.u_matrix = mvp;
-
-        objectsToDraw.forEach(function (object) {
-            const program = object.programInfo.program;
-            console.log("Current Program:", program);
-            const vertexArray = object.vertexArray;
-            gl.useProgram(program);
-            gl.bindVertexArray(vertexArray);
-
-            // Set the uniforms.
-            gl.uniformMatrix4fv(object.programInfo.matrixLoc, false, object.uniforms.u_matrix);
-            gl.uniform4fv(object.programInfo.colorLoc, object.uniforms.u_colorMult);
-            object.programInfo.lineWidthLoc ? gl.uniform1f(object.programInfo.lineWidthLoc, object.uniforms.u_lineWidth) : {};
-
-            gl.bindBuffer(gl.ARRAY_BUFFER, object.dataBuffer); // Watch this 
-            // Draw
-            const primitiveType = object.primitiveType;
-            const offset = 0;
-            const count = object.count;
-            const instanceCount = object.getInstanceCount();
-            console.log('FINAL COUNT:', count);
-
-            if (object.getInstanceCount) {
-                gl.drawArraysInstanced(
-                    primitiveType,
-                    offset,             // offset
-                    count,   // num vertices per instance
-                    instanceCount,  // num instances
-                );
-            } else {
-                gl.drawArrays(primitiveType, offset, count);
-            }
-        });
-    }
-
     drawScene();
 }
 
@@ -541,7 +537,7 @@ const graphPoints = (start, end, resolution, f) => {
 
     const points = rangeInclusive(startX, endX).flatMap(values).slice(2, -2)
 
-    console.log("POINTS:", points)
+    console.log('POINTS:', points)
     return points
 }
 
@@ -568,7 +564,7 @@ const computeRoundJoinGeometry = resolution => {
         points.push(0.5 * Math.cos(theta1), 0.5 * Math.sin(theta1));
     }
 
-    console.log("Round Join points:", points)
+    console.log('Round Join points:', points)
     return points
 }
 
@@ -677,8 +673,8 @@ const uploadAttributeData = (bufferName, data) => {
 }
 
 const initializeGlobalVariables = () => {
-    canvas = document.getElementById("webgl");
-    gl = expect(canvas.getContext("webgl2", { antialias: true }), 'could not get webgl2 context');
+    canvas = document.getElementById('webgl');
+    gl = expect(canvas.getContext('webgl2', { antialias: true }), 'could not get webgl2 context');
     near = 0;
     far = 2;
     [xMin, xMax] = (() => {
