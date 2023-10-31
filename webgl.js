@@ -358,7 +358,7 @@ const main = () => {
     }
     const createBufferWithData = data => {
         const buffer = gl.createBuffer()
-        uploadBufferData(buffer, data)
+        uploadBufferData(buffer, new Float32Array(data))
         return buffer
     }
     const uploadBufferData = (bufferName, data) => {
@@ -377,14 +377,14 @@ const main = () => {
     //     }
     // }
 
-    const lineSegmentInstanceGeometry = new Float32Array([
+    const lineSegmentInstanceGeometry = [
         0, -0.5,
         1, -0.5,
         1, 0.5,
         0, -0.5,
         1, 0.5,
         0, 0.5
-    ])
+    ]
 
     const {
         graphProgram,
@@ -402,7 +402,7 @@ const main = () => {
     const graphVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionLine)
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
-    const _graphPoints = new Float32Array(graphPoints());
+    const _graphPoints = graphPoints()
     const graphPointsBuffer = createBufferWithData(_graphPoints);
     let graphPointsBufferLength = bufferLength(_graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
@@ -412,7 +412,7 @@ const main = () => {
         startAndEndPointsRoundJoin,
     ] = attribLocations(roundJoinProgram)
     const roundJoinGeometry = computeRoundJoinGeometry();
-    createBufferWithData(new Float32Array(roundJoinGeometry))
+    createBufferWithData(roundJoinGeometry)
     const roundJoinVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionRoundJoin)
     gl.bindBuffer(gl.ARRAY_BUFFER, graphPointsBuffer);
@@ -425,7 +425,7 @@ const main = () => {
     createBufferWithData(lineSegmentInstanceGeometry)
     const majorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
-    const majorGridData = new Float32Array(majorGridPoints());
+    const majorGridData = majorGridPoints()
     let majorGridDataBufferLength = bufferLength(majorGridData);
     const majorGridPointsBuffer = createBufferWithData(majorGridData)
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
@@ -437,7 +437,7 @@ const main = () => {
     createBufferWithData(lineSegmentInstanceGeometry)
     const minorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
-    const minorGridData = new Float32Array(minorGridPoints());
+    const minorGridData = minorGridPoints()
     let minorGridDataBufferLength = bufferLength(minorGridData);
     const minorGridPointsBuffer = createBufferWithData(minorGridData)
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
@@ -449,7 +449,7 @@ const main = () => {
     createBufferWithData(lineSegmentInstanceGeometry)
     const axesVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionAxes)
-    const _axesPoints = new Float32Array(axesPoints());
+    const _axesPoints = axesPoints()
     let axesPointsBufferLength = bufferLength(_axesPoints);
     const axesPointsBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
