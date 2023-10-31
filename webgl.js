@@ -347,6 +347,19 @@ const main = () => {
             axesProgram,
         }
     }
+    const computeViewProjectionMatrix = () => {
+        const viewMatrix = () => {
+            const cameraPosition = [0, 0, 1];
+            const target = [0, 0, 0];
+            const up = [0, 1, 0];
+        
+            const cameraMatrix = m4.lookAt(cameraPosition, target, up);
+            return m4.inverse(cameraMatrix);
+        }
+
+        const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
+        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
+    }
 
     const lineSegmentInstanceGeometry = new Float32Array([
         0, -0.5,
@@ -439,68 +452,55 @@ const main = () => {
         axesUniforms,
     } = uniforms()
 
-    const objectsToDraw = [
-        {
-            programInfo: graphProgramInfo,
-            vertexArray: graphVAO,
-            uniforms: graphUniforms,
-            primitiveType: gl.TRIANGLE_STRIP,
-            dataBuffer: graphPointsBuffer,
-            count: 6 ,
-            instanceCount: () => graphPointsBufferLength / 2,
-        },
-        {
-            programInfo: roundJoinProgramInfo,
-            vertexArray: roundJoinVAO,
-            uniforms: roundJoinUniforms,
-            primitiveType: gl.TRIANGLE_STRIP,
-            dataBuffer: graphPointsBuffer,
-            count: roundJoinGeometry.length / 2,
-            instanceCount: () => graphPointsBufferLength / 2,
-        },
-        {
-            programInfo: majorGridProgramInfo,
-            vertexArray: majorGridVAO,
-            uniforms: majorGridUniforms,
-            primitiveType: gl.TRIANGLES,
-            dataBuffer: majorGridPointsBuffer,
-            count: 6,
-            instanceCount: () => majorGridDataBufferLength / 2,
-        },
-        {
-            programInfo: minorGridProgramInfo,
-            vertexArray: minorGridVAO,
-            uniforms: minorGridUniforms,
-            primitiveType: gl.TRIANGLES,
-            dataBuffer: minorGridPointsBuffer,
-            count: 6,
-            instanceCount: () => minorGridDataBufferLength / 2,
-        },
-        {
-            programInfo: axesProgramInfo,
-            vertexArray: axesVAO,
-            uniforms: axesUniforms,
-            primitiveType: gl.TRIANGLES,
-            dataBuffer: axesPointsBuffer,
-            count: 6,
-            instanceCount: () => axesPointsBufferLength / 2,
-        }
-    ];
+    const graph = {
+        programInfo: graphProgramInfo,
+        vertexArray: graphVAO,
+        uniforms: graphUniforms,
+        primitiveType: gl.TRIANGLE_STRIP,
+        dataBuffer: graphPointsBuffer,
+        count: 6 ,
+        instanceCount: () => graphPointsBufferLength / 2,
+    }
+    const roundJoin = {
+        programInfo: roundJoinProgramInfo,
+        vertexArray: roundJoinVAO,
+        uniforms: roundJoinUniforms,
+        primitiveType: gl.TRIANGLE_STRIP,
+        dataBuffer: graphPointsBuffer,
+        count: roundJoinGeometry.length / 2,
+        instanceCount: () => graphPointsBufferLength / 2,
+    }
+    const majorGrid = {
+        programInfo: majorGridProgramInfo,
+        vertexArray: majorGridVAO,
+        uniforms: majorGridUniforms,
+        primitiveType: gl.TRIANGLES,
+        dataBuffer: majorGridPointsBuffer,
+        count: 6,
+        instanceCount: () => majorGridDataBufferLength / 2,
+    }
+    const minorGrid = {
+        programInfo: minorGridProgramInfo,
+        vertexArray: minorGridVAO,
+        uniforms: minorGridUniforms,
+        primitiveType: gl.TRIANGLES,
+        dataBuffer: minorGridPointsBuffer,
+        count: 6,
+        instanceCount: () => minorGridDataBufferLength / 2,
+    }
+    const axes = {
+        programInfo: axesProgramInfo,
+        vertexArray: axesVAO,
+        uniforms: axesUniforms,
+        primitiveType: gl.TRIANGLES,
+        dataBuffer: axesPointsBuffer,
+        count: 6,
+        instanceCount: () => axesPointsBufferLength / 2,
+    }
 
     let viewProjectionMatrix
-    const computeViewProjectionMatrix = () => {
-        const viewMatrix = () => {
-            const cameraPosition = [0, 0, 1];
-            const target = [0, 0, 0];
-            const up = [0, 1, 0];
-        
-            const cameraMatrix = m4.lookAt(cameraPosition, target, up);
-            return m4.inverse(cameraMatrix);
-        }
 
-        const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
-        viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
-    }
+    const objectsToDraw = [graph, roundJoin, majorGrid, minorGrid, axes]
 
     setupMouseEventListeners()
     computeViewProjectionMatrix()
