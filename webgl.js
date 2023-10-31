@@ -351,10 +351,9 @@ const main = () => {
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
 
-    const bufferLength = data => data.length
     const updateBufferData = (buffer, data) => {
-        uploadBufferData(buffer, data);
-        return bufferLength(data);
+        uploadBufferData(buffer, data)
+        return data.length
     }
     const createBufferWithData = data => {
         const buffer = gl.createBuffer()
@@ -404,7 +403,7 @@ const main = () => {
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
     const _graphPoints = graphPoints()
     const graphPointsBuffer = createBufferWithData(_graphPoints);
-    let graphPointsBufferLength = bufferLength(_graphPoints);
+    let graphPointsBufferLength = _graphPoints.length;
     setupStartAndEndPoints(startAndEndPointsLine)
 
     const [
@@ -426,7 +425,7 @@ const main = () => {
     const majorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
     const majorGridData = majorGridPoints()
-    let majorGridDataBufferLength = bufferLength(majorGridData);
+    let majorGridDataBufferLength = majorGridData.length;
     const majorGridPointsBuffer = createBufferWithData(majorGridData)
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
 
@@ -438,7 +437,7 @@ const main = () => {
     const minorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
     const minorGridData = minorGridPoints()
-    let minorGridDataBufferLength = bufferLength(minorGridData);
+    let minorGridDataBufferLength = minorGridData.length;
     const minorGridPointsBuffer = createBufferWithData(minorGridData)
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
 
@@ -450,7 +449,7 @@ const main = () => {
     const axesVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionAxes)
     const _axesPoints = axesPoints()
-    let axesPointsBufferLength = bufferLength(_axesPoints);
+    let axesPointsBufferLength = _axesPoints.length;
     const axesPointsBuffer = createBufferWithData(_axesPoints)
     setupStartAndEndPoints(startAndEndPointsAxes)
 
