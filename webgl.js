@@ -218,8 +218,8 @@ const main = () => {
         // Prevent the page from scrolling when using the mouse wheel on the canvas
         canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
 
-        const zoom = (isZoomingIn, mousePosition) => {
-            const factor = isZoomingIn ? zoomFactor : 1 / zoomFactor
+        const zoom = (zoomingIn, mousePosition) => {
+            const factor = zoomingIn ? zoomFactor : 1 / zoomFactor
             const recalculate = something => something / factor
             const recalculateAll = somethings => somethings.map(recalculate)
 
