@@ -35,7 +35,7 @@ const scaleCanvas = () => {
     }
 }
 
-const graphVertexShaderSource = `#version 300 es
+const lineVertexShaderSource = `#version 300 es
 precision highp float;
 
 in vec2 a_instanceVertexPosition;
@@ -313,7 +313,7 @@ const main = () => {
         drawEachObject()
     }
     const attribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
-    const programs = () => {
+    const createProgramFunctions = () => {
         const createProgram = ({ vertexShaderSource, fragmentShaderSource }) => {
             const shaders = [
                 webglUtils.loadShader(gl, vertexShaderSource, gl.VERTEX_SHADER),
@@ -321,14 +321,19 @@ const main = () => {
             ]
             return webglUtils.createProgram(gl, shaders);
         }
-        const createDuplicateProgram = () => createProgram({ vertexShaderSource: graphVertexShaderSource, fragmentShaderSource: fragmentShaderSource })
+        const createLineProgram = () => createProgram({ vertexShaderSource: lineVertexShaderSource, fragmentShaderSource: fragmentShaderSource })
         const createRoundJoinProgram = () => createProgram({ vertexShaderSource: roundJoinShaderSource,  fragmentShaderSource: fragmentShaderSource })
-
-        const graphProgram = createDuplicateProgram()
+        return {
+            createLineProgram,
+            createRoundJoinProgram,
+        }
+    }
+    const programs = () => {
+        const graphProgram = createLineProgram()
         const roundJoinProgram = createRoundJoinProgram()
-        const majorGridProgram = createDuplicateProgram()
-        const minorGridProgram = createDuplicateProgram()
-        const axesProgram = createDuplicateProgram()
+        const majorGridProgram = createLineProgram()
+        const minorGridProgram = createLineProgram()
+        const axesProgram = createLineProgram()
 
         return {
             graphProgram,
@@ -351,7 +356,6 @@ const main = () => {
         const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
-
     const createBuffer = initialData => {
         const createBufferWithData = data => {
             const buffer = gl.createBuffer()
@@ -379,32 +383,22 @@ const main = () => {
             bind,
         }
     }
-
-    const lineSegmentInstanceGeometry = [
-        0, -0.5,
-        1, -0.5,
-        1, 0.5,
-        0, -0.5,
-        1, 0.5,
-        0, 0.5
-    ]
-
-    const {
-        graphProgram,
-        roundJoinProgram,
-        majorGridProgram,
-        minorGridProgram,
-        axesProgram,
-    } = programs()
-
-    const lineSegmentBuffer = createBuffer(lineSegmentInstanceGeometry)
-
-    const graphPointsBuffer = createBuffer(graphPoints())
-    const roundJoinGeometryBuffer = createBuffer(computeRoundJoinGeometry())
-    const majorGridPointsBuffer = createBuffer(majorGridPoints())
-    const minorGridPointsBuffer = createBuffer(minorGridPoints())
-    const axesPointsBuffer = createBuffer(axesPoints())
-
+    const buffers = () => {
+        const lineSegmentBuffer = createBuffer(lineSegmentInstanceGeometry)
+        const graphPointsBuffer = createBuffer(graphPoints())
+        const roundJoinGeometryBuffer = createBuffer(computeRoundJoinGeometry())
+        const majorGridPointsBuffer = createBuffer(majorGridPoints())
+        const minorGridPointsBuffer = createBuffer(minorGridPoints())
+        const axesPointsBuffer = createBuffer(axesPoints())
+        return {
+            lineSegmentBuffer,
+            graphPointsBuffer,
+            roundJoinGeometryBuffer,
+            majorGridPointsBuffer,
+            minorGridPointsBuffer,
+            axesPointsBuffer,
+        }
+    }
     const setupVAO = (program, instanceVertexPositionBuffer, startAndEndPointsBuffer) => {
         const [
             instanceVertexPosition,
@@ -417,6 +411,41 @@ const main = () => {
         setupStartAndEndPoints(startAndEndPoints)
         return vao
     }
+
+    const lineSegmentInstanceGeometry = [
+        0, -0.5,
+        1, -0.5,
+        1, 0.5,
+        0, -0.5,
+        1, 0.5,
+        0, 0.5
+    ]
+
+    const {
+        lineSegmentBuffer,
+        graphPointsBuffer,
+        roundJoinGeometryBuffer,
+        majorGridPointsBuffer,
+        minorGridPointsBuffer,
+        axesPointsBuffer,
+    } = buffers()
+
+    const {
+        createLineProgram,
+        createRoundJoinProgram,
+    } = createProgramFunctions()
+
+    const component = () => {
+
+    }
+
+    const {
+        graphProgram,
+        roundJoinProgram,
+        majorGridProgram,
+        minorGridProgram,
+        axesProgram,
+    } = programs()
 
     const graphVAO = setupVAO(graphProgram, lineSegmentBuffer, graphPointsBuffer)
     const roundJoinVAO = setupVAO(roundJoinProgram, roundJoinGeometryBuffer, graphPointsBuffer)
