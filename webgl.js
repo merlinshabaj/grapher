@@ -1,7 +1,10 @@
 import * as webglUtils from './webgl-utils.js';
-import { rangeInclusive, sub, expect } from './utils.js';
+import { rangeInclusive, vsub, expect, vmul, vdiv, vadd } from './utils.js';
 import * as m3 from './m3.js';
 import * as m4 from './m4.js';
+
+const flipY = vec2 => [vec2[0], -vec2[1]]
+const canvasSize = () => [canvas.clientWidth, canvas.clientHeight]
 
 const lineVertexShaderSource = `#version 300 es
 precision highp float;
@@ -150,14 +153,12 @@ const main = () => {
             if (!panningStartPosition) return;
     
             const mousePosition = [event.clientX, event.clientY]
-            const delta = sub(mousePosition, panningStartPosition)
-            const deltaWorld = [
-                delta[0] * (xMax - xMin) / canvas.clientWidth,
-                -delta[1] * (yMax - yMin) / canvas.clientHeight
-            ]
-    
-            translation[0] += deltaWorld[0];
-            translation[1] += deltaWorld[1];
+            const delta = vsub(mousePosition, panningStartPosition)
+            const size = [xMax - xMin, yMax - yMin]
+            const deltaWorld = flipY(vdiv(vmul(delta, size), canvasSize()))
+            const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
+            translation[0] = newTranslation[0]
+            translation[1] = newTranslation[1]
     
             panningStartPosition = mousePosition
     
@@ -179,7 +180,7 @@ const main = () => {
             const rect = canvas.getBoundingClientRect();
             const rectOrigin = [rect.left, rect.top]
             const mousePosition = [event.clientX, event.clientY]
-            const mousePositionRelativeToCanvas = sub(mousePosition, rectOrigin)
+            const mousePositionRelativeToCanvas = vsub(mousePosition, rectOrigin)
 
             // Determine zoom direction
             if (event.deltaY === 0) return
@@ -203,11 +204,7 @@ const main = () => {
             newAxesLineWidth = axesLineWidth / factor;
             newResolution = resolution * factor;
 
-            const screenToClipSpace = vec2 => {
-                const x = vec2[0] / canvas.clientWidth * 2 - 1;
-                const y = -vec2[1] / canvas.clientHeight * 2 + 1;
-                return [x, y]
-            }
+            const screenToClipSpace = vec2 => vadd(vmul(flipY(vdiv(vec2, canvasSize())), 2), [-1, 1])
 
             const [clipX, clipY] = screenToClipSpace(mousePosition)
 
