@@ -269,9 +269,7 @@ const main = () => {
     }
 
     const updateAllPoints = () => {
-        const graphPoints = translatedGraphPoints(resolution, currentFn);
-        uploadAttributeData(pointsBuffer, graphPoints);
-        graphPointsBufferLength = getBufferLength(graphPoints);
+        graphPointsBufferLength = updatePoints(pointsBuffer, graphPoints())
         majorGridDataBufferLength = updatePoints(majorGridPointsBuffer, majorGridPoints())
         minorGridDataBufferLength = updatePoints(minorGridPointsBuffer, minorGridPoints())
         axesPointsBufferLength = updatePoints(axesPointsBuffer, axesPoints())
@@ -386,9 +384,9 @@ const main = () => {
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
 
     // Points for per-instance data
-    const graphPoints = translatedGraphPoints(resolution, currentFn);
-    const pointsBuffer = createBufferWithData(graphPoints);
-    let graphPointsBufferLength = getBufferLength(graphPoints);
+    const _graphPoints = new Float32Array(graphPoints());
+    const pointsBuffer = createBufferWithData(_graphPoints);
+    let graphPointsBufferLength = getBufferLength(_graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
 
     // Round join points
@@ -528,13 +526,14 @@ const computeMVPMatrix = (viewProjectionMatrix, translation, xRotation, yRotatio
     return matrix;
 }
 
-const graphPoints = (start, end, resolution, f) => {
-    const startX = start * resolution;
-    const endX = end * resolution;
+const graphPoints = () => {
+    const [xMin, xMax,,] = translatedAxisRanges()
+    const startX = xMin * resolution;
+    const endX = xMax * resolution;
 
     const values = xStep => {
         const x = xStep / resolution;
-        const y = f(x);
+        const y = currentFn(x);
         return [x, y, x, y];
     }
 
@@ -651,13 +650,6 @@ const determineGridSize = maxRange => {
 }
 
 const getBufferLength = data => data.length / 2
-
-const translatedGraphPoints = (resolution, f) => {
-    const translatedLeft = xMin - translation[0];
-    const translatedRight = xMax - translation[0];
-    const points = new Float32Array(graphPoints(translatedLeft, translatedRight, resolution, f));
-    return points;
-}
 
 const translatedAxisRanges = () => [xMin - translation[0], xMax - translation[0], yMin - translation[1], yMax - translation[1]]
 
