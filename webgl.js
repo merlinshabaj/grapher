@@ -217,12 +217,11 @@ const main = () => {
         canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
 
         const zoom = (isZoomingIn, mousePosition) => {
-            const [worldWidth, worldHeight] = worldSize()
+            const _worldSize = worldSize()
 
-            let newWidth, newHeight, newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newAxesLineWidth, newResolution;
+            let newPlotLineWidth, newMajorGridLineWidth, newMinorGridLineWidth, newAxesLineWidth, newResolution;
             const factor = isZoomingIn ? zoomFactor : 1 / zoomFactor
-            newWidth = worldWidth / factor;
-            newHeight = worldHeight / factor;
+            const newWorldSize = vdiv(_worldSize, factor)
             newPlotLineWidth = plotLineWidth / factor;
             newMajorGridLineWidth = majorGridLineWidth / factor;
             newMinorGridLineWidth = minorGridLineWidth / factor;
@@ -230,21 +229,20 @@ const main = () => {
             newResolution = resolution * factor;
 
             const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
-            const [mouseWorldX, mouseWorldY] = mousePositionWorld
-            console.log('Mouse world space: ', mouseWorldX, mouseWorldY);
+            console.log('Mouse world space: ', mousePositionWorld[0], mousePositionWorld[1]);
 
-            const widthScalingFactor = newWidth / worldWidth;
-            const heightScalingFactor = newHeight / worldHeight;
+            const sizeScalingFactors = vdiv(newWorldSize, _worldSize)
             const plotLineWidthScalingFactor = newPlotLineWidth / plotLineWidth;
             const majorGridLineWidthScalingFactor = newMajorGridLineWidth / majorGridLineWidth;
             const minorGridLineWidthScalingFactor = newMinorGridLineWidth / minorGridLineWidth;
             const axesLineWidthScalingFactor = newAxesLineWidth / axesLineWidth;
             const resolutionScalingFactor = newResolution / resolution;
 
-            const xMinNew = mouseWorldX - (mouseWorldX - xMin) * widthScalingFactor;
-            const xMaxNew = mouseWorldX + (xMax - mouseWorldX) * widthScalingFactor;
-            const yMinNew = mouseWorldY - (mouseWorldY - yMin) * heightScalingFactor;
-            const yMaxNew = mouseWorldY + (yMax - mouseWorldY) * heightScalingFactor;
+            const min = [xMin, yMin]
+            const minNew = vsub(mousePositionWorld, vmul(vsub(mousePositionWorld, min), sizeScalingFactors))
+            
+            const max = [xMax, yMax]
+            const maxNew = vadd(mousePositionWorld, vmul(vsub(max, mousePositionWorld), sizeScalingFactors))
 
             plotLineWidth = plotLineWidth * plotLineWidthScalingFactor;
             lineUniforms.u_lineWidth = plotLineWidth;
@@ -262,10 +260,11 @@ const main = () => {
             resolution = resolution * resolutionScalingFactor;
             console.log('resolution:', resolution);
 
-            xMin = xMinNew;
-            xMax = xMaxNew;
-            yMin = yMinNew;
-            yMax = yMaxNew;
+            xMin = minNew[0];
+            yMin = minNew[1];
+
+            xMax = maxNew[0];
+            yMax = maxNew[1];
 
             renderWithNewOrthographicDimensions();
         }
