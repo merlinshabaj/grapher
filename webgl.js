@@ -352,16 +352,17 @@ const main = () => {
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
 
-    const createBufferWithData = data => {
-        const buffer = gl.createBuffer()
-        uploadBufferData(buffer, data)
-        return buffer
-    }
-    const uploadBufferData = (buffer, data) => {
-        bindArrayBuffer(buffer)
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW)
-    }
-    const createManagedBuffer = initialData => {
+    const createBuffer = initialData => {
+        const createBufferWithData = data => {
+            const buffer = gl.createBuffer()
+            uploadBufferData(buffer, data)
+            return buffer
+        }
+        const uploadBufferData = (buffer, data) => {
+            bindArrayBuffer(buffer)
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW)
+        }
+
         let _length = initialData.length
         const buffer = createBufferWithData(initialData)
         const updateData = newData => {
@@ -403,17 +404,19 @@ const main = () => {
         ] = attribLocations(program)
     }
 
-    const graphPointsBuffer = createManagedBuffer(graphPoints())
-    const majorGridPointsBuffer = createManagedBuffer(majorGridPoints())
-    const minorGridPointsBuffer = createManagedBuffer(minorGridPoints())
-    const axesPointsBuffer = createManagedBuffer(axesPoints())
+    const lineSegmentBuffer = createBuffer(lineSegmentInstanceGeometry)
+    const graphPointsBuffer = createBuffer(graphPoints())
+    const roundJoinGeometryBuffer = createBuffer(computeRoundJoinGeometry())
+    const majorGridPointsBuffer = createBuffer(majorGridPoints())
+    const minorGridPointsBuffer = createBuffer(minorGridPoints())
+    const axesPointsBuffer = createBuffer(axesPoints())
 
     const [
         instanceVertexPositionLine,
         startAndEndPointsLine,
     ] = attribLocations(graphProgram)
     const graphVAO = createAndBindVAO()
-    createBufferWithData(lineSegmentInstanceGeometry)
+    lineSegmentBuffer.bind()
     setupInstanceVertexPosition(instanceVertexPositionLine)
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
     graphPointsBuffer.bind()
@@ -424,8 +427,7 @@ const main = () => {
         startAndEndPointsRoundJoin,
     ] = attribLocations(roundJoinProgram)
     const roundJoinVAO = createAndBindVAO()
-    const roundJoinGeometry = computeRoundJoinGeometry();
-    createBufferWithData(roundJoinGeometry)
+    roundJoinGeometryBuffer.bind()
     setupInstanceVertexPosition(instanceVertexPositionRoundJoin)
     graphPointsBuffer.bind()
     setupStartAndEndPoints(startAndEndPointsRoundJoin)
@@ -435,7 +437,7 @@ const main = () => {
         startAndEndPointsMajorGrid,
     ] = attribLocations(majorGridProgram)
     const majorGridVAO = createAndBindVAO()
-    createBufferWithData(lineSegmentInstanceGeometry)
+    lineSegmentBuffer.bind()
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
     majorGridPointsBuffer.bind()
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
@@ -445,7 +447,7 @@ const main = () => {
         startAndEndPointsMinorGrid,
     ] = attribLocations(minorGridProgram)
     const minorGridVAO = createAndBindVAO()
-    createBufferWithData(lineSegmentInstanceGeometry)
+    lineSegmentBuffer.bind()
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
     minorGridPointsBuffer.bind()
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
@@ -455,7 +457,7 @@ const main = () => {
         startAndEndPointsAxes,
     ] = attribLocations(axesProgram)
     const axesVAO = createAndBindVAO()
-    createBufferWithData(lineSegmentInstanceGeometry)
+    createBuffer(lineSegmentInstanceGeometry)
     setupInstanceVertexPosition(instanceVertexPositionAxes)
     axesPointsBuffer.bind()
     setupStartAndEndPoints(startAndEndPointsAxes)
@@ -480,7 +482,7 @@ const main = () => {
         uniforms: graphUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
         dataBuffer: graphPointsBuffer.buffer,
-        count: lineSegmentInstanceGeometry.length / 2,
+        count: lineSegmentBuffer.length() / 2,
         instanceCount: () => graphPointsBuffer.length() / 4,
     }
     const roundJoin = {
@@ -489,7 +491,7 @@ const main = () => {
         uniforms: roundJoinUniforms,
         primitiveType: gl.TRIANGLE_STRIP,
         dataBuffer: graphPointsBuffer.buffer,
-        count: roundJoinGeometry.length / 2,
+        count: roundJoinGeometryBuffer.length() / 2,
         instanceCount: () => graphPointsBuffer.length() / 4,
     }
     const majorGrid = {
@@ -498,7 +500,7 @@ const main = () => {
         uniforms: majorGridUniforms,
         primitiveType: gl.TRIANGLES,
         dataBuffer: majorGridPointsBuffer.buffer,
-        count: lineSegmentInstanceGeometry.length / 2,
+        count: lineSegmentBuffer.length() / 2,
         instanceCount: () => majorGridPointsBuffer.length() / 4,
     }
     const minorGrid = {
@@ -507,7 +509,7 @@ const main = () => {
         uniforms: minorGridUniforms,
         primitiveType: gl.TRIANGLES,
         dataBuffer: minorGridPointsBuffer.buffer,
-        count: lineSegmentInstanceGeometry.length / 2,
+        count: lineSegmentBuffer.length() / 2,
         instanceCount: () => minorGridPointsBuffer.length() / 4,
     }
     const axes = {
@@ -516,7 +518,7 @@ const main = () => {
         uniforms: axesUniforms,
         primitiveType: gl.TRIANGLES,
         dataBuffer: axesPointsBuffer.buffer,
-        count: lineSegmentInstanceGeometry.length / 2,
+        count: lineSegmentBuffer.length() / 2,
         instanceCount: () => axesPointsBuffer.length() / 4,
     }
 
