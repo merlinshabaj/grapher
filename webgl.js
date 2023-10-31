@@ -255,6 +255,10 @@ const main = () => {
         }
     }
     const updateAllPoints = () => {
+        const updateBufferData = (buffer, data) => {
+            uploadBufferData(buffer, data)
+            return data.length
+        }
         graphPointsBufferLength = updateBufferData(graphPointsBuffer, graphPoints())
         majorGridDataBufferLength = updateBufferData(majorGridPointsBuffer, majorGridPoints())
         minorGridDataBufferLength = updateBufferData(minorGridPointsBuffer, minorGridPoints())
@@ -351,10 +355,6 @@ const main = () => {
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
 
-    const updateBufferData = (buffer, data) => {
-        uploadBufferData(buffer, data)
-        return data.length
-    }
     const createBufferWithData = data => {
         const buffer = gl.createBuffer()
         uploadBufferData(buffer, data)
@@ -364,17 +364,21 @@ const main = () => {
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW)
     }
-    // const createManagedBuffer = initialData => {
-    //     const buffer = createBufferWithData(new Float32Array(initialData))
-    //     const updateData = newData => updateBufferData(buffer, newData)
-    //     const length = () => 
+    const createManagedBuffer = initialData => {
+        let _length = initialData.length
+        const buffer = createBufferWithData(initialData)
+        const updateData = newData => {
+            _length = newData.length
+            uploadBufferData(buffer, newData)
+        }
+        const length = () => _length
 
-    //     return {
-    //         buffer,
-    //         length,
-    //         updateData,
-    //     }
-    // }
+        return {
+            buffer,
+            length,
+            updateData,
+        }
+    }
 
     const lineSegmentInstanceGeometry = [
         0, -0.5,
