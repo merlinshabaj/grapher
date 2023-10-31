@@ -142,39 +142,45 @@ const main = () => {
     }
 
     const setupMouseEventListeners = () => {
-        let panningStartPosition = null
+        let panningPosition = null
 
         canvas.addEventListener('mousedown', event => {
             const mousePosition = [event.clientX, event.clientY]
-            panningStartPosition = mousePosition
+            panningPosition = mousePosition
             canvas.style.cursor = 'grabbing';
         });
     
         canvas.addEventListener('mousemove', event => {
-            if (!panningStartPosition) return;
-    
+            if (!panningPosition) return;
+
             const mousePosition = [event.clientX, event.clientY]
-            const delta = vsub(mousePosition, panningStartPosition)
-            const screenToClipSpace = vec2 => vadd(vmul(flipY(vdiv(vec2, canvasSize())), 2), [-1, 1])
-            const deltaWorld = flipY(vdiv(vmul(delta, worldSize()), canvasSize()))
-            // const deltaWorld = screenToClipSpace(delta)
-            const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
-            translation[0] = newTranslation[0]
-            translation[1] = newTranslation[1]
-    
-            panningStartPosition = mousePosition
+
+            const updateTranslation = () => {
+                const delta = vsub(mousePosition, panningPosition)
+                const screenToClipSpace = vec2 => vadd(vmul(flipY(vdiv(vec2, canvasSize())), 2), [-1, 1])
+                const deltaClip = screenToClipSpace(delta)
+                // const deltaWorld = vadd([xMin, yMin], vmul(vadd(deltaClip, 1), 1/2, worldSize()))
+                const deltaWorld = flipY(vdiv(vmul(delta, worldSize()), canvasSize()))
+                const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
+                translation[0] = newTranslation[0]
+                translation[1] = newTranslation[1]    
+            }
+
+            updateTranslation()
+        
+            panningPosition = mousePosition
     
             updateAllPoints()
             drawScene();
         });
     
         canvas.addEventListener('mouseup', () => {
-            panningStartPosition = null;
+            panningPosition = null;
             canvas.style.cursor = 'grab';
         });
     
         canvas.addEventListener('mouseleave', () => {
-            panningStartPosition = null;
+            panningPosition = null;
             canvas.style.cursor = 'default';
         });
     
@@ -218,7 +224,7 @@ const main = () => {
 
             const mousePositionWorld = vadd([xMin, yMin], vmul(vadd(mousePositionClip, 1), 1/2, worldSize()))
             const [mouseWorldX, mouseWorldY] = mousePositionWorld
-            console.log('Mouse world dpace: ', mouseWorldX, mouseWorldY);
+            console.log('Mouse world space: ', mouseWorldX, mouseWorldY);
 
             const widthScalingFactor = newWidth / worldWidth;
             const heightScalingFactor = newHeight / worldHeight;
