@@ -369,79 +369,57 @@ const main = () => {
         instanceVertexPositionLine,
         startAndEndPointsLine,
     ] = getAttribLocations(lineProgram)
-
-    const [
-        instanceVertexPositionRoundJoin,
-        startAndEndPointsRoundJoin,
-    ] = getAttribLocations(roundJoinProgram)
-
-    const [
-        instanceVertexPositionMajorGrid,
-        startAndEndPointsMajorGrid,
-    ] = getAttribLocations(majorGridProgram)
-
-    const [
-        instanceVertexPositionMinorGrid,
-        startAndEndPointsMinorGrid,
-    ] = getAttribLocations(minorGridProgram)
-
-    const [
-        instanceVertexPositionAxes,
-        startAndEndPointsAxes,
-    ] = getAttribLocations(axesProgram)
-
-    // Line - static geometry
     createBufferWithData(lineSegmentInstanceGeometry)
     const lineVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionLine)
-
     console.log('Buffersize instance geo:', gl.getBufferParameter(gl.ARRAY_BUFFER, gl.BUFFER_SIZE) / 4 / 2);
-
-    // Points for per-instance data
     const _graphPoints = new Float32Array(graphPoints());
     const graphPointsBuffer = createBufferWithData(_graphPoints);
     let graphPointsBufferLength = getBufferLength(_graphPoints);
     setupStartAndEndPoints(startAndEndPointsLine)
 
-    // Round join points
+    const [
+        instanceVertexPositionRoundJoin,
+        startAndEndPointsRoundJoin,
+    ] = getAttribLocations(roundJoinProgram)
     const roundJoinGeometry = computeRoundJoinGeometry();
     createBufferWithData(new Float32Array(roundJoinGeometry))
     const roundJoinVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionRoundJoin)
-
-    // Start and End points for per-instance data (graphPoints)
     gl.bindBuffer(gl.ARRAY_BUFFER, graphPointsBuffer);
     setupStartAndEndPoints(startAndEndPointsRoundJoin)
 
-    // Major grid - static geometry
+    const [
+        instanceVertexPositionMajorGrid,
+        startAndEndPointsMajorGrid,
+    ] = getAttribLocations(majorGridProgram)
     createBufferWithData(lineSegmentInstanceGeometry)
-
     const majorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMajorGrid)
-
-    // Start and end points for per-instace data majorgrid
     const majorGridData = new Float32Array(majorGridPoints());
     let majorGridDataBufferLength = getBufferLength(majorGridData);
     const majorGridPointsBuffer = createBufferWithData(majorGridData)
     setupStartAndEndPoints(startAndEndPointsMajorGrid)
 
-    // Minor grid - static geometry
+    const [
+        instanceVertexPositionMinorGrid,
+        startAndEndPointsMinorGrid,
+    ] = getAttribLocations(minorGridProgram)
     createBufferWithData(lineSegmentInstanceGeometry)
     const minorGridVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionMinorGrid)
-
-    // Start and end points for per-instance data minor grid
     const minorGridData = new Float32Array(minorGridPoints());
     let minorGridDataBufferLength = getBufferLength(minorGridData);
     const minorGridPointsBuffer = createBufferWithData(minorGridData)
     setupStartAndEndPoints(startAndEndPointsMinorGrid)
 
-    // Axes - static geometry
+    const [
+        instanceVertexPositionAxes,
+        startAndEndPointsAxes,
+    ] = getAttribLocations(axesProgram)
     createBufferWithData(lineSegmentInstanceGeometry)
     const axesVAO = createAndBindVAO()
     setupInstanceVertexPosition(instanceVertexPositionAxes)
-
-    // Start and end points for per-instance data minor grid
     const _axesPoints = new Float32Array(axesPoints());
     let axesPointsBufferLength = getBufferLength(_axesPoints);
     const axesPointsBuffer = createBufferWithData(_axesPoints)
