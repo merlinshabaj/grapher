@@ -477,7 +477,7 @@ const main = () => {
 
     let viewProjectionMatrix
 
-    const components = [graph, roundJoin, majorGrid, minorGrid, axes]
+    const components = [graph, roundJoin, axes, majorGrid, minorGrid]
 
     setupMouseEventListeners()
     computeViewProjectionMatrix()
@@ -583,14 +583,11 @@ const minorGridPoints = () => {
 }
 
 const axesPoints = () => {
-    const [xMin, xMax, , ] = translatedAxisRanges()
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const points = [];
 
-    if (xMin < xMax) {
-        for (let x = 0; x < xMax; x++) {
-            points.push(x, 0, x, 0);
-        }
-    }
+    points.push(xMin, 0, xMax, 0)
+    points.push(0, yMin, 0, yMax)
 
     return points
 }
@@ -635,7 +632,7 @@ const initializeGlobalVariables = () => {
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
     minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
-    axesLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
+    axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0];
 }
 
 /** @type {HTMLCanvasElement} */
