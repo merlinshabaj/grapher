@@ -3,4 +3,4 @@
 - After zooming out far, zooming in doesn't display graph properly (resolution related)
 
 ### TODO
-- Scale lineWidth with zoomLevel
+- fix worldToScreen() function
