@@ -1,8 +1,8 @@
 import * as webglUtils from './webgl-utils.js';
-import { rangeInclusive, vsub, expect, vmul, vdiv, vadd } from './utils.js';
+import { rangeInclusive, vsub, expect, vmul, vdiv, vadd, elementWithId, div, setProps } from './utils.js';
 import * as m4 from './m4.js';
 
-const flipY = vec2 => [vec2[0], -vec2[1]]
+const flipY = vec2 => [vec2[0], -1 * vec2[1]]
 const canvasSize = () => [canvas.clientWidth, canvas.clientHeight]
 const worldSize = () => [xMax - xMin, yMax - yMin]
 const min = () => [xMin, yMin]
@@ -16,22 +16,28 @@ const translationVector = vector => {
 
 const positionVector = vector => {
     const screenToClipSpace = vector => () => vadd(vmul(flipY(vdiv(vector, canvasSize())), 2), [-1, 1])
-    const clipToWorldSpace = vector => () => vadd([xMin, yMin], vmul(vadd(vector, 1), 1/2, worldSize()))
+    const clipToScreenSpace = vector => () => vmul(vector, canvasSize())
+    const clipToWorldSpace = vector => () => vadd(min(), vmul(vadd(vector, 1), 1/2, worldSize()))
+    const worldToClipSpace = vector => () => vsub(vmul(vsub(vector, min()), vdiv([2,2], worldSize())), 1);
     const screenToWorldSpace = () => clipToWorldSpace(screenToClipSpace(vector)())()
+    const worldToScreenSpace = () => clipToScreenSpace(worldToClipSpace(vector)())()
 
     return {
         screenToClipSpace: screenToClipSpace(vector),
+        clipToScreenSpace: clipToScreenSpace(vector),
         clipToWorldSpace: clipToWorldSpace(vector),
+        worldToClipSpace: worldToClipSpace(vector),
         screenToWorldSpace,
+        worldToScreenSpace,
     }
 }
 
-const scaleCanvas = () => {
-    const width = canvas.clientWidth * devicePixelRatio
-    const height = canvas.clientHeight * devicePixelRatio
-    if (canvas.width !== width || canvas.height !== height) {
-        canvas.width = width;
-        canvas.height = height;
+const scaleCanvas = (context) => {
+    const width = context.canvas.clientWidth * devicePixelRatio
+    const height = context.canvas.clientHeight * devicePixelRatio
+    if (context.canvas.width !== width || context.canvas.height !== height) {
+        context.canvas.width = width;
+        context.canvas.height = height;
     }
 }
 
@@ -102,7 +108,7 @@ const colors = () => {
     const graphColor = grayscale(0.25, 1.0)
     const majorGridColor = grayscale(0.75);
     const minorGridColor = grayscale(0.9);
-    const axesColor = [0, 0, 0, 1];
+    const axesColor = grayscale(0.5);
     return { graphColor, majorGridColor, minorGridColor, axesColor }
 }
 
@@ -232,7 +238,6 @@ const main = () => {
                 const primitiveType = object.primitiveType
                 const offset = 0
                 const verticesPerInstance = object.count
-
                 object.instanceCount ? drawArraysInstanced() : drawArrays()
             }
 
@@ -242,10 +247,12 @@ const main = () => {
             draw()
         }
         const setupRenderingContext = () => {
+            textContext.clearRect(0, 0, textContext.canvas.width, textContext.canvas.height)
             gl.viewport(0, 0, canvas.width, canvas.height);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.enable(gl.DEPTH_TEST);    
+            gl.enable(gl.DEPTH_TEST);
+            
         }
         const updateMVPMatrices = () => {
             const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
@@ -257,10 +264,17 @@ const main = () => {
         }
         const drawEachObject = () => components.forEach(drawObject)
 
-        scaleCanvas()
+        scaleCanvas(gl)
+        scaleCanvas(textContext)
         setupRenderingContext()
         updateMVPMatrices()
         drawEachObject()
+        const point = [1,1]
+        const textPos = positionVector(point).worldToScreenSpace()
+        console.log('position: ', textPos)
+        
+        textContext.font = '40px KaTeX_Main'
+        textContext.fillText('1', textPos[0], textPos[1]);
     }
     const attribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
     const createProgramFunctions = () => {
@@ -478,7 +492,7 @@ const main = () => {
     let viewProjectionMatrix
 
     const components = [graph, roundJoin, axes, majorGrid, minorGrid]
-
+    
     setupMouseEventListeners()
     computeViewProjectionMatrix()
     render();
@@ -613,8 +627,10 @@ const determineGridSize = maxRange => {
 const translatedAxisRanges = () => [xMin - translation[0], xMax - translation[0], yMin - translation[1], yMax - translation[1]]
 
 const initializeGlobalVariables = () => {
-    canvas = document.getElementById('webgl');
+    canvas = elementWithId('webgl');
     gl = expect(canvas.getContext('webgl2', { antialias: true }), 'could not get webgl2 context');
+    textCanvas = elementWithId('text2dCanvas')
+    textContext = textCanvas.getContext('2d')
     near = 0;
     far = 2;
     [xMin, xMax] = (() => {
@@ -639,6 +655,10 @@ const initializeGlobalVariables = () => {
 let canvas
 /** @type {WebGL2RenderingContext} */
 let gl
+/** @type {HTMLCanvasElement}*/
+let textCanvas
+/** @type {CanvasRenderingContext2D} */
+let textContext
 let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
 let graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
 const zoomFactor = 1.05;
