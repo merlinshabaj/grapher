@@ -274,7 +274,7 @@ const main = () => {
                 return textPos
             }
             const textDimensions = (text) => {
-                const _textMetrics = textContext.measureText(`${text}`)
+                const _textMetrics = textContext.measureText(String(text).replace('-', '−'))
                 const textWidth = _textMetrics.width
                 const textHeight = _textMetrics.actualBoundingBoxAscent + _textMetrics.actualBoundingBoxDescent
 
@@ -287,7 +287,7 @@ const main = () => {
             const drawNumber = (number, position) => {
                 textContext.font = '40px KaTeX_Main'
                 textContext.fillStyle = 'black'
-                textContext.fillText(`${number}`, position[0], position[1]);
+                textContext.fillText(String(number).replace('-', '−'), position[0], position[1]);
             }
             const roundPoint = (point) => {
                 point[0] = Math.round(point[0] * 1000000) / 1000000
