@@ -254,7 +254,6 @@ const main = () => {
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
             gl.enable(gl.DEPTH_TEST);
-            
         }
         const updateMVPMatrices = () => {
             mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
@@ -293,13 +292,14 @@ const main = () => {
             const roundPoint = (point) => {
                 point[0] = Math.round(point[0] * 1000000) / 1000000
                 point[1] = Math.round(point[1] * 1000000) / 1000000
-
+            
                 return point
             }
             
 
             numberPointsXAxis().forEach(worldPoint => {
                 worldPoint = roundPoint(worldPoint)
+                if (worldPoint[0] === 0 && worldPoint[1] === 0) { return }
                 const offsetAndCalculateNumberPosition = (width, height) => {
                     const offset = [width / -2, height + 15]
                     const numberPosition = vadd(worldToScreen(worldPoint), offset)
@@ -315,6 +315,7 @@ const main = () => {
 
             numberPointsYAxis().forEach(worldPoint => {
                 worldPoint = roundPoint(worldPoint)
+                if (worldPoint[0] === 0 && worldPoint[1] === 0) { return }
                 const offsetAndCalculateNumberPosition = (width, height) => {
                     const offset = [-width - 10, height / 2]
                     const numberPosition = vadd(worldToScreen(worldPoint), offset)
@@ -334,6 +335,8 @@ const main = () => {
         setupRenderingContext()
         updateMVPMatrices()
         drawEachObject()    
+        drawNumbers()
+        textContext.clearRect(0, 0, textContext.canvas.width, textContext.canvas.height)
         drawNumbers()
     }
     const attribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
@@ -680,9 +683,7 @@ const numberPointsXAxis = () => {
     for (let x = xStart; x <= xMax; x += gridSize) {
         points.push([x, 0]);
     }
-    // Remove [0, 0]
-    points = points.filter(point => point[0] !== 0 || point[1] !==0)
-
+    
     return points
 }
 
@@ -694,8 +695,6 @@ const numberPointsYAxis = () => {
     for (let y = yStart; y <= yMax; y += gridSize) {
         points.push([0, y]);
     }
-    // Remove [0, 0]
-    points = points.filter(point => point[0] !== 0 || point[1] !==0)
 
     return points
 }
