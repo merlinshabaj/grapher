@@ -281,8 +281,9 @@ const main = () => {
                 return [textWidth, textHeight]
             }
             const drawBackground = (position, dimensions) => {
+                const padding = 5 // Added to: top, bottom, left, right
                 textContext.fillStyle = 'rgba(255, 255, 255, 0.5)'
-                textContext.fillRect(position[0], position[1], dimensions[0], -dimensions[1])
+                textContext.fillRect(position[0] - padding, position[1] + padding, dimensions[0] + (padding * 2), -dimensions[1] - (padding * 2))
             }
             const drawNumber = (number, position) => {
                 textContext.font = '40px KaTeX_Main'
