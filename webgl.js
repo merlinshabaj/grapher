@@ -281,14 +281,18 @@ const main = () => {
                 return [textWidth, textHeight]
             }
             const drawNumber = (number, position) => {
+                const drawStroke = () => {
+                    textContext.strokeStyle = 'white'
+                    textContext.lineWidth = 20;
+                    textContext.strokeText(String(number).replace('-', '−'), position[0], position[1])
+                }
+                const _drawNumber = () => {
+                    textContext.fillStyle = 'black'
+                    textContext.fillText(String(number).replace('-', '−'), position[0], position[1])
+                }
                 textContext.font = '56px KaTeX_Main'
-
-                textContext.strokeStyle = 'white'
-                textContext.lineWidth = 20;
-                textContext.strokeText(String(number).replace('-', '−'), position[0], position[1])
-
-                textContext.fillStyle = 'black'
-                textContext.fillText(String(number).replace('-', '−'), position[0], position[1])
+                drawStroke()
+                _drawNumber() 
             }
             const roundPoint = point => {
                 point[0] = Math.round(point[0] * 1000000) / 1000000
