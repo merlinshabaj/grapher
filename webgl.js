@@ -13,7 +13,8 @@ const max = () => [xMax, yMax]
 const translationVector = vector => {
     // How many world space coordinates do we travel for one pixel? (this could also be a transformation matrix instead)
     const transformationVector = () => flipY(vdiv(worldSize(), canvasSize()))
-    return { screenToWorldSpace: () => vmul(vector, transformationVector()) }
+    const screenToWorldSpace = () => vmul(vector, transformationVector())
+    return { screenToWorldSpace }
 }
 
 const positionVector = vector => {
@@ -285,23 +286,24 @@ const main = () => {
                 textContext.fillRect(position[0] - padding, position[1] + padding, dimensions[0] + (padding * 2), -dimensions[1] - (padding * 2))
             }
             const drawNumber = (number, position) => {
-                textContext.font = '40px KaTeX_Main'
+                textContext.font = '56px KaTeX_Main'
                 textContext.fillStyle = 'black'
                 textContext.fillText(String(number).replace('-', '−'), position[0], position[1]);
             }
-            const roundPoint = (point) => {
+            const roundPoint = point => {
                 point[0] = Math.round(point[0] * 1000000) / 1000000
                 point[1] = Math.round(point[1] * 1000000) / 1000000
             
                 return point
             }
-            
+
+            const numberAxisOffset = 28 // half of font size?
 
             numberPointsXAxis().forEach(worldPoint => {
                 worldPoint = roundPoint(worldPoint)
                 if (worldPoint[0] === 0 && worldPoint[1] === 0) { return }
                 const offsetAndCalculateNumberPosition = (width, height) => {
-                    const offset = [width / -2, height + 15]
+                    const offset = [width / -2, height + numberAxisOffset]
                     const numberPosition = vadd(worldToScreen(worldPoint), offset)
                     
                     return numberPosition
@@ -317,7 +319,7 @@ const main = () => {
                 worldPoint = roundPoint(worldPoint)
                 if (worldPoint[0] === 0 && worldPoint[1] === 0) { return }
                 const offsetAndCalculateNumberPosition = (width, height) => {
-                    const offset = [-width - 10, height / 2]
+                    const offset = [-width - numberAxisOffset, height / 2]
                     const numberPosition = vadd(worldToScreen(worldPoint), offset)
                     
                     return numberPosition
@@ -737,7 +739,7 @@ const initializeGlobalVariables = () => {
 
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
-    currentFn = functions[3];
+    currentFn = functions[0];
 
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
