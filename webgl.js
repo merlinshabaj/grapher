@@ -1,5 +1,5 @@
 import * as webglUtils from './webgl-utils.js';
-import { rangeInclusive, vsub, expect, vmul, vdiv, vadd, elementWithId, div, setProps } from './utils.js';
+import { rangeInclusive, vsub, expect, vmul, vdiv, vadd, elementWithId, div, setProps, log } from './utils.js';
 import * as m4 from './m4.js';
 
 const flipY = vec2 => [vec2[0], -1 * vec2[1]]
@@ -16,7 +16,7 @@ const translationVector = vector => {
 
 const positionVector = vector => {
     const screenToClipSpace = vector => () => vadd(vmul(flipY(vdiv(vector, canvasSize())), 2), [-1, 1])
-    const clipToScreenSpace = vector => () => vmul(vector, canvasSize())
+    const clipToScreenSpace = vector => () => vadd(vmul(flipY(vmul(vector, canvasSize())), 2), canvasSize())
     const clipToWorldSpace = vector => () => vadd(min(), vmul(vadd(vector, 1), 1/2, worldSize()))
     const worldToClipSpace = vector => () => vsub(vmul(vsub(vector, min()), vdiv([2,2], worldSize())), 1);
     const screenToWorldSpace = () => clipToWorldSpace(screenToClipSpace(vector)())()
@@ -269,9 +269,8 @@ const main = () => {
         setupRenderingContext()
         updateMVPMatrices()
         drawEachObject()
-        const point = [1,1]
+        const point = [1, 2]
         const textPos = positionVector(point).worldToScreenSpace()
-        console.log('position: ', textPos)
         
         textContext.font = '40px KaTeX_Main'
         textContext.fillText('1', textPos[0], textPos[1]);
@@ -643,7 +642,7 @@ const initializeGlobalVariables = () => {
 
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
-    currentFn = functions[1];
+    currentFn = functions[3];
 
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
