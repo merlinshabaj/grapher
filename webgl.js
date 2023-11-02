@@ -266,65 +266,66 @@ const main = () => {
         }
         const drawEachObject = () => components.forEach(drawObject)
 
+        const drawNumbers = () => {
+            const worldToScreen = worldPoint => {
+                const clipPosition = m4.transformVector(mvpMatrix, [worldPoint[0], worldPoint[1], 0, 1])
+                const textPos = positionVector(clipPosition).clipToScreenSpace()
+
+                return textPos
+            }
+            const textDimensions = (text) => {
+                const _textMetrics = textContext.measureText(`${text}`)
+                const textWidth = _textMetrics.width
+                const textHeight = _textMetrics.actualBoundingBoxAscent + _textMetrics.actualBoundingBoxDescent
+
+                return [textWidth, textHeight]
+            }
+            const drawBackground = (position, dimensions) => {
+                textContext.fillStyle = 'rgba(255, 255, 255, 0.5)'
+                textContext.fillRect(position[0], position[1], dimensions[0], -dimensions[1])
+            }
+            const drawNumber = (number, position) => {
+                textContext.font = '40px KaTeX_Main'
+                textContext.fillStyle = 'black'
+                textContext.fillText(`${number}`, position[0], position[1]);
+            }
+            
+
+            numberPointsXAxis().forEach(worldPoint => {
+                const offsetAndCalculateNumberPosition = (width, height) => {
+                    const offset = [width / -2, height + 15]
+                    const numberPosition = vadd(worldToScreen(worldPoint), offset)
+                    
+                    return numberPosition
+                }
+
+                const numberDimensions = textDimensions(worldPoint[0])
+                const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
+                drawBackground(numberPosition, numberDimensions)
+                drawNumber(worldPoint[0], numberPosition)
+            })
+
+            numberPointsYAxis().forEach(worldPoint => {
+                const offsetAndCalculateNumberPosition = (width, height) => {
+                    const offset = [-width - 10, height / 2]
+                    const numberPosition = vadd(worldToScreen(worldPoint), offset)
+                    
+                    return numberPosition
+                }
+
+                const numberDimensions = textDimensions(worldPoint[1])
+                const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
+                drawBackground(numberPosition, numberDimensions)
+                drawNumber(worldPoint[1], numberPosition)
+            })
+        }
+
         scaleCanvas(canvas)
         scaleCanvas(textCanvas)
         setupRenderingContext()
         updateMVPMatrices()
         drawEachObject()    
-        // const _numberPointsXAxis = numberPointsXAxis()
-        // const _numberPointsYAxis = numberPointsYAxis()
-
-        const worldToScreen = worldPoint => {
-            const clipPosition = m4.transformVector(mvpMatrix, [worldPoint[0], worldPoint[1], 0, 1])
-            const textPos = positionVector(clipPosition).clipToScreenSpace()
-
-            return textPos
-        }
-        const textDimensions = (text) => {
-            const _textMetrics = textContext.measureText(`${text}`)
-            const textWidth = _textMetrics.width
-            const textHeight = _textMetrics.actualBoundingBoxAscent + _textMetrics.actualBoundingBoxDescent
-
-            return [textWidth, textHeight]
-        }
-        const drawBackground = (position, dimensions) => {
-            textContext.fillStyle = 'rgba(255, 255, 255, 0.5)'
-            textContext.fillRect(position[0], position[1], dimensions[0], -dimensions[1])
-        }
-        const drawNumber = (number, position) => {
-            textContext.font = '40px KaTeX_Main'
-            textContext.fillStyle = 'black'
-            textContext.fillText(`${number}`, position[0], position[1]);
-        }
-        
-
-        numberPointsXAxis().forEach(worldPoint => {
-            const offsetAndCalculateNumberPosition = (width, height) => {
-                const offset = [width / -2, height + 15]
-                const numberPosition = vadd(worldToScreen(worldPoint), offset)
-                
-                return numberPosition
-            }
-
-            const numberDimensions = textDimensions(worldPoint[0])
-            const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
-            drawBackground(numberPosition, numberDimensions)
-            drawNumber(worldPoint[0], numberPosition)
-        })
-
-        numberPointsYAxis().forEach(worldPoint => {
-            const offsetAndCalculateNumberPosition = (width, height) => {
-                const offset = [-width - 10, height / 2]
-                const numberPosition = vadd(worldToScreen(worldPoint), offset)
-                
-                return numberPosition
-            }
-
-            const numberDimensions = textDimensions(worldPoint[1])
-            const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
-            drawBackground(numberPosition, numberDimensions)
-            drawNumber(worldPoint[1], numberPosition)
-        })
+        drawNumbers()
     }
     const attribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
     const createProgramFunctions = () => {
@@ -589,18 +590,26 @@ const computeRoundJoinGeometry = () => {
     return points
 }
 
-const majorGridPoints = () => {
+const determineMinBasedOnGridSize = () => {
     const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
-    const points = [];
     const xRange = Math.abs(xMax - xMin);
     const yRange = Math.abs(yMax - yMin);
 
     const maxRange = Math.max(xRange, yRange);
     const gridSize = determineGridSize(maxRange);
 
-    // Start points based on grid size
+    // Min based on grid size
     const xStart = Math.ceil(xMin / gridSize) * gridSize;
     const yStart = Math.ceil(yMin / gridSize) * gridSize;
+
+    return [xStart, yStart]
+}
+
+const majorGridPoints = () => {
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
+    const points = [];
+
+    const [xStart, yStart] = determineMinBasedOnGridSize()
 
     for (let x = xStart; x <= xMax; x += gridSize) {
         points.push(x, yMax, x, yMin);
@@ -652,21 +661,6 @@ const axesPoints = () => {
     points.push(0, yMin, 0, yMax)
 
     return points
-}
-
-const determineMinBasedOnGridSize = () => {
-    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
-    const xRange = Math.abs(xMax - xMin);
-    const yRange = Math.abs(yMax - yMin);
-
-    const maxRange = Math.max(xRange, yRange);
-    const gridSize = determineGridSize(maxRange);
-
-    // Min based on grid size
-    const xStart = Math.ceil(xMin / gridSize) * gridSize;
-    const yStart = Math.ceil(yMin / gridSize) * gridSize;
-
-    return [xStart, yStart]
 }
 
 const numberPointsXAxis = () => {
