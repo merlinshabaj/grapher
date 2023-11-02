@@ -16,7 +16,7 @@ const translationVector = vector => {
 
 const positionVector = vector => {
     const screenToClipSpace = vector => () => vadd(vmul(flipY(vdiv(vector, canvasSize())), 2), [-1, 1])
-    const clipToScreenSpace = vector => () => vadd(vmul(flipY(vmul(vector, canvasSize())), 2), canvasSize())
+    const clipToScreenSpace = vector => () => vadd(vmul(flipY(vmul(vector, canvasSize())), 1), canvasSize())
     const clipToWorldSpace = vector => () => vadd(min(), vmul(vadd(vector, 1), 1/2, worldSize()))
     const worldToClipSpace = vector => () => vsub(vmul(vsub(vector, min()), vdiv([2,2], worldSize())), 1);
     const screenToWorldSpace = () => clipToWorldSpace(screenToClipSpace(vector)())()
@@ -32,12 +32,12 @@ const positionVector = vector => {
     }
 }
 
-const scaleCanvas = (context) => {
-    const width = context.canvas.clientWidth * devicePixelRatio
-    const height = context.canvas.clientHeight * devicePixelRatio
-    if (context.canvas.width !== width || context.canvas.height !== height) {
-        context.canvas.width = width;
-        context.canvas.height = height;
+const scaleCanvas = canvas => {
+    const width = canvas.clientWidth * devicePixelRatio
+    const height = canvas.clientHeight * devicePixelRatio
+    if (canvas.width !== width || canvas.height !== height) {
+        canvas.width = width;
+        canvas.height = height;
     }
 }
 
@@ -255,7 +255,7 @@ const main = () => {
             
         }
         const updateMVPMatrices = () => {
-            const mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
+            mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
             graph.updateMVPMatrix(mvpMatrix)
             roundJoin.updateMVPMatrix(mvpMatrix)
             majorGrid.updateMVPMatrix(mvpMatrix)
@@ -264,16 +264,57 @@ const main = () => {
         }
         const drawEachObject = () => components.forEach(drawObject)
 
-        scaleCanvas(gl)
-        scaleCanvas(textContext)
+        scaleCanvas(canvas)
+        scaleCanvas(textCanvas)
         setupRenderingContext()
         updateMVPMatrices()
-        drawEachObject()
-        const point = [1, 2]
-        const textPos = positionVector(point).worldToScreenSpace()
+        drawEachObject()    
+        // const _numberPointsXAxis = numberPointsXAxis()
+        // const _numberPointsYAxis = numberPointsYAxis()
+
+        const worldToScreen = worldPoint => {
+            const clipPosition = m4.transformVector(mvpMatrix, [worldPoint[0], worldPoint[1], 0, 1])
+            const textPos = positionVector(clipPosition).clipToScreenSpace()
+
+            return textPos
+        }
         
-        textContext.font = '40px KaTeX_Main'
-        textContext.fillText('1', textPos[0], textPos[1]);
+        
+        const textMetrics = (text) => {
+            const _textMetrics = textContext.measureText(`${text}`)
+            const textWidth = _textMetrics.width
+            const textHeight = _textMetrics.actualBoundingBoxAscent + _textMetrics.actualBoundingBoxDescent
+
+            return {
+                textWidth,
+                textHeight
+            }
+        }
+        numberPointsXAxis().forEach(worldPoint => {
+            
+            const drawNumberBackground = () => {
+               
+                const paddingY = 5
+                textContext.fillStyle = 'white'
+                textContext.fillRect(textPosition[0], textPosition[1], textWidth, -textHeight - paddingY)
+            }
+    
+            const drawNumber = (number) => {
+                textContext.font = '40px KaTeX_Main'
+                textContext.fillStyle = 'black'
+                textContext.fillText(`${number}`, textPosition[0], textPosition[1]);
+            }
+            
+            
+            const {textWidth, textHeight} = textMetrics(worldPoint[0])
+            const offset = [textWidth / -2, 40]
+           
+            const textPosition = vadd(worldToScreen(worldPoint), offset)
+
+            drawNumberBackground()
+            drawNumber(worldPoint[0])
+            
+        })
     }
     const attribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
     const createProgramFunctions = () => {
@@ -440,8 +481,6 @@ const main = () => {
         axesPointsBuffer,
     } = buffers()
 
-    const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
-
     const {
         createLineProgram,
         createRoundJoinProgram,
@@ -488,7 +527,7 @@ const main = () => {
         primitiveType: gl.TRIANGLES,
     })
 
-    let viewProjectionMatrix
+    let viewProjectionMatrix, mvpMatrix
 
     const components = [graph, roundJoin, axes, majorGrid, minorGrid]
     
@@ -605,21 +644,63 @@ const axesPoints = () => {
     return points
 }
 
+const determineMinBasedOnGridSize = () => {
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
+    const xRange = Math.abs(xMax - xMin);
+    const yRange = Math.abs(yMax - yMin);
+
+    const maxRange = Math.max(xRange, yRange);
+    const gridSize = determineGridSize(maxRange);
+
+    // Min based on grid size
+    const xStart = Math.ceil(xMin / gridSize) * gridSize;
+    const yStart = Math.ceil(yMin / gridSize) * gridSize;
+
+    return [xStart, yStart]
+}
+
+const numberPointsXAxis = () => {
+    const [,xMax,,] = translatedAxisRanges()
+    let points = [];
+    const [xStart,] = determineMinBasedOnGridSize()
+
+    for (let x = xStart; x <= xMax; x += 1) {
+        points.push([x, 0]);
+    }
+    // Remove [0, 0]
+    points = points.filter(point => point[0] !== 0 || point[1] !==0)
+
+    return points
+}
+
+const numberPointsYAxis = () => {
+    const [,,,yMax] = translatedAxisRanges()
+    let points = [];
+    const [,yStart] = determineMinBasedOnGridSize()
+
+    for (let y = yStart; y <= yMax; y += 1) {
+        points.push([0, y]);
+    }
+
+    return points
+}
+
 const determineGridSize = maxRange => {
     const orderOfMagnitude = Math.floor(Math.log10(maxRange));
 
     let gridSize = Math.pow(10, orderOfMagnitude);
-
+    console.log('Initial Gridsize: ', gridSize)
     const rangeGridMultiple = maxRange / gridSize;
 
-    const threshold = 0.5
+    const threshold = 1
 
     if (rangeGridMultiple < 5 * threshold) {
-        gridSize /= 5;
+        gridSize /= 10;
     } else if (rangeGridMultiple < 10 * threshold) {
         gridSize /= 2;
     }
 
+    console.log('Gridsize: ', gridSize)
     return gridSize;
 }
 
@@ -661,5 +742,6 @@ let textContext
 let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
 let graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
 const zoomFactor = 1.05;
+const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
 initializeGlobalVariables()
 main();
