@@ -280,15 +280,15 @@ const main = () => {
 
                 return [textWidth, textHeight]
             }
-            const drawBackground = (position, dimensions) => {
-                const padding = 5 // Added to: top, bottom, left, right
-                textContext.fillStyle = 'rgba(255, 255, 255, 0.5)'
-                textContext.fillRect(position[0] - padding, position[1] + padding, dimensions[0] + (padding * 2), -dimensions[1] - (padding * 2))
-            }
             const drawNumber = (number, position) => {
                 textContext.font = '56px KaTeX_Main'
+
+                textContext.strokeStyle = 'white'
+                textContext.lineWidth = 20;
+                textContext.strokeText(String(number).replace('-', '−'), position[0], position[1])
+
                 textContext.fillStyle = 'black'
-                textContext.fillText(String(number).replace('-', '−'), position[0], position[1]);
+                textContext.fillText(String(number).replace('-', '−'), position[0], position[1])
             }
             const roundPoint = point => {
                 point[0] = Math.round(point[0] * 1000000) / 1000000
@@ -311,7 +311,6 @@ const main = () => {
 
                 const numberDimensions = textDimensions(worldPoint[0])
                 const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
-                drawBackground(numberPosition, numberDimensions)
                 drawNumber(worldPoint[0], numberPosition)
             })
 
@@ -327,7 +326,7 @@ const main = () => {
 
                 const numberDimensions = textDimensions(worldPoint[1])
                 const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
-                drawBackground(numberPosition, numberDimensions)
+                // drawBackground(numberPosition, numberDimensions)
                 drawNumber(worldPoint[1], numberPosition)
             })
         }
