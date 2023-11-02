@@ -1,3 +1,5 @@
+'use strict'
+
 import * as webglUtils from './webgl-utils.js';
 import { rangeInclusive, vsub, expect, vmul, vdiv, vadd, elementWithId, div, setProps, log } from './utils.js';
 import * as m4 from './m4.js';
@@ -278,42 +280,50 @@ const main = () => {
 
             return textPos
         }
-        
-        
-        const textMetrics = (text) => {
+        const textDimensions = (text) => {
             const _textMetrics = textContext.measureText(`${text}`)
             const textWidth = _textMetrics.width
             const textHeight = _textMetrics.actualBoundingBoxAscent + _textMetrics.actualBoundingBoxDescent
 
-            return {
-                textWidth,
-                textHeight
-            }
+            return [textWidth, textHeight]
         }
-        numberPointsXAxis().forEach(worldPoint => {
-            
-            const drawNumberBackground = () => {
-               
-                const paddingY = 5
-                textContext.fillStyle = 'white'
-                textContext.fillRect(textPosition[0], textPosition[1], textWidth, -textHeight - paddingY)
-            }
-    
-            const drawNumber = (number) => {
-                textContext.font = '40px KaTeX_Main'
-                textContext.fillStyle = 'black'
-                textContext.fillText(`${number}`, textPosition[0], textPosition[1]);
-            }
-            
-            
-            const {textWidth, textHeight} = textMetrics(worldPoint[0])
-            const offset = [textWidth / -2, 40]
-           
-            const textPosition = vadd(worldToScreen(worldPoint), offset)
+        const drawBackground = (position, dimensions) => {
+            textContext.fillStyle = 'rgba(255, 255, 255, 0.5)'
+            textContext.fillRect(position[0], position[1], dimensions[0], -dimensions[1])
+        }
+        const drawNumber = (number, position) => {
+            textContext.font = '40px KaTeX_Main'
+            textContext.fillStyle = 'black'
+            textContext.fillText(`${number}`, position[0], position[1]);
+        }
+        
 
-            drawNumberBackground()
-            drawNumber(worldPoint[0])
-            
+        numberPointsXAxis().forEach(worldPoint => {
+            const offsetAndCalculateNumberPosition = (width, height) => {
+                const offset = [width / -2, height + 15]
+                const numberPosition = vadd(worldToScreen(worldPoint), offset)
+                
+                return numberPosition
+            }
+
+            const numberDimensions = textDimensions(worldPoint[0])
+            const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
+            drawBackground(numberPosition, numberDimensions)
+            drawNumber(worldPoint[0], numberPosition)
+        })
+
+        numberPointsYAxis().forEach(worldPoint => {
+            const offsetAndCalculateNumberPosition = (width, height) => {
+                const offset = [-width - 10, height / 2]
+                const numberPosition = vadd(worldToScreen(worldPoint), offset)
+                
+                return numberPosition
+            }
+
+            const numberDimensions = textDimensions(worldPoint[1])
+            const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
+            drawBackground(numberPosition, numberDimensions)
+            drawNumber(worldPoint[1], numberPosition)
         })
     }
     const attribLocations = program => ['a_instanceVertexPosition', 'a_startAndEndPoints'].map(name => gl.getAttribLocation(program, name))
@@ -681,6 +691,8 @@ const numberPointsYAxis = () => {
     for (let y = yStart; y <= yMax; y += 1) {
         points.push([0, y]);
     }
+    // Remove [0, 0]
+    points = points.filter(point => point[0] !== 0 || point[1] !==0)
 
     return points
 }
