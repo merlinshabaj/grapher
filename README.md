@@ -10,7 +10,7 @@
 ### Bugs
 - Zooming in and out still has limits that aren't handled
 - Zooming in too far makes minor grid disappear and also major grid when scrolled even further
-- Zooming out too far and graph begins to flig. I assume this is due to the points be recalculated, this being the same bahviour as panning on a low resolution creates.
+- Zooming out too far and graph begins to flig. I assume this is due to the points be recalculated, this being the same bahviour as panning on a low resolution creates. Need to check calculation of resolution 
 
 
 ## Miscellaneous 
