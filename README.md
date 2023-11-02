@@ -6,6 +6,7 @@
 
 ### Implementation 
 - Get rid of 'duplicate' programs, meaning all programs that use the line vertex shader. I want to use only two programs (line segements, joins) for line rendering and merely give them different points to draw the lines from and to. 
+- Probably need to migrate to rendering the numbers using WebGL, in order to be able to display them behind the graph. I don't think there is a way of having the canvas api respect my 3D hierachy in WebGL.
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
