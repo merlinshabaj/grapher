@@ -602,14 +602,14 @@ const determineMinBasedOnGridSize = () => {
     const xStart = Math.ceil(xMin / gridSize) * gridSize;
     const yStart = Math.ceil(yMin / gridSize) * gridSize;
 
-    return [xStart, yStart]
+    return [xStart, yStart, gridSize]
 }
 
 const majorGridPoints = () => {
     const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const points = [];
 
-    const [xStart, yStart] = determineMinBasedOnGridSize()
+    const [xStart, yStart, gridSize] = determineMinBasedOnGridSize()
 
     for (let x = xStart; x <= xMax; x += gridSize) {
         points.push(x, yMax, x, yMin);
@@ -666,9 +666,9 @@ const axesPoints = () => {
 const numberPointsXAxis = () => {
     const [,xMax,,] = translatedAxisRanges()
     let points = [];
-    const [xStart,] = determineMinBasedOnGridSize()
+    const [xStart,,gridSize] = determineMinBasedOnGridSize()
 
-    for (let x = xStart; x <= xMax; x += 1) {
+    for (let x = xStart; x <= xMax; x += gridSize) {
         points.push([x, 0]);
     }
     // Remove [0, 0]
@@ -680,9 +680,9 @@ const numberPointsXAxis = () => {
 const numberPointsYAxis = () => {
     const [,,,yMax] = translatedAxisRanges()
     let points = [];
-    const [,yStart] = determineMinBasedOnGridSize()
+    const [,yStart, gridSize] = determineMinBasedOnGridSize()
 
-    for (let y = yStart; y <= yMax; y += 1) {
+    for (let y = yStart; y <= yMax; y += gridSize) {
         points.push([0, y]);
     }
     // Remove [0, 0]
@@ -698,10 +698,10 @@ const determineGridSize = maxRange => {
     console.log('Initial Gridsize: ', gridSize)
     const rangeGridMultiple = maxRange / gridSize;
 
-    const threshold = 1
+    const threshold = 0.5
 
     if (rangeGridMultiple < 5 * threshold) {
-        gridSize /= 10;
+        gridSize /= 5;
     } else if (rangeGridMultiple < 10 * threshold) {
         gridSize /= 2;
     }
