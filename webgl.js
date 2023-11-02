@@ -289,9 +289,16 @@ const main = () => {
                 textContext.fillStyle = 'black'
                 textContext.fillText(`${number}`, position[0], position[1]);
             }
+            const roundPoint = (point) => {
+                point[0] = Math.round(point[0] * 1000000) / 1000000
+                point[1] = Math.round(point[1] * 1000000) / 1000000
+
+                return point
+            }
             
 
             numberPointsXAxis().forEach(worldPoint => {
+                worldPoint = roundPoint(worldPoint)
                 const offsetAndCalculateNumberPosition = (width, height) => {
                     const offset = [width / -2, height + 15]
                     const numberPosition = vadd(worldToScreen(worldPoint), offset)
@@ -306,6 +313,7 @@ const main = () => {
             })
 
             numberPointsYAxis().forEach(worldPoint => {
+                worldPoint = roundPoint(worldPoint)
                 const offsetAndCalculateNumberPosition = (width, height) => {
                     const offset = [-width - 10, height / 2]
                     const numberPosition = vadd(worldToScreen(worldPoint), offset)
