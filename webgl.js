@@ -179,9 +179,6 @@ const main = () => {
                 const updateLineWidthOnUniforms = () => {
                     line.updateWidth([graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
                     roundJoin.updateWidth([graphLineWidth])
-                    // majorGrid.updateWidth(majorGridLineWidth)
-                    // minorGrid.updateWidth(minorGridLineWidth)
-                    // axes.updateWidth(axesLineWidth)
                 }
                 const updateLineWidths = () => {
                     const recalculateEach = somethings => somethings.map(recalculate);
@@ -228,7 +225,6 @@ const main = () => {
         const drawObject = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
             const setUniforms = (mvp, color, lineWidth) => {
-                // const _uniforms = object.uniforms()
                 gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, mvp)
                 gl.uniform4fv(object.programInfo.colorLocation, color)
                 gl.uniform1f(object.programInfo.lineWidthLocation, lineWidth)
@@ -243,18 +239,14 @@ const main = () => {
                 const verticesPerInstance = object.count
                 let instanceCount
 
-                console.log(object)
-                // This is going to be an object that holds the data for each elelment that is supposed to be drawn (graph, axes, grids)
                 const _uniform = object.uniforms()
+
                 let i = 0
                 console.log('i: ', i)
-                object.startAndEndPointsBuffers.forEach(buffer => {
-                    
-                    console.log('colors: ', _uniform.u_color, 'lineWidths: ', _uniform.u_lineWidth)
+                object.startAndEndPointsBuffers.forEach(buffer => { // This buffer gives length of arrays as well
                     setUniforms(_uniform.u_mvp, _uniform.u_color[i], _uniform.u_lineWidth[i])
-                    console.log('buffers: ', buffer)
-                    buffer.bind() // BIND
-                    setupStartAndEndPoints(startAndEndPoints)   // SET DATA
+                    buffer.bind()
+                    setupStartAndEndPoints(startAndEndPoints)
                     instanceCount = buffer.length() / 4 
 
                     drawArraysInstanced(instanceCount)
@@ -266,7 +258,6 @@ const main = () => {
 
             useObjectProgram()
             bindVertexArray()
-            // setUniforms()
             draw()
         }
         const setupRenderingContext = () => {
@@ -280,9 +271,6 @@ const main = () => {
             mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
             line.updateMVPMatrix(mvpMatrix)
             roundJoin.updateMVPMatrix(mvpMatrix)
-            // majorGrid.updateMVPMatrix(mvpMatrix)
-            // minorGrid.updateMVPMatrix(mvpMatrix)
-            // axes.updateMVPMatrix(mvpMatrix)
         }
         const drawEachObject = () => components.forEach(drawObject)
 
@@ -350,7 +338,6 @@ const main = () => {
 
                 const numberDimensions = textDimensions(worldPoint[1])
                 const numberPosition = offsetAndCalculateNumberPosition(numberDimensions[0], numberDimensions[1])
-                // drawBackground(numberPosition, numberDimensions)
                 drawNumber(worldPoint[1], numberPosition)
             })
         }
@@ -437,6 +424,7 @@ const main = () => {
         return {
             lineSegmentBuffer,
             graphPointsBuffer,
+
             roundJoinGeometryBuffer,
             majorGridPointsBuffer,
             minorGridPointsBuffer,
@@ -459,12 +447,9 @@ const main = () => {
     const component = ({
         program,
         instanceVertexPositionBuffer,
-        startAndEndPointsBuffers, // Array
-        colors,
-        widths,
         primitiveType,
     }) => {
-        const setupVAO = (program, instanceVertexPositionBuffer, startAndEndPointsBuffer) => {
+        const setupVAO = (program, instanceVertexPositionBuffer) => {
             const [
                 instanceVertexPosition,
                 ,
@@ -472,14 +457,12 @@ const main = () => {
             const vao = createAndBindVAO()
             instanceVertexPositionBuffer.bind()
             setupInstanceVertexPosition(instanceVertexPosition)
-            // startAndEndPointsBuffer.bind() //double bind (second bind in draw() function)
-            // setupStartAndEndPoints(startAndEndPoints)
             return vao
         }
-        const uniforms = ({ colors, widths }) => ({
+        const uniforms = ({ colors, lineWidths }) => ({
             u_color: colors, // array
             u_mvp: m4.identity(),
-            u_lineWidth: widths, //arrray
+            u_lineWidth: lineWidths, //array
         })
         const createAndBindVAO = () => {
             const vao = gl.createVertexArray();
@@ -505,21 +488,38 @@ const main = () => {
             }
         }    
         
-        const vao = setupVAO(program, instanceVertexPositionBuffer, startAndEndPointsBuffers)
+        const vao = setupVAO(program, instanceVertexPositionBuffer)
         const _programInfo = programInfo(program)
-        const _uniforms = uniforms({ colors, widths })
+        let startAndEndPointsBuffers = []
+        let colors = []
+        let lineWidths = []
+        const _uniforms = uniforms({ colors, lineWidths })
         const updateMVPMatrix = mvp => _uniforms.u_mvp = mvp
         const updateWidth = width => _uniforms.u_lineWidth = width
+        const addElements = (elements) => {
+            elements.forEach(element => {
+                startAndEndPointsBuffers.push(element.buffer)
+                colors.push(element.color)
+                lineWidths.push(element.lineWidth)
+            })
+        }
         return {
             programInfo: _programInfo,
             vertexArray: vao,
             uniforms: () => _uniforms,
             primitiveType,
             count: instanceVertexPositionBuffer.length() / 2,
-            // instanceCount: () => startAndEndPointsBuffer.length() / 4,
+            startAndEndPointsBuffers,
             updateMVPMatrix,
             updateWidth,
-            startAndEndPointsBuffers,
+            addElements,
+        }
+    }
+    const createElement = (buffer, color, lineWidth) => {
+        return {
+            buffer,
+            color,
+            lineWidth,
         }
     }
 
@@ -542,51 +542,28 @@ const main = () => {
         axesPointsBuffer,
     } = buffers()
 
+    const graph = createElement(graphPointsBuffer, graphColor, graphLineWidth)
+    const majorGrid = createElement(majorGridPointsBuffer, majorGridColor, majorGridLineWidth)
+    const minorGrid = createElement(minorGridPointsBuffer, minorGridColor, minorGridLineWidth)
+    const axes = createElement(axesPointsBuffer, axesColor, axesLineWidth)
 
     const line = component({
         program: lineProgram,
         instanceVertexPositionBuffer: lineSegmentBuffer,
-        startAndEndPointsBuffers: [graphPointsBuffer, majorGridPointsBuffer, minorGridPointsBuffer, axesPointsBuffer],
-        colors: [graphColor, majorGridColor, minorGridColor, axesColor],
-        widths: [graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth], 
         primitiveType: gl.TRIANGLES,
     })
+    line.addElements([graph, majorGrid, minorGrid, axes])
+    
     const roundJoin = component({
         program: roundJoinProgram,
         instanceVertexPositionBuffer: roundJoinGeometryBuffer,
-        startAndEndPointsBuffers: [graphPointsBuffer],
-        colors: [graphColor],
-        widths: [graphLineWidth],
         primitiveType: gl.TRIANGLE_STRIP,
     })
-    // const majorGrid = component({
-    //     program: lineProgram,
-    //     instanceVertexPositionBuffer: lineSegmentBuffer,
-    //     startAndEndPointsBuffer: majorGridPointsBuffer,
-    //     color: majorGridColor,
-    //     width: majorGridLineWidth,
-    //     primitiveType: gl.TRIANGLES,
-    // })
-    // const minorGrid = component({
-    //     program: lineProgram,
-    //     instanceVertexPositionBuffer: lineSegmentBuffer,
-    //     startAndEndPointsBuffer: minorGridPointsBuffer,
-    //     color: minorGridColor,
-    //     width: minorGridLineWidth,
-    //     primitiveType: gl.TRIANGLES,
-    // })
-    // const axes = component({
-    //     program: lineProgram,
-    //     instanceVertexPositionBuffer: lineSegmentBuffer,
-    //     startAndEndPointsBuffer: axesPointsBuffer,
-    //     color: axesColor,
-    //     width: axesLineWidth,
-    //     primitiveType: gl.TRIANGLES,
-    // })
+    roundJoin.addElements([graph])
 
     let viewProjectionMatrix, mvpMatrix
 
-    const components = [line, roundJoin/* , axes, majorGrid, minorGrid */]
+    const components = [line, roundJoin]
     
     setupMouseEventListeners()
     computeViewProjectionMatrix()
