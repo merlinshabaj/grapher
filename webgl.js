@@ -355,9 +355,14 @@ const main = () => {
         }
         const createLineProgram = () => createProgram({ vertexShaderSource: lineVertexShaderSource, fragmentShaderSource: fragmentShaderSource })
         const createRoundJoinProgram = () => createProgram({ vertexShaderSource: roundJoinShaderSource,  fragmentShaderSource: fragmentShaderSource })
+
+        const lineProgram = createLineProgram()
+        const roundJoinProgram = createRoundJoinProgram()
         return {
             createLineProgram,
             createRoundJoinProgram,
+            lineProgram, 
+            roundJoinProgram,
         }
     }
     const computeViewProjectionMatrix = () => {
@@ -404,8 +409,9 @@ const main = () => {
         }
 
         const lineSegmentBuffer = buffer(lineSegmentInstanceGeometry)
-        const graphPointsBuffer = buffer(graphPoints())
         const roundJoinGeometryBuffer = buffer(computeRoundJoinGeometry())
+        
+        const graphPointsBuffer = buffer(graphPoints())
         const majorGridPointsBuffer = buffer(majorGridPoints())
         const minorGridPointsBuffer = buffer(minorGridPoints())
         const axesPointsBuffer = buffer(axesPoints())
@@ -502,8 +508,9 @@ const main = () => {
 
     const {
         lineSegmentBuffer,
-        graphPointsBuffer,
         roundJoinGeometryBuffer,
+
+        graphPointsBuffer,
         majorGridPointsBuffer,
         minorGridPointsBuffer,
         axesPointsBuffer,
@@ -512,6 +519,8 @@ const main = () => {
     const {
         createLineProgram,
         createRoundJoinProgram,
+        lineProgram, 
+        roundJoinProgram,
     } = createProgramFunctions()
 
     const graph = component({
@@ -742,7 +751,7 @@ const initializeGlobalVariables = () => {
 
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
-    currentFn = functions[0];
+    currentFn = functions[3];
 
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
