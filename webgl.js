@@ -242,7 +242,6 @@ const main = () => {
                 const _uniform = object.uniforms()
 
                 let i = 0
-                console.log('i: ', i)
                 object.startAndEndPointsBuffers.forEach(buffer => { // This buffer gives length of arrays as well
                     setUniforms(_uniform.u_mvp, _uniform.u_color[i], _uniform.u_lineWidth[i])
                     buffer.bind()
@@ -444,7 +443,7 @@ const main = () => {
         gl.enableVertexAttribArray(location);
         gl.vertexAttribDivisor(location, 1);
     }
-    const component = ({
+    const renderer = ({
         program,
         instanceVertexPositionBuffer,
         primitiveType,
@@ -547,18 +546,18 @@ const main = () => {
     const minorGrid = createElement(minorGridPointsBuffer, minorGridColor, minorGridLineWidth)
     const axes = createElement(axesPointsBuffer, axesColor, axesLineWidth)
 
-    const line = component({
+    const line = renderer({
         program: lineProgram,
         instanceVertexPositionBuffer: lineSegmentBuffer,
         primitiveType: gl.TRIANGLES,
     })
-    line.addElements([graph, majorGrid, minorGrid, axes])
-    
-    const roundJoin = component({
+    const roundJoin = renderer({
         program: roundJoinProgram,
         instanceVertexPositionBuffer: roundJoinGeometryBuffer,
         primitiveType: gl.TRIANGLE_STRIP,
     })
+
+    line.addElements([graph, majorGrid, minorGrid, axes])
     roundJoin.addElements([graph])
 
     let viewProjectionMatrix, mvpMatrix
