@@ -241,18 +241,16 @@ const main = () => {
 
                 const _uniform = object.uniforms()
 
-                let i = 0
-                object.startAndEndPointsBuffers.forEach(buffer => { // This buffer gives length of arrays as well
-                    setUniforms(_uniform.u_mvp, _uniform.u_color[i], _uniform.u_lineWidth[i])
+                Array.from({ length: object.elementCount() }, (_, index) => {
+                    const buffer = object.startAndEndPointsBuffers[index]
+
+                    setUniforms(_uniform.u_mvp, _uniform.u_color[index], _uniform.u_lineWidth[index])
                     buffer.bind()
                     setupStartAndEndPoints(startAndEndPoints)
                     instanceCount = buffer.length() / 4 
 
                     drawArraysInstanced(instanceCount)
-
-                    i += 1  
                 })
-                i = 0
             }
 
             useObjectProgram()
@@ -290,7 +288,7 @@ const main = () => {
             const drawNumber = (number, position) => {
                 const drawStroke = () => {
                     textContext.strokeStyle = 'white'
-                    textContext.lineWidth = 20;
+                    textContext.lineWidth = 16;
                     textContext.strokeText(String(number).replace('-', '−'), position[0], position[1])
                 }
                 const _drawNumber = () => {
@@ -485,23 +483,27 @@ const main = () => {
                 mvpLocation,
                 lineWidthLocation,
             }
-        }    
-        
-        const vao = setupVAO(program, instanceVertexPositionBuffer)
-        const _programInfo = programInfo(program)
+        }
+            
         let startAndEndPointsBuffers = []
         let colors = []
         let lineWidths = []
+        let numberOfElements
+        
+        const vao = setupVAO(program, instanceVertexPositionBuffer)
+        const _programInfo = programInfo(program)
         const _uniforms = uniforms({ colors, lineWidths })
         const updateMVPMatrix = mvp => _uniforms.u_mvp = mvp
         const updateWidth = width => _uniforms.u_lineWidth = width
         const addElements = (elements) => {
+            numberOfElements = elements.length
             elements.forEach(element => {
                 startAndEndPointsBuffers.push(element.buffer)
                 colors.push(element.color)
                 lineWidths.push(element.lineWidth)
             })
         }
+        const elementCount = () => { return numberOfElements }
         return {
             programInfo: _programInfo,
             vertexArray: vao,
@@ -509,6 +511,7 @@ const main = () => {
             primitiveType,
             count: instanceVertexPositionBuffer.length() / 2,
             startAndEndPointsBuffers,
+            elementCount,
             updateMVPMatrix,
             updateWidth,
             addElements,
