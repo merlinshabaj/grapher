@@ -247,9 +247,22 @@ const main = () => {
                     return current + fraction * (targetValues[index] - current);
                 });
             }
-            
-            const animationDuration = 500
+            const setWorldDimensions = (dimensions) => {
+                xMin = dimensions[0]
+                xMax = dimensions[1]
+                yMin = dimensions[2]
+                yMax = dimensions[3]
+            }
+            // Only updates on uniforms doesn't update initial / global lineWidth variables
+            const updateLineWidthOnUniforms = () => {
+                graph.updateWidth(graphLineWidth)
+                majorGrid.updateWidth(majorGridLineWidth)
+                minorGrid.updateWidth(minorGridLineWidth)
+                axes.updateWidth(axesLineWidth)
+            }
+
             const animateZoom = () => {
+                const animationDuration = 500
                 let elapsedTime = Date.now() - startTime
                 let fraction = elapsedTime / animationDuration
                 if (fraction > 1) fraction = 1
@@ -267,14 +280,19 @@ const main = () => {
                 renderWithNewOrthographicDimensions(interpolatedMatrix);
 
                 const interpolatedDimensions = interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction)
-                xMin = interpolatedDimensions[0]
-                xMax = interpolatedDimensions[1]
-                yMin = interpolatedDimensions[2]
-                yMax = interpolatedDimensions[3]
+                setWorldDimensions(interpolatedDimensions)
+
+                graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+                majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+                minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+                axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
+                updateLineWidthOnUniforms()
+
+                resolution = 100
+
                 if (fraction < 1) {
                     requestAnimationFrame(animateZoom); // Continue the animation
                 }
-                // setToWorldOrigin()
             }
             
             startTime = Date.now();
