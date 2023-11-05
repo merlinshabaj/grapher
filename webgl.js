@@ -117,8 +117,8 @@ const colors = () => {
 
 const main = () => {
     const setupMouseEventListeners = () => {
-        const renderWithNewOrthographicDimensions = optionalOrthographicMatrix => {
-            computeViewProjectionMatrix(optionalOrthographicMatrix)
+        const renderWithNewOrthographicDimensions = () => {
+            computeViewProjectionMatrix()
             updateAllPoints()
             render();
         }
@@ -212,26 +212,20 @@ const main = () => {
             }
             
             updateLineWidths()
+            console.log('Resolution: ', resolution)
             updateResolution()
             updateWorldMinAndMax()
             renderWithNewOrthographicDimensions();
         }
         let startTime = Date.now()
         const zoomToOrigin = () => {
-            const interpolateProjectionMatrices = (matrix1, matrix2, fraction) => {
-                let interpolatedMatrix = new Float32Array(16);
-
-                for (let i = 0; i < 16; i++) {
-                    // Simple linear interpolation for each element
-                    interpolatedMatrix[i] = matrix1[i] + fraction * (matrix2[i] - matrix1[i]);
-                }
-
-                return interpolatedMatrix;
+            const easeInOutCubic = t => {
+                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
             }
             const interpolateTranslation = (currentTranslation, fraction) => {
                 fraction = Math.max(0, Math.min(1, fraction));
                 const targetTranslation = [0, 0, 0]
-
+  
                 // Interpolate each component of the translation vector
                 let interpolatedTranslation = currentTranslation.map((current, index) => {
                     return current + fraction * (targetTranslation[index] - current);
@@ -260,50 +254,47 @@ const main = () => {
                 minorGrid.updateWidth(minorGridLineWidth)
                 axes.updateWidth(axesLineWidth)
             }
+            const adjustedZoomFactor = resolution < 100 ? zoomFactor : 1 / zoomFactor
+            const recalculate = something => something / adjustedZoomFactor
+            const updateResolution = () => resolution = resolution == 100 ? 100 : 1 / recalculate(1 / resolution)
 
+            let startTime = Date.now()
             const animateZoom = () => {
                 const animationDuration = 500
                 let elapsedTime = Date.now() - startTime
                 let fraction = elapsedTime / animationDuration
                 if (fraction > 1) fraction = 1
 
+                // Update dimensions, translations, resolution and linewidths
                 translation = interpolateTranslation(translation, fraction);
 
-                const aspectRatio = canvas.clientWidth / canvas.clientHeight;
-                const originMin = [-5 * aspectRatio, -5]
-                const originMax = [5 * aspectRatio, 5]
-                const originMatrix = m4.orthographic(originMin[0], originMax[0], originMin[1], originMax[1], near, far)
-
-
-                const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far)
-                const interpolatedMatrix = interpolateProjectionMatrices(orthographicMatrix, originMatrix, fraction)
-                renderWithNewOrthographicDimensions(interpolatedMatrix);
-
-                const interpolatedDimensions = interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction)
-                setWorldDimensions(interpolatedDimensions)
+                setWorldDimensions(interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction))
+                translation = interpolateTranslation(translation, fraction);
 
                 graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
                 majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
                 minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
                 axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
                 updateLineWidthOnUniforms()
-
-                resolution = 100
+                console.log('pre update resolution: ', resolution)
+                updateResolution()
+                console.log('after update resolution: ', resolution)
+                renderWithNewOrthographicDimensions()
 
                 if (fraction < 1) {
                     requestAnimationFrame(animateZoom); // Continue the animation
+                } else {
+                    resolution = 100
                 }
             }
             
             startTime = Date.now();
-            requestAnimationFrame(animateZoom); 
+            requestAnimationFrame(animateZoom);
         }
        
         const handleKeyPress = event => {
             if (event.code === 'KeyR') {
-                console.log('pre zoomToOrigin(): ', {xMin, xMax, yMin, yMax})
                 zoomToOrigin()
-                console.log('after zoomToOrigin(): ', {xMin, xMax, yMin, yMax})
             }                                 
         }
         addEventListener('keypress', handleKeyPress)
@@ -460,7 +451,7 @@ const main = () => {
             roundJoinProgram,
         }
     }
-    const computeViewProjectionMatrix = optionalOrthographicMatrix => {
+    const computeViewProjectionMatrix = () => {
         const viewMatrix = () => {
             const cameraPosition = [0, 0, 1];
             const target = [0, 0, 0];
@@ -471,7 +462,7 @@ const main = () => {
         }
 
 
-        const orthographicMatrix = optionalOrthographicMatrix ?? m4.orthographic(xMin, xMax, yMin, yMax, near, far);
+        const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
     const buffers = () => {
