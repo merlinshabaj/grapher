@@ -117,6 +117,12 @@ const colors = () => {
 
 const main = () => {
     const setupMouseEventListeners = () => {
+        const renderWithNewOrthographicDimensions = optionalOrthographicMatrix => {
+            computeViewProjectionMatrix(optionalOrthographicMatrix)
+            updateAllPoints()
+            render();
+        }
+
         let panningPosition = null
 
         canvas.addEventListener('mousedown', event => {
@@ -172,9 +178,8 @@ const main = () => {
         canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
 
         const zoom = (zoomingIn, mousePosition) => {
-            const factor = zoomingIn ? zoomFactor : 1 / zoomFactor
-
-            const recalculate = something => something / factor
+            const adjustedZoomFactor = zoomingIn ? zoomFactor : 1 / zoomFactor
+            const recalculate = something => something / adjustedZoomFactor
             const updateLineWidths = () => {
                 const updateLineWidthOnUniforms = () => {
                     graph.updateWidth(graphLineWidth)
@@ -194,8 +199,8 @@ const main = () => {
             const updateWorldMinAndMax = () => {
                 const recalculateWorldMinAndMax = () => {
                     const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
-                    const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), factor))
-                    const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), factor))
+                    const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), adjustedZoomFactor))
+                    const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), adjustedZoomFactor))
                     return [minNew, maxNew]
                 }
 
@@ -205,17 +210,81 @@ const main = () => {
                 xMax = maxNew[0];
                 yMax = maxNew[1];
             }
-            const renderWithNewOrthographicDimensions = () => {
-                computeViewProjectionMatrix()
-                updateAllPoints()
-                render();
-            }
-
+            
             updateLineWidths()
             updateResolution()
             updateWorldMinAndMax()
             renderWithNewOrthographicDimensions();
         }
+        let startTime = Date.now()
+        const zoomToOrigin = () => {
+            const interpolateMatrices = (matrix1, matrix2, fraction) => {
+                let interpolatedMatrix = new Float32Array(16);
+
+                for (let i = 0; i < 16; i++) {
+                    // Simple linear interpolation for each element
+                    interpolatedMatrix[i] = matrix1[i] + fraction * (matrix2[i] - matrix1[i]);
+                }
+
+                return interpolatedMatrix;
+            }
+            const interpolateTranslation = (currentTranslation, fraction) => {
+                fraction = Math.max(0, Math.min(1, fraction));
+                const targetTranslation = [0, 0, 0]
+                // Initialize an array to hold the interpolated translation
+                let interpolatedTranslation = [0, 0, 0]
+
+                // Interpolate each component of the translation vector
+                for (let i = 0; i < 3; i++) {
+                    interpolatedTranslation[i] = currentTranslation[i] + fraction * (targetTranslation[i] - currentTranslation[i])
+                }
+                console.log('Interpolated Translation:', interpolatedTranslation)
+                return interpolatedTranslation
+            }
+            const animationDuration = 500
+            const animateZoom = () => {
+                let elapsedTime = Date.now() - startTime
+                let fraction = elapsedTime / animationDuration
+                if (fraction > 1) fraction = 1
+
+                console.log('Before interpolation:', { translation, fraction });
+                translation = interpolateTranslation(translation, fraction);
+                console.log('After interpolation:', { translation });
+
+                renderWithNewOrthographicDimensions();
+                console.log('Animation frame:', { fraction });
+
+                if (fraction < 1) {
+                    requestAnimationFrame(animateZoom); // Continue the animation
+                }
+            }
+            // const aspectRatio = canvas.clientWidth / canvas.clientHeight;
+            // const originMin = [-5 * aspectRatio, -5]
+            // const originMax = [5 * aspectRatio, 5]
+            // const originMatrix = m4.orthographic(originMin[0], originMax[0], originMin[1], originMax[1], near, far)
+
+
+            // const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far)
+            // const interpolatedMatrix = interpolateMatrices(orthographicMatrix, originMatrix, fraction)
+            startTime = Date.now();
+            requestAnimationFrame(animateZoom); 
+        }
+       
+        const handleKeyPress = event => {
+            if (event.code === 'KeyR') {
+                
+                // xMin = -5 * aspectRatio
+                // xMax = 5 * aspectRatio
+                // yMin = -5
+                // yMax = 5
+                console.log('keypress event fired')
+                zoomToOrigin()
+
+                // renderWithNewOrthographicDimensions()
+            }                                 
+            render()
+        }
+        addEventListener('keypress', handleKeyPress)
     }
     const updateAllPoints = () => {
         graphPointsBuffer.updateData(graphPoints())
@@ -244,7 +313,6 @@ const main = () => {
                 object.elements().forEach( element => {
                     const buffer = element.buffer
                     const _uniform = element.uniforms()
-
                     setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth)
                     buffer.bind()
                     setupStartAndEndPoints(startAndEndPoints)
@@ -263,7 +331,7 @@ const main = () => {
             gl.viewport(0, 0, canvas.width, canvas.height);
             gl.clearColor(0, 0, 0, 0);
             gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            gl.enable(gl.DEPTH_TEST);
+            // gl.enable(gl.DEPTH_TEST);
         }
         const updateMVPMatrices = () => {
             mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
@@ -370,7 +438,7 @@ const main = () => {
             roundJoinProgram,
         }
     }
-    const computeViewProjectionMatrix = () => {
+    const computeViewProjectionMatrix = optionalOrthographicMatrix => {
         const viewMatrix = () => {
             const cameraPosition = [0, 0, 1];
             const target = [0, 0, 0];
@@ -380,7 +448,8 @@ const main = () => {
             return m4.inverse(cameraMatrix);
         }
 
-        const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
+
+        const orthographicMatrix = optionalOrthographicMatrix ?? m4.orthographic(xMin, xMax, yMin, yMax, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
     }
     const buffers = () => {
@@ -562,7 +631,7 @@ const main = () => {
         primitiveType: gl.TRIANGLE_STRIP,
     })
 
-    line.addElements([graph, majorGrid, minorGrid, axes])
+    line.addElements([minorGrid, majorGrid, axes, graph])
     roundJoin.addElements([graph])
 
     let viewProjectionMatrix, mvpMatrix
