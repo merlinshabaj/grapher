@@ -234,30 +234,16 @@ const main = () => {
             const bindVertexArray = () => gl.bindVertexArray(object.vertexArray)
             const draw = () => {
                 const drawArraysInstanced = (instanceCount) => gl.drawArraysInstanced(primitiveType, offset, verticesPerInstance, instanceCount)
-                const drawArrays = () => gl.drawArrays(primitiveType, offset, verticesPerInstance)
+                // const drawArrays = () => gl.drawArrays(primitiveType, offset, verticesPerInstance)
                 
                 const primitiveType = object.primitiveType
                 const offset = 0
                 const verticesPerInstance = object.count
                 let instanceCount
 
-                
-
-                // Array.from({ length: object.elementCount() }, (_, index) => {
-                //     const buffer = object.startAndEndPointsBuffers[index]
-
-                //     setUniforms(_uniform.u_mvp, _uniform.u_color[index], _uniform.u_lineWidth[index])
-                //     buffer.bind()
-                //     setupStartAndEndPoints(startAndEndPoints)
-                //     instanceCount = buffer.length() / 4 
-
-                //     drawArraysInstanced(instanceCount)
-                // })
-                console.log(object.elements())
                 object.elements().forEach( element => {
                     const buffer = element.buffer
                     const _uniform = element.uniforms()
-                    console.log('uniform: ', _uniform)
 
                     setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth)
                     buffer.bind()
