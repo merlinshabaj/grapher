@@ -1,14 +1,25 @@
 # `Plotter`
 ## TODO 
 ### Features
-- Arrows for axes
-- Maybe label for axes (x and y)
+- Zoom / pan to origin on button click
 - Drawing multiple lines
+- Stretching and squashing of individual axes
+- Display numbers even when axes aren't in view (GeoGebra)
+- Show coordinates of mouse position
+#### Soon
+- Maybe label for axes (x and y)
+- Arrows for axes
+
+
 
 ### Implementation 
-- Get rid of 'duplicate' programs, meaning all programs that use the line vertex shader. I want to use only two programs (line segements, joins) for line rendering and merely give them different points to draw the lines from and to. ✅ 
-    - Need to refactor new code: Loop over number of elements for each given `component` instead of having `let i = 0; i += 1;`. Additionally change name of `component` to something more fitting.
 - Probably need to migrate to rendering the numbers using WebGL, in order to be able to display them behind the graph. I don't think there is a way of having the canvas api respect my 3D hierachy in WebGL.
+Possible approaches:
+    1. Try to render numbers into textures using 2D canvas API and send the data to GPU on the fly
+    2. Render set of numbers / symbols that are going to be displayed into textures and send them to the GPU 
+    3. Create an atlas of all the symbols
+- I want to move away from defining the variables representing the world dimension (xMin, xMax, yMin, yMax) as individual values and either move them together. I don't know how yet but time will tell, I shouldn't do that yet anyway.
+- Move away from having double definitions, like I do for the unfiorms. I have a variable storing the uniform value and an object inside the element object/bundle. Long term it will probably be better to have one single source of truth and it would also simpliy the code. 
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
