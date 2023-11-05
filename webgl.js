@@ -177,8 +177,10 @@ const main = () => {
             const recalculate = something => something / factor
             const updateLineWidths = () => {
                 const updateLineWidthOnUniforms = () => {
-                    line.updateWidth([graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
-                    roundJoin.updateWidth([graphLineWidth])
+                    graph.updateWidth(graphLineWidth)
+                    majorGrid.updateWidth(majorGridLineWidth)
+                    minorGrid.updateWidth(minorGridLineWidth)
+                    axes.updateWidth(axesLineWidth)
                 }
                 const updateLineWidths = () => {
                     const recalculateEach = somethings => somethings.map(recalculate);
@@ -239,12 +241,25 @@ const main = () => {
                 const verticesPerInstance = object.count
                 let instanceCount
 
-                const _uniform = object.uniforms()
+                
 
-                Array.from({ length: object.elementCount() }, (_, index) => {
-                    const buffer = object.startAndEndPointsBuffers[index]
+                // Array.from({ length: object.elementCount() }, (_, index) => {
+                //     const buffer = object.startAndEndPointsBuffers[index]
 
-                    setUniforms(_uniform.u_mvp, _uniform.u_color[index], _uniform.u_lineWidth[index])
+                //     setUniforms(_uniform.u_mvp, _uniform.u_color[index], _uniform.u_lineWidth[index])
+                //     buffer.bind()
+                //     setupStartAndEndPoints(startAndEndPoints)
+                //     instanceCount = buffer.length() / 4 
+
+                //     drawArraysInstanced(instanceCount)
+                // })
+                console.log(object.elements())
+                object.elements().forEach( element => {
+                    const buffer = element.buffer
+                    const _uniform = element.uniforms()
+                    console.log('uniform: ', _uniform)
+
+                    setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth)
                     buffer.bind()
                     setupStartAndEndPoints(startAndEndPoints)
                     instanceCount = buffer.length() / 4 
@@ -266,8 +281,9 @@ const main = () => {
         }
         const updateMVPMatrices = () => {
             mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-            line.updateMVPMatrix(mvpMatrix)
-            roundJoin.updateMVPMatrix(mvpMatrix)
+            line.elements().map(e => {e.updateMVPMatrix(mvpMatrix)})
+            roundJoin.elements().map(e => {e.updateMVPMatrix(mvpMatrix)})
+            // roundJoin.updateMVPMatrix(mvpMatrix)
         }
         const drawEachObject = () => components.forEach(drawObject)
 
@@ -456,11 +472,6 @@ const main = () => {
             setupInstanceVertexPosition(instanceVertexPosition)
             return vao
         }
-        const uniforms = ({ colors, lineWidths }) => ({
-            u_color: colors, // array
-            u_mvp: m4.identity(),
-            u_lineWidth: lineWidths, //array
-        })
         const createAndBindVAO = () => {
             const vao = gl.createVertexArray();
             gl.bindVertexArray(vao);    
@@ -484,46 +495,50 @@ const main = () => {
                 lineWidthLocation,
             }
         }
-            
-        let startAndEndPointsBuffers = []
-        let colors = []
-        let lineWidths = []
-        let numberOfElements
+
+        let _elements = []
         
         const vao = setupVAO(program, instanceVertexPositionBuffer)
         const _programInfo = programInfo(program)
-        const _uniforms = uniforms({ colors, lineWidths })
-        const updateMVPMatrix = mvp => _uniforms.u_mvp = mvp
-        const updateWidth = width => _uniforms.u_lineWidth = width
-        const addElements = (elements) => {
-            numberOfElements = elements.length
-            elements.forEach(element => {
-                startAndEndPointsBuffers.push(element.buffer)
-                colors.push(element.color)
-                lineWidths.push(element.lineWidth)
-            })
+        const getElements = () => _elements
+        const addElements = elements => {
+            _elements = _elements.concat(elements);
         }
-        const elementCount = () => { return numberOfElements }
         return {
             programInfo: _programInfo,
             vertexArray: vao,
-            uniforms: () => _uniforms,
             primitiveType,
             count: instanceVertexPositionBuffer.length() / 2,
-            startAndEndPointsBuffers,
-            elementCount,
-            updateMVPMatrix,
-            updateWidth,
+            elements: getElements,
             addElements,
         }
     }
-    const createElement = (buffer, color, lineWidth) => {
+    const element = ({ 
+        buffer, 
+        color, 
+        lineWidth 
+    }) => {
+        const uniforms = ({ color, lineWidth }) => ({
+            u_color: color, 
+            u_mvp: m4.identity(),
+            u_lineWidth: lineWidth, 
+        })
+
+        let _buffer = buffer
+        
+        const _uniforms = uniforms({ color, lineWidth})
+        const updateMVPMatrix = mvp => _uniforms.u_mvp = mvp
+        const updateWidth = width => _uniforms.u_lineWidth = width
+
         return {
-            buffer,
-            color,
-            lineWidth,
+            buffer: _buffer,
+            uniforms: () => _uniforms,
+            updateMVPMatrix,
+            updateWidth,
         }
     }
+
+
 
     const lineSegmentInstanceGeometry = [
         0, -0.5,
@@ -544,10 +559,10 @@ const main = () => {
         axesPointsBuffer,
     } = buffers()
 
-    const graph = createElement(graphPointsBuffer, graphColor, graphLineWidth)
-    const majorGrid = createElement(majorGridPointsBuffer, majorGridColor, majorGridLineWidth)
-    const minorGrid = createElement(minorGridPointsBuffer, minorGridColor, minorGridLineWidth)
-    const axes = createElement(axesPointsBuffer, axesColor, axesLineWidth)
+    const graph = element({buffer: graphPointsBuffer, color: graphColor, lineWidth: graphLineWidth})
+    const majorGrid = element({buffer: majorGridPointsBuffer, color: majorGridColor, lineWidth: majorGridLineWidth})
+    const minorGrid = element({buffer: minorGridPointsBuffer, color: minorGridColor, lineWidth: minorGridLineWidth})
+    const axes = element({buffer: axesPointsBuffer, color: axesColor, lineWidth: axesLineWidth})
 
     const line = renderer({
         program: lineProgram,
