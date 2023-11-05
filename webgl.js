@@ -241,6 +241,11 @@ const main = () => {
                     return current + fraction * (targetValues[index] - current);
                 });
             }
+            const interpolateResolution = (currentResolution, fraction) => {
+                fraction = Math.max(0, Math.min(1, fraction));
+                const targetResolution = 100
+                return currentResolution + fraction * (targetResolution - currentResolution);
+            }
             const setWorldDimensions = (dimensions) => {
                 xMin = dimensions[0]
                 xMax = dimensions[1]
@@ -254,9 +259,6 @@ const main = () => {
                 minorGrid.updateWidth(minorGridLineWidth)
                 axes.updateWidth(axesLineWidth)
             }
-            const adjustedZoomFactor = resolution < 100 ? zoomFactor : 1 / zoomFactor
-            const recalculate = something => something / adjustedZoomFactor
-            const updateResolution = () => resolution = resolution == 100 ? 100 : 1 / recalculate(1 / resolution)
 
             let startTime = Date.now()
             const animateZoom = () => {
@@ -266,6 +268,10 @@ const main = () => {
                 if (fraction > 1) fraction = 1
 
                 // Update dimensions, translations, resolution and linewidths
+                console.log('pre update resolution: ', resolution)
+                const interpolatedResolution = interpolateResolution(resolution, fraction)
+                resolution = interpolatedResolution
+                console.log('after update resolution: ', resolution)
                 translation = interpolateTranslation(translation, fraction);
 
                 setWorldDimensions(interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction))
@@ -276,15 +282,11 @@ const main = () => {
                 minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
                 axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
                 updateLineWidthOnUniforms()
-                console.log('pre update resolution: ', resolution)
-                updateResolution()
-                console.log('after update resolution: ', resolution)
+                
                 renderWithNewOrthographicDimensions()
 
                 if (fraction < 1) {
                     requestAnimationFrame(animateZoom); // Continue the animation
-                } else {
-                    resolution = 100
                 }
             }
             
