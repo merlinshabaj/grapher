@@ -18,7 +18,7 @@ Possible approaches:
     1. Try to render numbers into textures using 2D canvas API and send the data to GPU on the fly
     2. Render set of numbers / symbols that are going to be displayed into textures and send them to the GPU 
     3. Create an atlas of all the symbols
-- I want to move away from defining the variables representing the world dimension (xMin, xMax, yMin, yMax) as individual values and either move them together. I don't know how yet but time will tell, I shouldn't do that yet anyway.
+- I want to move away from defining the variables representing the world dimension (`xMin`, `xMax`, `yMin`, `yMax`) as individual values and either move them together. I don't know how yet but time will tell, I shouldn't do that yet anyway.
 - Move away from having double definitions, like I do for the unfiorms. I have a variable storing the uniform value and an object inside the element object/bundle. Long term it will probably be better to have one single source of truth and it would also simpliy the code. 
 
 ### Bugs
