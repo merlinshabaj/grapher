@@ -231,13 +231,11 @@ const main = () => {
             const interpolateTranslation = (currentTranslation, fraction) => {
                 fraction = Math.max(0, Math.min(1, fraction));
                 const targetTranslation = [0, 0, 0]
-                // Initialize an array to hold the interpolated translation
-                let interpolatedTranslation = [0, 0, 0]
 
                 // Interpolate each component of the translation vector
-                for (let i = 0; i < 3; i++) {
-                    interpolatedTranslation[i] = currentTranslation[i] + fraction * (targetTranslation[i] - currentTranslation[i])
-                }
+                let interpolatedTranslation = currentTranslation.map((current, index) => {
+                    return current + fraction * (targetTranslation[index] - current);
+                });
                 console.log('Interpolated Translation:', interpolatedTranslation)
                 return interpolatedTranslation
             }
