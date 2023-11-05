@@ -267,9 +267,10 @@ const main = () => {
         }
         const updateMVPMatrices = () => {
             mvpMatrix = computeMVPMatrix(viewProjectionMatrix, translation, 0, 0, scale);
-            line.elements().map(e => {e.updateMVPMatrix(mvpMatrix)})
-            roundJoin.elements().map(e => {e.updateMVPMatrix(mvpMatrix)})
-            // roundJoin.updateMVPMatrix(mvpMatrix)
+            graph.updateMVPMatrix(mvpMatrix)
+            majorGrid.updateMVPMatrix(mvpMatrix)
+            minorGrid.updateMVPMatrix(mvpMatrix)
+            axes.updateMVPMatrix(mvpMatrix)
         }
         const drawEachElement = () => renderers.forEach(drawElements)
 
