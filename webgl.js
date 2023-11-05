@@ -224,7 +224,7 @@ const main = () => {
         axesPointsBuffer.updateData(axesPoints())
     }
     const render = () => {
-        const drawObject = object => {
+        const drawElements = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
             const setUniforms = (mvp, color, lineWidth) => {
                 gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, mvp)
@@ -271,7 +271,7 @@ const main = () => {
             roundJoin.elements().map(e => {e.updateMVPMatrix(mvpMatrix)})
             // roundJoin.updateMVPMatrix(mvpMatrix)
         }
-        const drawEachObject = () => components.forEach(drawObject)
+        const drawEachElement = () => renderers.forEach(drawElements)
 
         const drawNumbers = () => {
             const worldToScreen = worldPoint => {
@@ -345,7 +345,7 @@ const main = () => {
         scaleCanvas(textCanvas)
         setupRenderingContext()
         updateMVPMatrices()
-        drawEachObject()  
+        drawEachElement()  
 
         drawNumbers()
         textContext.clearRect(0, 0, textContext.canvas.width, textContext.canvas.height)
@@ -566,7 +566,7 @@ const main = () => {
 
     let viewProjectionMatrix, mvpMatrix
 
-    const components = [line, roundJoin]
+    const renderers = [line, roundJoin]
     
     setupMouseEventListeners()
     computeViewProjectionMatrix()
