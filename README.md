@@ -16,7 +16,7 @@
 
 
 ## Miscellaneous 
-### Potential for bug
+### Potential for bugs
 The rendering order is currently not really flexible, it would need some refactoring to make it more flexible. For instance, the current rendering process, wouldn't allow for such a rendering oder: line segments > joins >line segments > joins ...
 
 ### Drawing numbers
