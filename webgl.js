@@ -218,7 +218,7 @@ const main = () => {
         }
         let startTime = Date.now()
         const zoomToOrigin = () => {
-            const interpolateMatrices = (matrix1, matrix2, fraction) => {
+            const interpolateProjectionMatrices = (matrix1, matrix2, fraction) => {
                 let interpolatedMatrix = new Float32Array(16);
 
                 for (let i = 0; i < 16; i++) {
@@ -236,51 +236,57 @@ const main = () => {
                 let interpolatedTranslation = currentTranslation.map((current, index) => {
                     return current + fraction * (targetTranslation[index] - current);
                 });
-                console.log('Interpolated Translation:', interpolatedTranslation)
                 return interpolatedTranslation
             }
+            const interpolateWorldDimensions = (currentValues, fraction) => {
+                fraction = Math.max(0, Math.min(1, fraction));
+                const aspectRatio = canvas.clientWidth / canvas.clientHeight;
+
+                const targetValues = [-5 * aspectRatio, 5 * aspectRatio, -5, 5] // xMin, xMax, yMin, yMax
+                return currentValues.map((current, index) => {
+                    return current + fraction * (targetValues[index] - current);
+                });
+            }
+            
             const animationDuration = 500
             const animateZoom = () => {
                 let elapsedTime = Date.now() - startTime
                 let fraction = elapsedTime / animationDuration
                 if (fraction > 1) fraction = 1
 
-                console.log('Before interpolation:', { translation, fraction });
                 translation = interpolateTranslation(translation, fraction);
-                console.log('After interpolation:', { translation });
 
-                renderWithNewOrthographicDimensions();
-                console.log('Animation frame:', { fraction });
+                const aspectRatio = canvas.clientWidth / canvas.clientHeight;
+                const originMin = [-5 * aspectRatio, -5]
+                const originMax = [5 * aspectRatio, 5]
+                const originMatrix = m4.orthographic(originMin[0], originMax[0], originMin[1], originMax[1], near, far)
 
+
+                const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far)
+                const interpolatedMatrix = interpolateProjectionMatrices(orthographicMatrix, originMatrix, fraction)
+                renderWithNewOrthographicDimensions(interpolatedMatrix);
+
+                const interpolatedDimensions = interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction)
+                xMin = interpolatedDimensions[0]
+                xMax = interpolatedDimensions[1]
+                yMin = interpolatedDimensions[2]
+                yMax = interpolatedDimensions[3]
                 if (fraction < 1) {
                     requestAnimationFrame(animateZoom); // Continue the animation
                 }
+                // setToWorldOrigin()
             }
-            // const aspectRatio = canvas.clientWidth / canvas.clientHeight;
-            // const originMin = [-5 * aspectRatio, -5]
-            // const originMax = [5 * aspectRatio, 5]
-            // const originMatrix = m4.orthographic(originMin[0], originMax[0], originMin[1], originMax[1], near, far)
-
-
-            // const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far)
-            // const interpolatedMatrix = interpolateMatrices(orthographicMatrix, originMatrix, fraction)
+            
             startTime = Date.now();
             requestAnimationFrame(animateZoom); 
         }
        
         const handleKeyPress = event => {
             if (event.code === 'KeyR') {
-                
-                // xMin = -5 * aspectRatio
-                // xMax = 5 * aspectRatio
-                // yMin = -5
-                // yMax = 5
-                console.log('keypress event fired')
+                console.log('pre zoomToOrigin(): ', {xMin, xMax, yMin, yMax})
                 zoomToOrigin()
-
-                // renderWithNewOrthographicDimensions()
+                console.log('after zoomToOrigin(): ', {xMin, xMax, yMin, yMax})
             }                                 
-            render()
         }
         addEventListener('keypress', handleKeyPress)
     }
