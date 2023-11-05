@@ -16,6 +16,9 @@
 
 
 ## Miscellaneous 
+### Potential for bug
+The rendering order is currently not really flexible, it would need some refactoring to make it more flexible. For instance, the current rendering process, wouldn't allow for such a rendering oder: line segments > joins >line segments > joins ...
+
 ### Drawing numbers
 I am currently rendering the numbers twice, this seems to be eliminating a bug. However this is probably a bad solution.
 ```JS
