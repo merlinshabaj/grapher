@@ -20,6 +20,16 @@ Possible approaches:
     3. Create an atlas of all the symbols
 - I want to move away from defining the variables representing the world dimension (`xMin`, `xMax`, `yMin`, `yMax`) as individual values and either move them together. I don't know how yet but time will tell, I shouldn't do that yet anyway.
 - Move away from having double definitions, like I do for the unfiorms. I have a variable storing the uniform value and an object inside the element object/bundle. Long term it will probably be better to have one single source of truth and it would also simpliy the code. 
+    - Define a default value for line widths and other globals, so this can be refactored
+    ```
+    const setLineWidthToDefault = () => {
+                graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+                majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+                minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+                axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
+                updateLineWidthOnUniforms()
+            }
+    ```
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
