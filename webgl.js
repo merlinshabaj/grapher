@@ -186,8 +186,9 @@ const main = () => {
             minorGrid.updateWidth(minorGridLineWidth)
             axes.updateWidth(axesLineWidth)
         }
-
+        let g = 0
         const zoom = (zoomingIn, mousePosition) => {
+            console.log('Zoom function got called', g +=1)
             const adjustedZoomFactor = zoomingIn ? zoomFactor : 1 / zoomFactor
             const recalculate = something => something / adjustedZoomFactor
             const updateLineWidths = () => {
@@ -216,7 +217,7 @@ const main = () => {
             }
             
             updateLineWidths()
-            console.log('Resolution: ', resolution)
+            // console.log('Resolution: ', resolution)
             updateResolution()
             updateWorldMinAndMax()
             renderWithNewOrthographicDimensions();
@@ -265,18 +266,20 @@ const main = () => {
             }
 
             let startTime = Date.now()
+            let f = 0
             const animateZoom = () => {
+                console.log('animateZoom got called', f += 1)
                 const animationDuration = 500
                 let elapsedTime = Date.now() - startTime
+                console.log('elapsed time', elapsedTime)
                 let fraction = elapsedTime / animationDuration
                 if (fraction > 1) fraction = 1
 
                 // Update dimensions, translations, resolution and linewidths
-                console.log('pre update resolution: ', resolution)
+                // console.log('pre update resolution: ', resolution)
                 const interpolatedResolution = interpolateResolution(resolution, fraction)
                 resolution = interpolatedResolution
-                console.log('after update resolution: ', resolution)
-                translation = interpolateTranslation(translation, fraction);
+                // console.log('after update resolution: ', resolution)
 
                 setWorldDimensions(interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction))
                 translation = interpolateTranslation(translation, fraction);
@@ -296,10 +299,16 @@ const main = () => {
        
         const handleKeyPress = event => {
             if (event.code === 'KeyR') {
-                zoomToOrigin()
+                requestAnimationFrame(zoomToOrigin())
             }                                 
         }
+
+        const handleButtonPress = event => {
+            zoomToOrigin()
+        }
         addEventListener('keypress', handleKeyPress)
+        const homeButton = document.querySelector('.home-button__container')
+        homeButton.addEventListener('click', handleButtonPress)
     }
     const updateAllPoints = () => {
         graphPointsBuffer.updateData(graphPoints())
