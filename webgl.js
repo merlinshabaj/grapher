@@ -104,6 +104,8 @@ const functions = [
     x => x * x,
     x => x * x * x,
     x => Math.log1p(x),
+    x => Math.cos(x) / 0.2,
+    x => Math.cos(x / 2 ),
 ];
 
 const colors = () => {
@@ -223,28 +225,28 @@ const main = () => {
                 return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
             }
             const interpolateTranslation = (currentTranslation, fraction) => {
-                fraction = Math.max(0, Math.min(1, fraction));
+                fraction = easeInOutCubic(Math.max(0, Math.min(1, fraction)))
                 const targetTranslation = [0, 0, 0]
   
                 // Interpolate each component of the translation vector
                 let interpolatedTranslation = currentTranslation.map((current, index) => {
-                    return current + fraction * (targetTranslation[index] - current);
+                    return current + fraction * (targetTranslation[index] - current)
                 });
                 return interpolatedTranslation
             }
             const interpolateWorldDimensions = (currentValues, fraction) => {
-                fraction = Math.max(0, Math.min(1, fraction));
+                fraction = easeInOutCubic(Math.max(0, Math.min(1, fraction)))
                 const aspectRatio = canvas.clientWidth / canvas.clientHeight;
 
                 const targetValues = [-5 * aspectRatio, 5 * aspectRatio, -5, 5] // xMin, xMax, yMin, yMax
                 return currentValues.map((current, index) => {
-                    return current + fraction * (targetValues[index] - current);
+                    return current + fraction * (targetValues[index] - current)
                 });
             }
             const interpolateResolution = (currentResolution, fraction) => {
-                fraction = Math.max(0, Math.min(1, fraction));
+                fraction = easeInOutCubic(Math.max(0, Math.min(1, fraction)))
                 const targetResolution = 100
-                return currentResolution + fraction * (targetResolution - currentResolution);
+                return currentResolution + fraction * (targetResolution - currentResolution)
             }
             const setWorldDimensions = (dimensions) => {
                 xMin = dimensions[0]
@@ -258,6 +260,14 @@ const main = () => {
                 majorGrid.updateWidth(majorGridLineWidth)
                 minorGrid.updateWidth(minorGridLineWidth)
                 axes.updateWidth(axesLineWidth)
+            }
+
+            const setLineWidthToDefault = () => {
+                graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+                majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+                minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+                axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
+                updateLineWidthOnUniforms()
             }
 
             let startTime = Date.now()
@@ -277,11 +287,7 @@ const main = () => {
                 setWorldDimensions(interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction))
                 translation = interpolateTranslation(translation, fraction);
 
-                graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
-                majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
-                minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
-                axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
-                updateLineWidthOnUniforms()
+                setLineWidthToDefault()
                 
                 renderWithNewOrthographicDimensions()
 
@@ -832,7 +838,7 @@ const initializeGlobalVariables = () => {
 
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
-    currentFn = functions[3];
+    currentFn = functions[7];
 
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
