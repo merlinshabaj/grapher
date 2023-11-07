@@ -179,16 +179,18 @@ const main = () => {
         // Prevent the page from scrolling when using the mouse wheel on the canvas
         canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
 
+        // Only updates on uniforms doesn't update initial / global lineWidth variables
+        const updateLineWidthOnUniforms = () => {
+            graph.updateWidth(graphLineWidth)
+            majorGrid.updateWidth(majorGridLineWidth)
+            minorGrid.updateWidth(minorGridLineWidth)
+            axes.updateWidth(axesLineWidth)
+        }
+
         const zoom = (zoomingIn, mousePosition) => {
             const adjustedZoomFactor = zoomingIn ? zoomFactor : 1 / zoomFactor
             const recalculate = something => something / adjustedZoomFactor
             const updateLineWidths = () => {
-                const updateLineWidthOnUniforms = () => {
-                    graph.updateWidth(graphLineWidth)
-                    majorGrid.updateWidth(majorGridLineWidth)
-                    minorGrid.updateWidth(minorGridLineWidth)
-                    axes.updateWidth(axesLineWidth)
-                }
                 const updateLineWidths = () => {
                     const recalculateEach = somethings => somethings.map(recalculate);
                     [graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth] = recalculateEach([graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
@@ -254,14 +256,6 @@ const main = () => {
                 yMin = dimensions[2]
                 yMax = dimensions[3]
             }
-            // Only updates on uniforms doesn't update initial / global lineWidth variables
-            const updateLineWidthOnUniforms = () => {
-                graph.updateWidth(graphLineWidth)
-                majorGrid.updateWidth(majorGridLineWidth)
-                minorGrid.updateWidth(minorGridLineWidth)
-                axes.updateWidth(axesLineWidth)
-            }
-
             const setLineWidthToDefault = () => {
                 graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
                 majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
