@@ -118,7 +118,7 @@ const colors = () => {
 }
 
 const main = () => {
-    const setupMouseEventListeners = () => {
+    const setupEventListeners = () => {
         const renderWithNewOrthographicDimensions = () => {
             computeViewProjectionMatrix()
             updateAllPoints()
@@ -299,16 +299,23 @@ const main = () => {
        
         const handleKeyPress = event => {
             if (event.code === 'KeyR') {
-                requestAnimationFrame(zoomToOrigin())
+                zoomToOrigin()
             }                                 
         }
 
-        const handleButtonPress = event => {
-            zoomToOrigin()
-        }
         addEventListener('keypress', handleKeyPress)
         const homeButton = document.querySelector('.home-button__container')
-        homeButton.addEventListener('click', handleButtonPress)
+        homeButton.addEventListener('click', zoomToOrigin)
+
+
+        const showMouseCoordinates = event => {
+            const mousePosition = [event.clientX, event.clientY]
+            let mousePositionWorld = vsub(positionVector(mousePosition).screenToWorldSpace(), [translation[0], translation[1]])
+            mousePositionWorld[0] = Math.round(mousePositionWorld[0])
+            mousePositionWorld[1] = Math.round(mousePositionWorld[1])
+            console.log('Mouseposition world: ', mousePositionWorld)
+        }
+        addEventListener('mousemove', showMouseCoordinates)
     }
     const updateAllPoints = () => {
         graphPointsBuffer.updateData(graphPoints())
@@ -662,7 +669,7 @@ const main = () => {
 
     const renderers = [line, roundJoin]
     
-    setupMouseEventListeners()
+    setupEventListeners()
     computeViewProjectionMatrix()
     render();
 }
