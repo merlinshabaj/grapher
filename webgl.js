@@ -309,10 +309,27 @@ const main = () => {
 
 
         const showMouseCoordinates = event => {
-            const mousePosition = [event.clientX, event.clientY]
-            let mousePositionWorld = vsub(positionVector(mousePosition).screenToWorldSpace(), [translation[0], translation[1]])
-            mousePositionWorld[0] = Math.round(mousePositionWorld[0])
-            mousePositionWorld[1] = Math.round(mousePositionWorld[1])
+            const roundToNearestHalf = value => {
+                return Math.round(value * 2) / 2
+            }
+            const roundToFractionOfStep = (value, step) => {
+
+                const fraction = step / 5
+                return Math.round(value / fraction) * fraction;
+            }
+            const mousePositionScreen = [event.clientX, event.clientY]
+
+            const mouseCoordinates = document.querySelector(".mouse-coordinates")
+            const mouseDivOffset = 15
+            mouseCoordinates.style.left = mousePositionScreen[0] + mouseDivOffset + 'px'
+            mouseCoordinates.style.top = mousePositionScreen[1] - mouseDivOffset + 'px'
+            determineGridSize()
+            let mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
+            const gridSize = determineGridSize()
+            mousePositionWorld[0] = roundToFractionOfStep(mousePositionWorld[0], gridSize)
+            mousePositionWorld[1] = roundToFractionOfStep(mousePositionWorld[1], gridSize)
+
+            mouseCoordinates.innerHTML = `(${mousePositionWorld[0]}, ${mousePositionWorld[1]})`
             console.log('Mouseposition world: ', mousePositionWorld)
         }
         addEventListener('mousemove', showMouseCoordinates)
@@ -717,12 +734,8 @@ const computeRoundJoinGeometry = () => {
 }
 
 const determineMinBasedOnGridSize = () => {
-    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
-    const xRange = Math.abs(xMax - xMin);
-    const yRange = Math.abs(yMax - yMin);
-
-    const maxRange = Math.max(xRange, yRange);
-    const gridSize = determineGridSize(maxRange);
+    const gridSize = determineGridSize();
+    console.log('determineMinBasedOnGridSize gridSize: ', gridSize)
 
     // Min based on grid size
     const xStart = Math.ceil(xMin / gridSize) * gridSize;
@@ -749,13 +762,15 @@ const majorGridPoints = () => {
 }
 
 const minorGridPoints = () => {
-    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const points = [];
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
+    const xRange = Math.abs(xMax - xMin)
+    const yRange = Math.abs(yMax - yMin)
 
-    const xRange = Math.abs(xMax - xMin);
-    const yRange = Math.abs(yMax - yMin);
-    const maxRange = Math.max(xRange, yRange);
-    const majorGridSize = determineGridSize(maxRange);
+    const maxRange = Math.max(xRange, yRange)
+
+    const majorGridSize = determineGridSize(maxRange)
+    console.log('minorGridPoints: ', majorGridSize)
 
     const minorGridSize = majorGridSize / 5; // 5 minor lines between major lines
 
@@ -813,7 +828,7 @@ const numberPointsYAxis = () => {
     return points
 }
 
-const determineGridSize = maxRange => {
+const calculateGridSize = maxRange => {
     const orderOfMagnitude = Math.floor(Math.log10(maxRange));
 
     let gridSize = Math.pow(10, orderOfMagnitude);
@@ -822,11 +837,21 @@ const determineGridSize = maxRange => {
     const threshold = 0.5
 
     if (rangeGridMultiple < 5 * threshold) {
-        gridSize /= 5;
+        gridSize /= 5
     } else if (rangeGridMultiple < 10 * threshold) {
-        gridSize /= 2;
+        gridSize /= 2
     }
-    return gridSize;
+    return gridSize
+}
+const determineGridSize = () => {
+    
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
+    const xRange = Math.abs(xMax - xMin)
+    const yRange = Math.abs(yMax - yMin)
+
+    const maxRange = Math.max(xRange, yRange)
+    const gridSize =  calculateGridSize(maxRange)
+    return gridSize
 }
 
 const translatedAxisRanges = () => [xMin - translation[0], xMax - translation[0], yMin - translation[1], yMax - translation[1]]

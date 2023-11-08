@@ -40,3 +40,9 @@ body {
     color: black;
     width: 1.3rem;
 }
+
+.mouse-coordinates {
+    position: absolute;
+    pointer-events: none;
+    font-family: 'KaTeX_Main';
+}
