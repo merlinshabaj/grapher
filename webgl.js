@@ -309,13 +309,11 @@ const main = () => {
 
 
         const showMouseCoordinates = event => {
-            const roundToNearestHalf = value => {
-                return Math.round(value * 2) / 2
-            }
             const roundToFractionOfStep = (value, step) => {
-
                 const fraction = step / 5
-                return Math.round(value / fraction) * fraction;
+                const roundedValue =  Math.round(value / fraction) * fraction
+                const decimalPlaces = Math.ceil(-Math.log10(fraction))
+                return Number(roundedValue.toFixed(decimalPlaces))
             }
             const mousePositionScreen = [event.clientX, event.clientY]
 
@@ -326,11 +324,11 @@ const main = () => {
             determineGridSize()
             let mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
             const gridSize = determineGridSize()
-            mousePositionWorld[0] = roundToFractionOfStep(mousePositionWorld[0], gridSize)
-            mousePositionWorld[1] = roundToFractionOfStep(mousePositionWorld[1], gridSize)
+            mousePositionWorld = mousePositionWorld.map(position => roundToFractionOfStep(position, gridSize))
+            // mousePositionWorld[0] = roundToFractionOfStep(mousePositionWorld[0], gridSize)
+            // mousePositionWorld[1] = roundToFractionOfStep(mousePositionWorld[1], gridSize)
 
             mouseCoordinates.innerHTML = `(${mousePositionWorld[0]}, ${mousePositionWorld[1]})`
-            console.log('Mouseposition world: ', mousePositionWorld)
         }
         addEventListener('mousemove', showMouseCoordinates)
     }
@@ -735,7 +733,6 @@ const computeRoundJoinGeometry = () => {
 
 const determineMinBasedOnGridSize = () => {
     const gridSize = determineGridSize();
-    console.log('determineMinBasedOnGridSize gridSize: ', gridSize)
 
     // Min based on grid size
     const xStart = Math.ceil(xMin / gridSize) * gridSize;
@@ -770,7 +767,6 @@ const minorGridPoints = () => {
     const maxRange = Math.max(xRange, yRange)
 
     const majorGridSize = determineGridSize(maxRange)
-    console.log('minorGridPoints: ', majorGridSize)
 
     const minorGridSize = majorGridSize / 5; // 5 minor lines between major lines
 
