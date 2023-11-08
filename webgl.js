@@ -315,20 +315,25 @@ const main = () => {
                 const decimalPlaces = Math.ceil(-Math.log10(fraction))
                 return Number(roundedValue.toFixed(decimalPlaces))
             }
+            const positionDiv = mousePositionScreen => {
+                const mouseCoordinates = document.querySelector(".mouse-coordinates")
+                const mouseDivOffset = 15
+                mouseCoordinates.style.left = mousePositionScreen[0] + mouseDivOffset + 'px'
+                mouseCoordinates.style.top = mousePositionScreen[1] - mouseDivOffset + 'px'
+                return mouseCoordinates
+            }
+            const mousePositionWorld = mousePositionScreen => {
+                let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
+                const gridSize = determineGridSize()
+                _mousePositionWorld = _mousePositionWorld.map(position => roundToFractionOfStep(position, gridSize))
+                return _mousePositionWorld
+            }
+
             const mousePositionScreen = [event.clientX, event.clientY]
+            const mouseCoordinates = positionDiv(mousePositionScreen)
+            const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
 
-            const mouseCoordinates = document.querySelector(".mouse-coordinates")
-            const mouseDivOffset = 15
-            mouseCoordinates.style.left = mousePositionScreen[0] + mouseDivOffset + 'px'
-            mouseCoordinates.style.top = mousePositionScreen[1] - mouseDivOffset + 'px'
-            determineGridSize()
-            let mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
-            const gridSize = determineGridSize()
-            mousePositionWorld = mousePositionWorld.map(position => roundToFractionOfStep(position, gridSize))
-            // mousePositionWorld[0] = roundToFractionOfStep(mousePositionWorld[0], gridSize)
-            // mousePositionWorld[1] = roundToFractionOfStep(mousePositionWorld[1], gridSize)
-
-            mouseCoordinates.innerHTML = `(${mousePositionWorld[0]}, ${mousePositionWorld[1]})`
+            mouseCoordinates.innerHTML = `(${_mousePositionWorld[0]}, ${_mousePositionWorld[1]})`
         }
         addEventListener('mousemove', showMouseCoordinates)
     }
