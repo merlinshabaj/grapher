@@ -312,8 +312,10 @@ const main = () => {
             const roundToFractionOfStep = (value, step) => {
                 const fraction = step / 5
                 const roundedValue =  Math.round(value / fraction) * fraction
-                const decimalPlaces = Math.ceil(-Math.log10(fraction))
-                return Number(roundedValue.toFixed(decimalPlaces))
+                // const decimalPlaces = Math.ceil(-Math.log10(fraction))
+                const precision = Math.ceil(Math.log10(step)) + 1
+                return Number.parseFloat(roundedValue.toPrecision(precision))
+                // return Number(roundedValue.toFixed(decimalPlaces))
             }
             const positionDiv = mousePositionScreen => {
                 const mouseCoordinates = document.querySelector(".mouse-coordinates")
@@ -325,7 +327,9 @@ const main = () => {
             const mousePositionWorld = mousePositionScreen => {
                 let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
                 const gridSize = determineGridSize()
+                console.log('grid size: ', gridSize)
                 _mousePositionWorld = _mousePositionWorld.map(position => roundToFractionOfStep(position, gridSize))
+                console.log('mouse position world: ', _mousePositionWorld)
                 return _mousePositionWorld
             }
 
