@@ -35,6 +35,15 @@ Possible approaches:
 - Zooming in and out still has limits that aren't handled
 - Zooming in too far makes minor grid disappear and also major grid when scrolled even further
 - Zooming out too far and graph begins to flig. I assume this is due to the points be recalculated, this being the same bahviour as panning on a low resolution creates. Need to check calculation of resolution 
+- The function `determinGridSize()` doesn't produce the same result as the following:
+```JS
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
+    const xRange = Math.abs(xMax - xMin)
+    const yRange = Math.abs(yMax - yMin)
+
+    const maxRange = Math.max(xRange, yRange)
+    const gridSize =  calculateGridSize(maxRange)
+```
 
 
 ## Miscellaneous 
