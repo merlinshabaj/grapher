@@ -124,13 +124,12 @@ const main = () => {
             updateAllPoints()
             render();
         }
-
+        const setCursorStyle = (style) => {
+            canvas.style.cursor = style;
+        }
         let panningPosition = null
-        canvas.addEventListener('mousedown', event => {
-            const mousePosition = [event.clientX, event.clientY]
-            panningPosition = mousePosition
-            canvas.style.cursor = 'grabbing';
-        });
+        let isMouseDown = false
+        
         canvas.addEventListener('mousemove', event => {
             if (!panningPosition) return;
 
@@ -148,20 +147,39 @@ const main = () => {
             updateTranslation()
         
             panningPosition = mousePosition
-    
+
             updateAllPoints()
             render();
         });
+        
+        canvas.addEventListener('mousedown', event => {
+            isMouseDown = true
+            const mousePosition = [event.clientX, event.clientY]
+            panningPosition = mousePosition
+            const _mousePositionWorld = mousePositionWorld(mousePosition)
+            const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0);
+            if (mousePositionWorldHasZero) {
+                const cursorStyle = _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
+                       : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
+                       : 'grabbing';
+
+                setCursorStyle(cursorStyle)
+            } else {
+                setCursorStyle('grabbing')
+            }
+        });
         canvas.addEventListener('mouseup', () => {
-            panningPosition = null;
-            canvas.style.cursor = 'grab';
+            isMouseDown = false
+            panningPosition = null
+            setCursorStyle('grab')
         });
         canvas.addEventListener('mouseleave', () => {
-            panningPosition = null;
-            canvas.style.cursor = 'default';
+            isMouseDown = false
+            panningPosition = null
+            setCursorStyle('default')
         });
         canvas.addEventListener('mouseenter', () => {
-            canvas.style.cursor = 'grab';
+            setCursorStyle('grab')
         });
         canvas.addEventListener('wheel', event => {
             const rect = canvas.getBoundingClientRect();
@@ -321,26 +339,25 @@ const main = () => {
 
             mouseCoordinates.innerHTML = `(${_mousePositionWorld[0]}, ${_mousePositionWorld[1]})`
         }
-        const scaleAxes = event => {
+        const changeCursorAxes = event => {
             const mousePositionScreen = [event.clientX, event.clientY]
             const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
-            console.log('mouse position world rounded: ', _mousePositionWorld)
-            _mousePositionWorld.forEach((position, index) => {
-                if (position == 0 && index == 0) {
-                    console.log('position 0: ', position)
-                    canvas.style.cursor = 'row-resize'
-                } else if (position == 0 && index == 1) {
-                    console.log('position 1: ', position)
-                    canvas.style.cursor = 'col-resize'
-                }
-            })
+            const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
+        
+            if (!isMouseDown || isMouseDown && mousePositionWorldHasZero) {
+                const cursorStyle = _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
+                       : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
+                       : 'grab'
+
+                setCursorStyle(cursorStyle)
+            }
         }
 
         addEventListener('keypress', handleKeyPress)
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)
         addEventListener('mousemove', showMouseCoordinates)
-        addEventListener('mousemove', scaleAxes)
+        addEventListener('mousemove', changeCursorAxes)
     }
     const updateAllPoints = () => {
         graphPointsBuffer.updateData(graphPoints())
