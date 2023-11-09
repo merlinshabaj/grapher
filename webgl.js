@@ -159,12 +159,15 @@ const main = () => {
             panningPosition = null;
             canvas.style.cursor = 'grab';
         });
-    
         canvas.addEventListener('mouseleave', () => {
             panningPosition = null;
             canvas.style.cursor = 'default';
         });
+        canvas.addEventListener('mouseenter', () => {
+            canvas.style.cursor = 'grab';
+        });
     
+        
         canvas.addEventListener('wheel', event => {
             const rect = canvas.getBoundingClientRect();
             const rectOrigin = [rect.left, rect.top]
@@ -222,7 +225,6 @@ const main = () => {
             updateWorldMinAndMax()
             renderWithNewOrthographicDimensions();
         }
-        let startTime = Date.now()
         const zoomToOrigin = () => {
             const easeInOutCubic = t => {
                 return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -310,7 +312,7 @@ const main = () => {
 
         const showMouseCoordinates = event => {
             const roundToFractionOfStep = (value, step) => {
-                const fraction = step / 5
+                const fraction = step / 10
                 const roundedValue =  Math.round(value / fraction) * fraction
                 const precision = Math.ceil(Math.log10(step)) + 1
                 return Number.parseFloat(roundedValue.toPrecision(precision))
@@ -325,9 +327,7 @@ const main = () => {
             const mousePositionWorld = mousePositionScreen => {
                 let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
                 const gridSize = determineGridSize()
-                console.log('grid size: ', gridSize)
                 _mousePositionWorld = _mousePositionWorld.map(position => roundToFractionOfStep(position, gridSize))
-                console.log('mouse position world: ', _mousePositionWorld)
                 return _mousePositionWorld
             }
 
