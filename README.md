@@ -2,6 +2,7 @@
 ## TODO 
 ### Features
 - Zoom / pan to origin on button click
+    - Interpolation of resolution isn't working yet
 - Drawing multiple lines
 - Stretching and squashing of individual axes
 - Display numbers even when axes aren't in view (GeoGebra)
@@ -44,7 +45,7 @@ Possible approaches:
     const maxRange = Math.max(xRange, yRange)
     const gridSize =  calculateGridSize(maxRange)
 ```
-- The function `roundToFractionOfStep()` doesn't stops rounding as soon as the step size is 0.1 or smaller
+- The function `roundToFractionOfStep()` doesn't stop rounding as soon as the step size is 0.1 or smaller
 
 
 ## Miscellaneous 
