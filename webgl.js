@@ -130,34 +130,14 @@ const main = () => {
         let panningPosition = null
         let isMouseDown = false
         
-        canvas.addEventListener('mousemove', event => {
-            if (!panningPosition) return;
-
-            const mousePosition = [event.clientX, event.clientY]
-
-            const updateTranslation = () => {
-                const deltaScreen = vsub(mousePosition, panningPosition)
-                const deltaWorld = translationVector(deltaScreen).screenToWorldSpace()
-
-                const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
-                translation[0] = newTranslation[0]
-                translation[1] = newTranslation[1]    
-            }
-
-            updateTranslation()
         
-            panningPosition = mousePosition
-
-            updateAllPoints()
-            render();
-        });
         
         canvas.addEventListener('mousedown', event => {
             isMouseDown = true
             const mousePosition = [event.clientX, event.clientY]
             panningPosition = mousePosition
             const _mousePositionWorld = mousePositionWorld(mousePosition)
-            const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0);
+            const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
             if (mousePositionWorldHasZero) {
                 const cursorStyle = _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
                        : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
@@ -166,6 +146,31 @@ const main = () => {
                 setCursorStyle(cursorStyle)
             } else {
                 setCursorStyle('grabbing')
+                canvas.addEventListener('mousemove', event => {
+                    if (!panningPosition) return
+        
+                    const mousePosition = [event.clientX, event.clientY]
+        
+                    const _mousePositionWorld = mousePositionWorld(mousePosition)
+                    const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
+        
+
+                    const updateTranslation = () => {
+                        const deltaScreen = vsub(mousePosition, panningPosition)
+                        const deltaWorld = translationVector(deltaScreen).screenToWorldSpace()
+    
+                        const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
+                        translation[0] = newTranslation[0]
+                        translation[1] = newTranslation[1]    
+                    }
+                    updateTranslation()
+                    
+                    panningPosition = mousePosition
+                    
+                    updateAllPoints()
+                    render();
+                    
+                });
             }
         });
         canvas.addEventListener('mouseup', () => {
@@ -230,7 +235,6 @@ const main = () => {
             }
             
             updateLineWidths()
-            // console.log('Resolution: ', resolution)
             updateResolution()
             updateWorldMinAndMax()
             renderWithNewOrthographicDimensions();
@@ -278,20 +282,15 @@ const main = () => {
             }
 
             let startTime = Date.now()
-            let f = 0
             const animateZoom = () => {
-                console.log('animateZoom got called', f += 1)
                 const animationDuration = 500
                 let elapsedTime = Date.now() - startTime
-                console.log('elapsed time', elapsedTime)
                 let fraction = elapsedTime / animationDuration
                 if (fraction > 1) fraction = 1
 
                 // Update dimensions, translations, resolution and linewidths
-                // console.log('pre update resolution: ', resolution)
                 const interpolatedResolution = interpolateResolution(resolution, fraction)
                 resolution = interpolatedResolution
-                // console.log('after update resolution: ', resolution)
 
                 setWorldDimensions(interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction))
                 translation = interpolateTranslation(translation, fraction);
