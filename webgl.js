@@ -126,13 +126,11 @@ const main = () => {
         }
 
         let panningPosition = null
-
         canvas.addEventListener('mousedown', event => {
             const mousePosition = [event.clientX, event.clientY]
             panningPosition = mousePosition
             canvas.style.cursor = 'grabbing';
         });
-    
         canvas.addEventListener('mousemove', event => {
             if (!panningPosition) return;
 
@@ -154,7 +152,6 @@ const main = () => {
             updateAllPoints()
             render();
         });
-    
         canvas.addEventListener('mouseup', () => {
             panningPosition = null;
             canvas.style.cursor = 'grab';
@@ -166,8 +163,6 @@ const main = () => {
         canvas.addEventListener('mouseenter', () => {
             canvas.style.cursor = 'grab';
         });
-    
-        
         canvas.addEventListener('wheel', event => {
             const rect = canvas.getBoundingClientRect();
             const rectOrigin = [rect.left, rect.top]
@@ -178,7 +173,6 @@ const main = () => {
             if (event.deltaY === 0) return
             zoom(event.deltaY < 0, mousePositionRelativeToCanvas);
         });
-    
         // Prevent the page from scrolling when using the mouse wheel on the canvas
         canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
 
@@ -189,9 +183,7 @@ const main = () => {
             minorGrid.updateWidth(minorGridLineWidth)
             axes.updateWidth(axesLineWidth)
         }
-        let g = 0
         const zoom = (zoomingIn, mousePosition) => {
-            console.log('Zoom function got called', g +=1)
             const adjustedZoomFactor = zoomingIn ? zoomFactor : 1 / zoomFactor
             const recalculate = something => something / adjustedZoomFactor
             const updateLineWidths = () => {
@@ -298,25 +290,24 @@ const main = () => {
             startTime = Date.now();
             requestAnimationFrame(animateZoom);
         }
-       
         const handleKeyPress = event => {
             if (event.code === 'KeyR') {
                 zoomToOrigin()
             }                                 
         }
-
-        addEventListener('keypress', handleKeyPress)
-        const homeButton = document.querySelector('.home-button__container')
-        homeButton.addEventListener('click', zoomToOrigin)
-
-
+        const roundToFractionOfStep = (value, step) => {
+            const fraction = step / 10
+            const roundedValue =  Math.round(value / fraction) * fraction
+            const precision = Math.ceil(Math.log10(step)) + 1
+            return Number.parseFloat(roundedValue.toPrecision(precision))
+        }
+        const mousePositionWorld = mousePositionScreen => {
+            let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
+            const gridSize = determineGridSize()
+            _mousePositionWorld = _mousePositionWorld.map(position => roundToFractionOfStep(position, gridSize))
+            return _mousePositionWorld
+        }
         const showMouseCoordinates = event => {
-            const roundToFractionOfStep = (value, step) => {
-                const fraction = step / 10
-                const roundedValue =  Math.round(value / fraction) * fraction
-                const precision = Math.ceil(Math.log10(step)) + 1
-                return Number.parseFloat(roundedValue.toPrecision(precision))
-            }
             const positionDiv = mousePositionScreen => {
                 const mouseCoordinates = document.querySelector(".mouse-coordinates")
                 const mouseDivOffset = 15
@@ -324,20 +315,32 @@ const main = () => {
                 mouseCoordinates.style.top = mousePositionScreen[1] - mouseDivOffset + 'px'
                 return mouseCoordinates
             }
-            const mousePositionWorld = mousePositionScreen => {
-                let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
-                const gridSize = determineGridSize()
-                _mousePositionWorld = _mousePositionWorld.map(position => roundToFractionOfStep(position, gridSize))
-                return _mousePositionWorld
-            }
-
             const mousePositionScreen = [event.clientX, event.clientY]
             const mouseCoordinates = positionDiv(mousePositionScreen)
             const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
 
             mouseCoordinates.innerHTML = `(${_mousePositionWorld[0]}, ${_mousePositionWorld[1]})`
         }
+        const scaleAxes = event => {
+            const mousePositionScreen = [event.clientX, event.clientY]
+            const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
+            console.log('mouse position world rounded: ', _mousePositionWorld)
+            _mousePositionWorld.forEach((position, index) => {
+                if (position == 0 && index == 0) {
+                    console.log('position 0: ', position)
+                    canvas.style.cursor = 'row-resize'
+                } else if (position == 0 && index == 1) {
+                    console.log('position 1: ', position)
+                    canvas.style.cursor = 'col-resize'
+                }
+            })
+        }
+
+        addEventListener('keypress', handleKeyPress)
+        const homeButton = document.querySelector('.home-button__container')
+        homeButton.addEventListener('click', zoomToOrigin)
         addEventListener('mousemove', showMouseCoordinates)
+        addEventListener('mousemove', scaleAxes)
     }
     const updateAllPoints = () => {
         graphPointsBuffer.updateData(graphPoints())
