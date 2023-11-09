@@ -41,6 +41,10 @@ body {
     width: 1.3rem;
 }
 
+.home-button__container:active {
+    background-color: oklch(75% 0 0);
+}
+
 .mouse-coordinates {
     position: absolute;
     pointer-events: none;
