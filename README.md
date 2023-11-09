@@ -44,6 +44,7 @@ Possible approaches:
     const maxRange = Math.max(xRange, yRange)
     const gridSize =  calculateGridSize(maxRange)
 ```
+- The function `roundToFractionOfStep()` doesn't stops rounding as soon as the step size is 0.1 or smaller
 
 
 ## Miscellaneous 
