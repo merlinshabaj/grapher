@@ -312,10 +312,8 @@ const main = () => {
             const roundToFractionOfStep = (value, step) => {
                 const fraction = step / 5
                 const roundedValue =  Math.round(value / fraction) * fraction
-                // const decimalPlaces = Math.ceil(-Math.log10(fraction))
                 const precision = Math.ceil(Math.log10(step)) + 1
                 return Number.parseFloat(roundedValue.toPrecision(precision))
-                // return Number(roundedValue.toFixed(decimalPlaces))
             }
             const positionDiv = mousePositionScreen => {
                 const mouseCoordinates = document.querySelector(".mouse-coordinates")
@@ -741,7 +739,13 @@ const computeRoundJoinGeometry = () => {
 }
 
 const determineMinBasedOnGridSize = () => {
-    const gridSize = determineGridSize();
+    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
+    const xRange = Math.abs(xMax - xMin)
+    const yRange = Math.abs(yMax - yMin)
+
+    const maxRange = Math.max(xRange, yRange)
+    const gridSize =  calculateGridSize(maxRange)
+    // const gridSize = determineGridSize();
 
     // Min based on grid size
     const xStart = Math.ceil(xMin / gridSize) * gridSize;
@@ -849,13 +853,12 @@ const calculateGridSize = maxRange => {
     return gridSize
 }
 const determineGridSize = () => {
-    
     const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const xRange = Math.abs(xMax - xMin)
     const yRange = Math.abs(yMax - yMin)
 
     const maxRange = Math.max(xRange, yRange)
-    const gridSize =  calculateGridSize(maxRange)
+    const gridSize = calculateGridSize(maxRange)
     return gridSize
 }
 
