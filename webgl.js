@@ -129,7 +129,30 @@ const main = () => {
         }
         let panningPosition = null
         let isMouseDown = false
-        
+        const pan = event => {
+            if (!panningPosition) return
+
+            const mousePosition = [event.clientX, event.clientY]
+
+            const _mousePositionWorld = mousePositionWorld(mousePosition)
+            const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
+
+
+            const updateTranslation = () => {
+                const deltaScreen = vsub(mousePosition, panningPosition)
+                const deltaWorld = translationVector(deltaScreen).screenToWorldSpace()
+
+                const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
+                translation[0] = newTranslation[0]
+                translation[1] = newTranslation[1]    
+            }
+            updateTranslation()
+            
+            panningPosition = mousePosition
+            
+            updateAllPoints()
+            render();
+        }
         
         
         canvas.addEventListener('mousedown', event => {
@@ -139,6 +162,8 @@ const main = () => {
             const _mousePositionWorld = mousePositionWorld(mousePosition)
             const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
             if (mousePositionWorldHasZero) {
+                console.log('has zero')
+                canvas.removeEventListener('mousemove', pan)
                 const cursorStyle = _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
                        : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
                        : 'grabbing';
@@ -146,42 +171,21 @@ const main = () => {
                 setCursorStyle(cursorStyle)
             } else {
                 setCursorStyle('grabbing')
-                canvas.addEventListener('mousemove', event => {
-                    if (!panningPosition) return
-        
-                    const mousePosition = [event.clientX, event.clientY]
-        
-                    const _mousePositionWorld = mousePositionWorld(mousePosition)
-                    const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
-        
-
-                    const updateTranslation = () => {
-                        const deltaScreen = vsub(mousePosition, panningPosition)
-                        const deltaWorld = translationVector(deltaScreen).screenToWorldSpace()
-    
-                        const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
-                        translation[0] = newTranslation[0]
-                        translation[1] = newTranslation[1]    
-                    }
-                    updateTranslation()
-                    
-                    panningPosition = mousePosition
-                    
-                    updateAllPoints()
-                    render();
-                    
-                });
+                console.log('is pannable')
+                canvas.addEventListener('mousemove', pan)
             }
         });
         canvas.addEventListener('mouseup', () => {
             isMouseDown = false
             panningPosition = null
             setCursorStyle('grab')
+            canvas.removeEventListener('mousemove', pan)
         });
         canvas.addEventListener('mouseleave', () => {
             isMouseDown = false
             panningPosition = null
             setCursorStyle('default')
+            canvas.removeEventListener('mousemove', pan)
         });
         canvas.addEventListener('mouseenter', () => {
             setCursorStyle('grab')
