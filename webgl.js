@@ -304,11 +304,6 @@ const main = () => {
             startTime = Date.now();
             requestAnimationFrame(animateZoom);
         }
-        const handleKeyPress = event => {
-            if (event.code === 'KeyR') {
-                zoomToOrigin()
-            }                                 
-        }
         const roundToFractionOfStep = (value, step) => {
             const fraction = step / 10
             const roundedValue =  Math.round(value / fraction) * fraction
@@ -346,11 +341,6 @@ const main = () => {
                        : 'grab'
 
                 setCursorStyle(cursorStyle)
-
-                canvas.addEventListener('mousedown', increaseRangeX)
-                canvas.addEventListener('mouseup', () => {
-                    canvas.removeEventListener('mousedown', increaseRangeX)
-                })
             }
         }
         let scalingPosition = null
@@ -378,7 +368,6 @@ const main = () => {
             canvas.addEventListener('mousemove', scaleX)
         }
 
-        addEventListener('keypress', handleKeyPress)
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)
         addEventListener('mousemove', showMouseCoordinates)
