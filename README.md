@@ -45,7 +45,9 @@ Possible approaches:
     const maxRange = Math.max(xRange, yRange)
     const gridSize =  calculateGridSize(maxRange)
 ```
-- The function `roundToFractionOfStep()` doesn't stop rounding as soon as the step size is 0.1 or smaller
+- The function `roundToFractionOfStep()` stops rounding as soon as the step size is 0.1 or smaller
+    - Panning doesn't work then as well
+- When the step size is 1, the rounding isn't working properly if the mouse position in world space is larger than 1
 
 
 ## Miscellaneous 
