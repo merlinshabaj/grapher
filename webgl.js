@@ -131,12 +131,7 @@ const main = () => {
         let isMouseDown = false
         const pan = event => {
             if (!panningPosition) return
-
             const mousePosition = [event.clientX, event.clientY]
-
-            const _mousePositionWorld = mousePositionWorld(mousePosition)
-            const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
-
 
             const updateTranslation = () => {
                 const deltaScreen = vsub(mousePosition, panningPosition)
@@ -162,7 +157,6 @@ const main = () => {
             const _mousePositionWorld = mousePositionWorld(mousePosition)
             const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
             if (mousePositionWorldHasZero) {
-                console.log('has zero')
                 canvas.removeEventListener('mousemove', pan)
                 const cursorStyle = _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
                        : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
@@ -171,7 +165,6 @@ const main = () => {
                 setCursorStyle(cursorStyle)
             } else {
                 setCursorStyle('grabbing')
-                console.log('is pannable')
                 canvas.addEventListener('mousemove', pan)
             }
         });
@@ -353,7 +346,36 @@ const main = () => {
                        : 'grab'
 
                 setCursorStyle(cursorStyle)
+
+                canvas.addEventListener('mousedown', increaseRangeX)
+                canvas.addEventListener('mouseup', () => {
+                    canvas.removeEventListener('mousedown', increaseRangeX)
+                })
             }
+        }
+        let scalingPosition = null
+        const scaleX = event => {
+            if (!isMouseDown) return
+            const mousePositionScreen = [event.clientX, event.clientY]
+            const _mousePositionWorldX = mousePositionWorld(mousePositionScreen)[0]
+            scalingPosition = scalingPosition - _mousePositionWorldX
+
+            xMin -= scalingPosition
+            xMax += scalingPosition
+
+            scalingPosition = _mousePositionWorldX
+            updateLineWidthOnUniforms()
+            renderWithNewOrthographicDimensions()
+        }
+
+        const increaseRangeX = event => {
+            isMouseDown = true
+            const mousePositionScreen = [event.clientX, event.clientY]
+            const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
+            scalingPosition = _mousePositionWorld[0]
+
+            
+            canvas.addEventListener('mousemove', scaleX)
         }
 
         addEventListener('keypress', handleKeyPress)
@@ -361,6 +383,7 @@ const main = () => {
         homeButton.addEventListener('click', zoomToOrigin)
         addEventListener('mousemove', showMouseCoordinates)
         addEventListener('mousemove', changeCursorAxes)
+        
     }
     const updateAllPoints = () => {
         graphPointsBuffer.updateData(graphPoints())
