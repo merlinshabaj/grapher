@@ -307,8 +307,8 @@ const main = () => {
         const roundToFractionOfStep = (value, step) => {
             const fraction = step / 10
             const roundedValue =  Math.round(value / fraction) * fraction
-            const precision = Math.ceil(Math.log10(step)) + 1
-            return Number.parseFloat(roundedValue.toPrecision(precision))
+            const decimalPlaces = (step.toString().split('.')[1] || '').length + 1
+            return Number.parseFloat(roundedValue.toFixed(decimalPlaces))
         }
         const mousePositionWorld = mousePositionScreen => {
             let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
