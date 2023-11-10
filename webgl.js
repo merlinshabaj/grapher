@@ -343,35 +343,47 @@ const main = () => {
                 setCursorStyle(cursorStyle)
             }
         }
-        let scalingPosition = null
-        const scaleX = event => {
-            if (!isMouseDown) return
-            const mousePositionScreen = [event.clientX, event.clientY]
-            const _mousePositionWorldX = mousePositionWorld(mousePositionScreen)[0]
-            scalingPosition = scalingPosition - _mousePositionWorldX
+        const setLineWidthToDefault = () => {
+            graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+            majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+            minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+            axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
+            updateLineWidthOnUniforms()
+        }
+        const squashX = () => {
+            xMin -= 1
+            xMax += 1
 
-            xMin -= scalingPosition
-            xMax += scalingPosition
-
-            scalingPosition = _mousePositionWorldX
+            setLineWidthToDefault()
+            updateLineWidthOnUniforms()
+            renderWithNewOrthographicDimensions()
+        }
+        const stretchX = () => {
+            xMin += 1
+            xMax -= 1
+            
+            setLineWidthToDefault()
             updateLineWidthOnUniforms()
             renderWithNewOrthographicDimensions()
         }
 
-        const increaseRangeX = event => {
-            isMouseDown = true
-            const mousePositionScreen = [event.clientX, event.clientY]
-            const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
-            scalingPosition = _mousePositionWorld[0]
-
-            
-            canvas.addEventListener('mousemove', scaleX)
-        }
-
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)
-        addEventListener('mousemove', showMouseCoordinates)
-        addEventListener('mousemove', changeCursorAxes)
+        canvas.addEventListener('mousemove', showMouseCoordinates)
+        canvas.addEventListener('mousemove', changeCursorAxes)
+        addEventListener('keydown', event => {
+            let pressedKey = event.key
+            switch (pressedKey) {
+                case 'm': 
+                    squashX()
+                    break
+                case 'n': 
+                    stretchX()
+                    break
+                default: 
+                break
+            }
+        })
         
     }
     const updateAllPoints = () => {
