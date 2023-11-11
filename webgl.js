@@ -351,18 +351,21 @@ const main = () => {
             updateLineWidthOnUniforms()
         }
         const squashX = () => {
-            xMin -= 1
-            xMax += 1
+            const aspectRatio = canvas.clientWidth / canvas.clientHeight
+            xMin -= 1 * aspectRatio
+            xMax += 1 * aspectRatio
 
-            setLineWidthToDefault()
+            // setLineWidthToDefault()
             updateLineWidthOnUniforms()
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
+            const aspectRatio = canvas.clientWidth / canvas.clientHeight
             xMin += 1
             xMax -= 1
-            
-            setLineWidthToDefault()
+
+            graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+            // setLineWidthToDefault()
             updateLineWidthOnUniforms()
             renderWithNewOrthographicDimensions()
         }
@@ -930,10 +933,10 @@ const initializeGlobalVariables = () => {
     resolution = 100 /* 250 */;
     currentFn = functions[7];
 
-    graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0];
-    majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
-    minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0];
-    axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0];
+    graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+    majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+    minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+    axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
 }
 
 /** @type {HTMLCanvasElement} */
