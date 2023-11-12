@@ -351,24 +351,28 @@ const main = () => {
             updateLineWidthOnUniforms()
         }
         const squashX = () => {
-            const aspectRatio = canvas.clientWidth / canvas.clientHeight
-            xMin -= 1 * aspectRatio
-            xMax += 1 * aspectRatio
-
-            // setLineWidthToDefault()
+            const range = xMax - xMin
+            xMin -= 1
+            xMax += 1
+            const newRange = xMax - xMin
+            const scaleFactor = newRange / range
+            graphLineWidth = graphLineWidth / scaleFactor
             updateLineWidthOnUniforms()
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
-            const aspectRatio = canvas.clientWidth / canvas.clientHeight
+            const range = xMax - xMin
             xMin += 1
             xMax -= 1
-
-            graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
-            // setLineWidthToDefault()
+            const newRange = xMax - xMin
+            const scaleFactor = newRange / range
+            graphLineWidth = graphLineWidth / scaleFactor
             updateLineWidthOnUniforms()
             renderWithNewOrthographicDimensions()
         }
+        // graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+            // setLineWidthToDefault()
+            // updateLineWidthOnUniforms()
 
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)
