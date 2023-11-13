@@ -351,13 +351,23 @@ const main = () => {
             updateLineWidthOnUniforms()
         }
         const squashX = () => {
-            const range = xMax - xMin
-            xMin -= 1
-            xMax += 1
-            const newRange = xMax - xMin
-            const scaleFactor = newRange / range
-            graphLineWidth = graphLineWidth / scaleFactor
-            updateLineWidthOnUniforms()
+            const scaleFactor = 1.1
+            const yRange = yMax - yMin
+            const xRange = xMax - xMin
+            const worldRatio = xRange / yRange
+            const xRangeNew = xRange * scaleFactor
+            xMin -= (xRangeNew - xRange) / 2
+            xMax += (xRangeNew - xRange) / 2
+
+            const yRangeNew = xRangeNew / worldRatio
+            const yMid = (yMax + yMin) / 2
+            yMin = yMid - yRangeNew / 2
+            yMax = yMid + yRangeNew / 2
+
+            // majorGridLineWidth = newLineWidth
+            // minorGridLineWidth = newLineWidth
+            // axesLineWidth = newLineWidth
+            // updateLineWidthOnUniforms()
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
