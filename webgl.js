@@ -366,8 +366,9 @@ const main = () => {
             updateLineWidthOnUniforms()
         }
         const squashX = () => {
-            xMin = -50
-            xMax = 50
+            const scaleFactor = 1.01
+            xMin = xMin * scaleFactor
+            xMax = xMax * scaleFactor
 
             const _correctedScale = (() => {
                 const xRange = xMax - xMin
@@ -377,15 +378,12 @@ const main = () => {
             })()
             correctedScale = _correctedScale
             graph.updateCorrectedScale(correctedScale)
-
-            // setLineWidthToDefault()
-            resolution = 20
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
-            const range = xMax - xMin
-            xMin += 1
-            xMax -= 1
+            const scaleFactor = 0.99
+            xMin = xMin * scaleFactor
+            xMax = xMax * scaleFactor
 
             const _correctedScale = (() => {
                 const xRange = xMax - xMin
@@ -395,16 +393,8 @@ const main = () => {
             })()
             correctedScale = _correctedScale
             graph.updateCorrectedScale(correctedScale)
-
-            const newRange = xMax - xMin
-            const scaleFactor = newRange / range
-            graphLineWidth = graphLineWidth / scaleFactor
-            updateLineWidthOnUniforms()
             renderWithNewOrthographicDimensions()
         }
-        // graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
-            // setLineWidthToDefault()
-            // updateLineWidthOnUniforms()
 
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)
