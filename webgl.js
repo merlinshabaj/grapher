@@ -1,7 +1,7 @@
 'use strict'
 
 import * as webglUtils from './webgl-utils.js';
-import { rangeInclusive, vsub, expect, vmul, vdiv, vadd, elementWithId, div, setProps, log } from './utils.js';
+import { rangeInclusive, vsub, expect, vmul, vdiv, vadd, elementWithId, div, setProps, log, left } from './utils.js';
 import * as m4 from './m4.js';
 
 const flipY = vec2 => [vec2[0], -1 * vec2[1]]
@@ -52,6 +52,7 @@ in vec4 a_startAndEndPoints;
 
 uniform mat4 u_mvp;
 uniform float u_lineWidth;
+uniform float u_correctedScale;
 
 void main() {
     vec2 start = a_startAndEndPoints.xy; // start points
@@ -59,7 +60,15 @@ void main() {
 
     vec2 direction = end - start;
     vec2 unitNormal = normalize(vec2(-direction.y, direction.x));
-    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + unitNormal * u_lineWidth * a_instanceVertexPosition.y;
+
+    // Check if the line is vertical
+    bool isVertical = abs(direction.x) < 0.0001;
+
+    // Correct the normal based on the aspect ratio for non-vertical lines
+    vec2 correctedUnitNormal = isVertical 
+        ? unitNormal 
+        : vec2(unitNormal.x * u_correctedScale, unitNormal.y);
+    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + correctedUnitNormal * u_lineWidth * a_instanceVertexPosition.y;
 
     gl_Position = u_mvp * vec4(worldSpacePosition, 0, 1);
 }
@@ -73,8 +82,7 @@ uniform mat4 u_mvp;
 uniform float u_lineWidth;
 
 void main() {
-    vec2 startPoint = a_startAndEndPoints.xy;
-
+    vec2 startPoint = a_startAndEndPoints.xy;    
     vec2 point = u_lineWidth * a_instanceVertexPosition + startPoint;
     
     gl_Position = u_mvp * vec4(point, 0, 1);
@@ -232,6 +240,10 @@ const main = () => {
             }
             
             updateLineWidths()
+            const otherLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+            graphLineWidth = otherLineWidth
+            graph.updateWidth(graphLineWidth)
+            // console.log('graphLineWidth:', graphLineWidth, 'defaulGraphLineWidht: ', otherLineWidth)
             updateResolution()
             updateWorldMinAndMax()
             renderWithNewOrthographicDimensions();
@@ -351,29 +363,27 @@ const main = () => {
             updateLineWidthOnUniforms()
         }
         const squashX = () => {
-            const scaleFactor = 1.1
-            const yRange = yMax - yMin
-            const xRange = xMax - xMin
-            const worldRatio = xRange / yRange
-            const xRangeNew = xRange * scaleFactor
-            xMin -= (xRangeNew - xRange) / 2
-            xMax += (xRangeNew - xRange) / 2
+            xMin = -50
+            xMax = 50
 
-            const yRangeNew = xRangeNew / worldRatio
-            const yMid = (yMax + yMin) / 2
-            yMin = yMid - yRangeNew / 2
-            yMax = yMid + yRangeNew / 2
-
-            // majorGridLineWidth = newLineWidth
-            // minorGridLineWidth = newLineWidth
-            // axesLineWidth = newLineWidth
-            // updateLineWidthOnUniforms()
+            const _correctedScale = (() => {
+                const xRange = xMax - xMin
+                const yRange = yMax - yMin
+                const xScale = xRange / yRange
+                return 10.0
+            })()
+            correctedScale = _correctedScale
+            console.log(correctedScale)
+            graph.updateCorrectedScale(correctedScale)
+            setLineWidthToDefault()
+            resolution = 20
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
             const range = xMax - xMin
             xMin += 1
             xMax -= 1
+
             const newRange = xMax - xMin
             const scaleFactor = newRange / range
             graphLineWidth = graphLineWidth / scaleFactor
@@ -412,10 +422,11 @@ const main = () => {
     const render = () => {
         const drawElements = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
-            const setUniforms = (mvp, color, lineWidth) => {
+            const setUniforms = (mvp, color, lineWidth, correctedScale) => {
                 gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, mvp)
                 gl.uniform4fv(object.programInfo.colorLocation, color)
                 gl.uniform1f(object.programInfo.lineWidthLocation, lineWidth)
+                gl.uniform1f(object.programInfo.correctedScaleLocation, correctedScale)
             }
             const bindVertexArray = () => gl.bindVertexArray(object.vertexArray)
             const draw = () => {
@@ -430,7 +441,7 @@ const main = () => {
                 object.elements().forEach( element => {
                     const buffer = element.buffer
                     const _uniform = element.uniforms()
-                    setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth)
+                    setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth, _uniform.u_correctedScale)
                     buffer.bind()
                     setupStartAndEndPoints(startAndEndPoints)
                     instanceCount = buffer.length() / 4 
@@ -657,15 +668,17 @@ const main = () => {
         }
         const programInfo = (program) => {
             const getUniformLocation = name => gl.getUniformLocation(program, name)
-            const mvpLocation = getUniformLocation('u_mvp');
-            const colorLocation = getUniformLocation('u_color');
-            const lineWidthLocation = getUniformLocation('u_lineWidth');
+            const mvpLocation = getUniformLocation('u_mvp')
+            const colorLocation = getUniformLocation('u_color')
+            const lineWidthLocation = getUniformLocation('u_lineWidth')
+            const correctedScaleLocation = getUniformLocation('u_correctedScale')
             
             return {
                 program,
                 colorLocation,
                 mvpLocation,
                 lineWidthLocation,
+                correctedScaleLocation,
             }
         }
 
@@ -689,25 +702,28 @@ const main = () => {
     const element = ({ 
         buffer, 
         color, 
-        lineWidth 
+        lineWidth,
+        correctedScale,
     }) => {
-        const uniforms = ({ color, lineWidth }) => ({
+        const uniforms = ({ color, lineWidth, correctedScale}) => ({
             u_color: color, 
             u_mvp: m4.identity(),
             u_lineWidth: lineWidth, 
+            u_correctedScale: correctedScale,
         })
 
         let _buffer = buffer
         
-        const _uniforms = uniforms({ color, lineWidth})
+        const _uniforms = uniforms({ color, lineWidth, correctedScale})
         const updateMVPMatrix = mvp => _uniforms.u_mvp = mvp
         const updateWidth = width => _uniforms.u_lineWidth = width
-
+        const updateCorrectedScale = correctedScale => _uniforms.u_correctedScale = correctedScale
         return {
             buffer: _buffer,
             uniforms: () => _uniforms,
             updateMVPMatrix,
             updateWidth,
+            updateCorrectedScale,
         }
     }
 
@@ -732,10 +748,10 @@ const main = () => {
         axesPointsBuffer,
     } = buffers()
 
-    const graph = element({buffer: graphPointsBuffer, color: graphColor, lineWidth: graphLineWidth})
-    const majorGrid = element({buffer: majorGridPointsBuffer, color: majorGridColor, lineWidth: majorGridLineWidth})
-    const minorGrid = element({buffer: minorGridPointsBuffer, color: minorGridColor, lineWidth: minorGridLineWidth})
-    const axes = element({buffer: axesPointsBuffer, color: axesColor, lineWidth: axesLineWidth})
+    const graph = element({buffer: graphPointsBuffer, color: graphColor, lineWidth: graphLineWidth, correctedScale: correctedScale})
+    const majorGrid = element({buffer: majorGridPointsBuffer, color: majorGridColor, lineWidth: majorGridLineWidth, correctedScale: correctedScale})
+    const minorGrid = element({buffer: minorGridPointsBuffer, color: minorGridColor, lineWidth: minorGridLineWidth, correctedScale: correctedScale})
+    const axes = element({buffer: axesPointsBuffer, color: axesColor, lineWidth: axesLineWidth, correctedScale: correctedScale})
 
     const line = renderer({
         program: lineProgram,
@@ -753,7 +769,7 @@ const main = () => {
 
     let viewProjectionMatrix, mvpMatrix
 
-    const renderers = [line, roundJoin]
+    const renderers = [line]
     
     setupEventListeners()
     computeViewProjectionMatrix()
@@ -935,6 +951,7 @@ const initializeGlobalVariables = () => {
     textContext = textCanvas.getContext('2d')
     near = 0;
     far = 2;
+    
     [xMin, xMax] = (() => {
         const aspectRatio = canvas.clientWidth / canvas.clientHeight;
         return [-5 * aspectRatio, 5 * aspectRatio]
@@ -943,6 +960,13 @@ const initializeGlobalVariables = () => {
     yMax = 5;
     translation = [0, 0, 0];
 
+    correctedScale = (() => {
+        const xRange = xMax - xMin
+        const yRange = yMax - yMin
+        const xScale = xRange / yRange
+        return xScale
+    })()
+    console.log('first correctedScale: ', correctedScale)
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
     currentFn = functions[7];
@@ -961,7 +985,7 @@ let gl
 let textCanvas
 /** @type {CanvasRenderingContext2D} */
 let textContext
-let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
+let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn, correctedScale
 let graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
 const zoomFactor = 1.05;
 const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
