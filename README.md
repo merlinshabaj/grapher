@@ -5,8 +5,16 @@
     - Interpolation of resolution isn't working yet
 - Drawing multiple lines
 - Stretching and squashing of individual axes
+    - Squashing and dragging of the y-axis
+    - Squash and stretch by dragging the repsective axis
+    - Update resoltuion
+    - Update line widths?
+    - Handle zoom behavior when an axis is stretched or squashed
+        - Update correctedScale uniform
+        - handle line width
+        - probably handle resolution
+
 - Display numbers even when axes aren't in view (GeoGebra)
-- Show coordinates of mouse position
 #### Soon
 - Maybe label for axes (x and y)
 - Arrows for axes
