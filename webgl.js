@@ -80,10 +80,13 @@ in vec4 a_startAndEndPoints;
 
 uniform mat4 u_mvp;
 uniform float u_lineWidth;
+uniform float u_correctedScale;
 
 void main() {
     vec2 startPoint = a_startAndEndPoints.xy;    
-    vec2 point = u_lineWidth * a_instanceVertexPosition + startPoint;
+    
+    vec2 offset = vec2(a_instanceVertexPosition.x * u_correctedScale, a_instanceVertexPosition.y);
+    vec2 point = u_lineWidth * offset + startPoint;
     
     gl_Position = u_mvp * vec4(point, 0, 1);
 }
@@ -370,12 +373,12 @@ const main = () => {
                 const xRange = xMax - xMin
                 const yRange = yMax - yMin
                 const xScale = xRange / yRange
-                return 10.0
+                return xScale
             })()
             correctedScale = _correctedScale
-            console.log(correctedScale)
             graph.updateCorrectedScale(correctedScale)
-            setLineWidthToDefault()
+
+            // setLineWidthToDefault()
             resolution = 20
             renderWithNewOrthographicDimensions()
         }
@@ -383,6 +386,15 @@ const main = () => {
             const range = xMax - xMin
             xMin += 1
             xMax -= 1
+
+            const _correctedScale = (() => {
+                const xRange = xMax - xMin
+                const yRange = yMax - yMin
+                const xScale = xRange / yRange
+                return xScale
+            })()
+            correctedScale = _correctedScale
+            graph.updateCorrectedScale(correctedScale)
 
             const newRange = xMax - xMin
             const scaleFactor = newRange / range
@@ -769,7 +781,7 @@ const main = () => {
 
     let viewProjectionMatrix, mvpMatrix
 
-    const renderers = [line]
+    const renderers = [line, roundJoin]
     
     setupEventListeners()
     computeViewProjectionMatrix()
@@ -966,7 +978,6 @@ const initializeGlobalVariables = () => {
         const xScale = xRange / yRange
         return xScale
     })()
-    console.log('first correctedScale: ', correctedScale)
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
     currentFn = functions[7];
