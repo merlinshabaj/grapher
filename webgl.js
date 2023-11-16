@@ -327,8 +327,9 @@ const main = () => {
         }
         const mousePositionWorld = mousePositionScreen => {
             let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
-            const gridSize = determineGridSize()
-            _mousePositionWorld = _mousePositionWorld.map(position => roundToFractionOfStep(position, gridSize))
+            const [gridSizeX, gridSizeY] = determineGridSize()
+            _mousePositionWorld[0] = roundToFractionOfStep(_mousePositionWorld[0], gridSizeX)
+            _mousePositionWorld[1] = roundToFractionOfStep(_mousePositionWorld[1], gridSizeY)
             return _mousePositionWorld
         }
         const showMouseCoordinates = event => {
@@ -870,7 +871,6 @@ const determineMinBasedOnGridSize = () => {
     const maxRange = Math.max(xRange, yRange)
     const gridSizeX = calculateGridSize(xRange)
     const gridSizeY = calculateGridSize(yRange)
-    // const gridSize = determineGridSize();
 
     // Min based on grid size
     const xStart = Math.ceil(xMin / gridSizeX) * gridSizeX;
