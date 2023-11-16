@@ -5,15 +5,15 @@
     - Interpolation of resolution isn't working yet
 - Drawing multiple lines
 - Stretching and squashing of individual axes
-    - Squashing and dragging of the y-axis
-    - Squash and stretch by dragging the repsective axis
-    - Update resoltuion
-    - Update line widths?
-    - Handle zoom behavior when an axis is stretched or squashed
-        - Update correctedScale uniform
-        - handle line width
-        - probably handle resolution
-    - Something about the calculation of grid size needs to be reworked
+    - [x] Squashing and stretching of the y-axis
+    - [ ] Squash and stretch by dragging the repsective axis
+    - [ ] Update resolution
+    - [ ] Update line widths?
+    - [ ] Handle zoom behavior when an axis is stretched or squashed
+        - [ ] Update correctedScale uniform
+        - [ ] handle line width
+        - [ ] probably handle resolution
+    - [x] Something about the calculation of grid size needs to be reworked 
 - Display numbers even when axes aren't in view (GeoGebra)
 #### Soon
 - Maybe label for axes (x and y)
