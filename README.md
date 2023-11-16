@@ -54,6 +54,7 @@ Possible approaches:
     const maxRange = Math.max(xRange, yRange)
     const gridSize =  calculateGridSize(maxRange)
 ```
+- Grid size updates aren't synchronised for x and y axis when zooming
 
 
 ## Miscellaneous 
