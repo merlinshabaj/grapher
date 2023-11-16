@@ -13,7 +13,7 @@
         - Update correctedScale uniform
         - handle line width
         - probably handle resolution
-
+    - Something about the calculation of grid size needs to be reworked
 - Display numbers even when axes aren't in view (GeoGebra)
 #### Soon
 - Maybe label for axes (x and y)
