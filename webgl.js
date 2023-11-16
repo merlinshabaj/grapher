@@ -396,6 +396,9 @@ const main = () => {
             })()
             correctedScale = _correctedScale
             graph.updateCorrectedScale(correctedScale)
+            majorGrid.updateCorrectedScale(correctedScale)
+            minorGrid.updateCorrectedScale(correctedScale)
+            axes.updateCorrectedScale(correctedScale)
             renderWithNewOrthographicDimensions()
         }
         const squashY = () => {
@@ -865,27 +868,28 @@ const determineMinBasedOnGridSize = () => {
     const yRange = Math.abs(yMax - yMin)
 
     const maxRange = Math.max(xRange, yRange)
-    const gridSize =  calculateGridSize(maxRange)
+    const gridSizeX = calculateGridSize(xRange)
+    const gridSizeY = calculateGridSize(yRange)
     // const gridSize = determineGridSize();
 
     // Min based on grid size
-    const xStart = Math.ceil(xMin / gridSize) * gridSize;
-    const yStart = Math.ceil(yMin / gridSize) * gridSize;
+    const xStart = Math.ceil(xMin / gridSizeX) * gridSizeX;
+    const yStart = Math.ceil(yMin / gridSizeY) * gridSizeY;
 
-    return [xStart, yStart, gridSize]
+    return [xStart, yStart, gridSizeX, gridSizeY]
 }
 
 const majorGridPoints = () => {
     const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const points = [];
 
-    const [xStart, yStart, gridSize] = determineMinBasedOnGridSize()
+    const [xStart, yStart, gridSizeX, gridSizeY] = determineMinBasedOnGridSize()
 
-    for (let x = xStart; x <= xMax; x += gridSize) {
+    for (let x = xStart; x <= xMax; x += gridSizeX) {
         points.push(x, yMax, x, yMin);
     }
 
-    for (let y = yStart; y <= yMax; y += gridSize) {
+    for (let y = yStart; y <= yMax; y += gridSizeY) {
         points.push(xMin, y, xMax, y);
     }
 
@@ -900,23 +904,24 @@ const minorGridPoints = () => {
 
     const maxRange = Math.max(xRange, yRange)
 
-    const majorGridSize = determineGridSize(maxRange)
+    const [majorGridSizeX, majorGridSizeY] = determineGridSize()
 
-    const minorGridSize = majorGridSize / 5; // 5 minor lines between major lines
+    const minorGridSizeX = majorGridSizeX / 5; // 5 minor lines between major lines
+    const minorGridSizeY = majorGridSizeY / 5; // 5 minor lines between major lines
 
-    const xStart = Math.ceil(xMin / minorGridSize) * minorGridSize;
-    const yStart = Math.ceil(yMin / minorGridSize) * minorGridSize;
+    const xStart = Math.ceil(xMin / minorGridSizeX) * minorGridSizeX;
+    const yStart = Math.ceil(yMin / minorGridSizeY) * minorGridSizeY;
 
-    for (let x = xStart; x <= xMax; x += minorGridSize) {
+    for (let x = xStart; x <= xMax; x += minorGridSizeX) {
         // Skip major grid lines
-        if (Math.abs(x % majorGridSize) > 0.0001) { 
+        if (Math.abs(x % majorGridSizeX) > 0.0001) { 
             points.push(x, yMax, x, yMin);
         }
     }
 
-    for (let y = yStart; y <= yMax; y += minorGridSize) {
+    for (let y = yStart; y <= yMax; y += minorGridSizeY) {
         // Skip major grid lines
-        if (Math.abs(y % majorGridSize) > 0.0001) { 
+        if (Math.abs(y % majorGridSizeY) > 0.0001) { 
             points.push(xMin, y, xMax, y);
         }
     }
@@ -937,9 +942,9 @@ const axesPoints = () => {
 const numberPointsXAxis = () => {
     const [,xMax,,] = translatedAxisRanges()
     let points = [];
-    const [xStart,,gridSize] = determineMinBasedOnGridSize()
+    const [xStart,,gridSizeX,] = determineMinBasedOnGridSize()
 
-    for (let x = xStart; x <= xMax; x += gridSize) {
+    for (let x = xStart; x <= xMax; x += gridSizeX) {
         points.push([x, 0]);
     }
     
@@ -949,20 +954,20 @@ const numberPointsXAxis = () => {
 const numberPointsYAxis = () => {
     const [,,,yMax] = translatedAxisRanges()
     let points = [];
-    const [,yStart, gridSize] = determineMinBasedOnGridSize()
+    const [,yStart, ,gridSizeY] = determineMinBasedOnGridSize()
 
-    for (let y = yStart; y <= yMax; y += gridSize) {
+    for (let y = yStart; y <= yMax; y += gridSizeY) {
         points.push([0, y]);
     }
 
     return points
 }
 
-const calculateGridSize = maxRange => {
-    const orderOfMagnitude = Math.floor(Math.log10(maxRange));
+const calculateGridSize = range => {
+    const orderOfMagnitude = Math.floor(Math.log10(range));
 
     let gridSize = Math.pow(10, orderOfMagnitude);
-    const rangeGridMultiple = maxRange / gridSize;
+    const rangeGridMultiple = range / gridSize;
 
     const threshold = 0.5
 
@@ -978,9 +983,10 @@ const determineGridSize = () => {
     const xRange = Math.abs(xMax - xMin)
     const yRange = Math.abs(yMax - yMin)
 
-    const maxRange = Math.max(xRange, yRange)
-    const gridSize = calculateGridSize(maxRange)
-    return gridSize
+    // const maxRange = Math.max(xRange, yRange)
+    const gridSizeX = calculateGridSize(xRange)
+    const gridSizeY = calculateGridSize(yRange)
+    return [gridSizeX, gridSizeY]
 }
 
 const translatedAxisRanges = () => [xMin - translation[0], xMax - translation[0], yMin - translation[1], yMax - translation[1]]
