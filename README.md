@@ -13,6 +13,7 @@
         - [ ] Update correctedScale uniform
         - [ ] handle line width
         - [ ] probably handle resolution
+        - [ ] Add correctedScale interpolation to zoomToOrigin function
     - [x] Something about the calculation of grid size needs to be reworked 
 - Display numbers even when axes aren't in view (GeoGebra)
 #### Soon
