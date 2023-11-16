@@ -378,12 +378,45 @@ const main = () => {
             })()
             correctedScale = _correctedScale
             graph.updateCorrectedScale(correctedScale)
+            majorGrid.updateCorrectedScale(correctedScale)
+            minorGrid.updateCorrectedScale(correctedScale)
+            axes.updateCorrectedScale(correctedScale)
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
             const scaleFactor = 0.99
             xMin = xMin * scaleFactor
             xMax = xMax * scaleFactor
+
+            const _correctedScale = (() => {
+                const xRange = xMax - xMin
+                const yRange = yMax - yMin
+                const xScale = xRange / yRange
+                return xScale
+            })()
+            correctedScale = _correctedScale
+            graph.updateCorrectedScale(correctedScale)
+            renderWithNewOrthographicDimensions()
+        }
+        const squashY = () => {
+            const scaleFactor = 1.01
+            yMin = yMin * scaleFactor
+            yMax = yMax * scaleFactor
+
+            const _correctedScale = (() => {
+                const xRange = xMax - xMin
+                const yRange = yMax - yMin
+                const xScale = xRange / yRange
+                return xScale
+            })()
+            correctedScale = _correctedScale
+            graph.updateCorrectedScale(correctedScale)
+            renderWithNewOrthographicDimensions()
+        }
+        const stretchY = () => {
+            const scaleFactor = 0.99
+            yMin = yMin * scaleFactor
+            yMax = yMax * scaleFactor
 
             const _correctedScale = (() => {
                 const xRange = xMax - xMin
@@ -408,6 +441,12 @@ const main = () => {
                     break
                 case 'n': 
                     stretchX()
+                    break
+                case 'k':
+                    squashY()
+                    break
+                case 'j': 
+                    stretchY()
                     break
                 default: 
                 break
