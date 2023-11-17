@@ -60,15 +60,14 @@ void main() {
 
     vec2 direction = end - start;
     vec2 unitNormal = normalize(vec2(-direction.y, direction.x));
-
-    // Check if the line is vertical
-    bool isVertical = abs(direction.x) < 0.0001;
-
-    // Correct the normal based on the aspect ratio for non-vertical lines
-    vec2 correctedUnitNormal = isVertical 
-        ? unitNormal 
-        : vec2(unitNormal.x * u_correctedScale, unitNormal.y);
-    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + correctedUnitNormal * u_lineWidth * a_instanceVertexPosition.y;
+    float correctedScale = 1.0;
+    if (u_correctedScale < 1.0) {
+        unitNormal = vec2(unitNormal.x * u_correctedScale, unitNormal.y );
+    } else {
+        unitNormal = vec2(unitNormal.x * u_correctedScale, unitNormal.y );
+    }
+    
+    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + unitNormal * u_lineWidth * a_instanceVertexPosition.y;
 
     gl_Position = u_mvp * vec4(worldSpacePosition, 0, 1);
 }
@@ -375,7 +374,7 @@ const main = () => {
             updateLineWidthOnUniforms()
         }
         const squashX = () => {
-            const scaleFactor = 1.01
+            const scaleFactor = 1.05
             xMin = xMin * scaleFactor
             xMax = xMax * scaleFactor
 
@@ -383,17 +382,21 @@ const main = () => {
                 const xRange = xMax - xMin
                 const yRange = yMax - yMin
                 const xScale = xRange / yRange
+                const yScale = yRange / xRange
+                console.log('xScale: ', xScale, 'yScale: ', yScale)
                 return xScale
             })()
+            // setLineWidthToDefault()
             correctedScale = _correctedScale
-            graph.updateCorrectedScale(correctedScale)
-            majorGrid.updateCorrectedScale(correctedScale)
-            minorGrid.updateCorrectedScale(correctedScale)
-            axes.updateCorrectedScale(correctedScale)
+            console.log(correctedScale)
+            // graph.updateCorrectedScale(correctedScale)
+            // majorGrid.updateCorrectedScale(correctedScale)
+            // minorGrid.updateCorrectedScale(correctedScale)
+            // axes.updateCorrectedScale(correctedScale)
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
-            const scaleFactor = 0.99
+            const scaleFactor = 0.95
             xMin = xMin * scaleFactor
             xMax = xMax * scaleFactor
 
@@ -404,14 +407,16 @@ const main = () => {
                 return xScale
             })()
             correctedScale = _correctedScale
-            graph.updateCorrectedScale(correctedScale)
+            // setLineWidthToDefault()
+            console.log(correctedScale)
+            // graph.updateCorrectedScale(correctedScale)
             majorGrid.updateCorrectedScale(correctedScale)
             minorGrid.updateCorrectedScale(correctedScale)
             axes.updateCorrectedScale(correctedScale)
             renderWithNewOrthographicDimensions()
         }
         const squashY = () => {
-            const scaleFactor = 1.01
+            const scaleFactor = 1.05
             yMin = yMin * scaleFactor
             yMax = yMax * scaleFactor
 
@@ -423,10 +428,13 @@ const main = () => {
             })()
             correctedScale = _correctedScale
             graph.updateCorrectedScale(correctedScale)
+            majorGrid.updateCorrectedScale(correctedScale)
+            minorGrid.updateCorrectedScale(correctedScale)
+            axes.updateCorrectedScale(correctedScale)
             renderWithNewOrthographicDimensions()
         }
         const stretchY = () => {
-            const scaleFactor = 0.99
+            const scaleFactor = 0.95
             yMin = yMin * scaleFactor
             yMax = yMax * scaleFactor
 
@@ -438,6 +446,9 @@ const main = () => {
             })()
             correctedScale = _correctedScale
             graph.updateCorrectedScale(correctedScale)
+            majorGrid.updateCorrectedScale(correctedScale)
+            minorGrid.updateCorrectedScale(correctedScale)
+            axes.updateCorrectedScale(correctedScale)
             renderWithNewOrthographicDimensions()
         }
 
@@ -1020,6 +1031,7 @@ const initializeGlobalVariables = () => {
         const xScale = xRange / yRange
         return xScale
     })();
+
 
     [gridSizeX, gridSizeY] = (() => {
         return determineGridSize()
