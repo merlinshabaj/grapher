@@ -254,10 +254,9 @@ const main = () => {
             updateLineWidths()
             updateResolution()
             updateWorldMinAndMax()
-            const newGridSizeX = calculateGridSize(xMax - xMin);
-            console.log('newGridSizeX: ', newGridSizeX)
-            renderWithNewOrthographicDimensions(newGridSizeX)
-            console.log('grid sizes: ', [gridSizeX, gridSizeY])
+            const maxRange =  Math.max(xMax - xMin, yMax - yMin)
+            const newGridSize = calculateGridSize(maxRange);
+            renderWithNewOrthographicDimensions(newGridSize)
         }
         const zoomToOrigin = () => {
             const easeInOutCubic = t => {
