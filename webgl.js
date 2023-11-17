@@ -130,8 +130,17 @@ const colors = () => {
 
 const main = () => {
     const setupEventListeners = () => {
-        const renderWithNewOrthographicDimensions = () => {
+        const updateGridSizes = () => {
+            [gridSizeX, gridSizeY] = determineGridSize();
+        }
+        const renderWithNewOrthographicDimensions = (newGridSize = null) => {
             computeViewProjectionMatrix()
+            if (newGridSize) { 
+                gridSizeX = newGridSize
+                gridSizeY = newGridSize
+            } else { 
+                updateGridSizes()
+            }
             updateAllPoints()
             render();
         }
@@ -243,13 +252,12 @@ const main = () => {
             }
             
             updateLineWidths()
-            const otherLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
-            graphLineWidth = otherLineWidth
-            graph.updateWidth(graphLineWidth)
-            // console.log('graphLineWidth:', graphLineWidth, 'defaulGraphLineWidht: ', otherLineWidth)
             updateResolution()
             updateWorldMinAndMax()
-            renderWithNewOrthographicDimensions();
+            const newGridSizeX = calculateGridSize(xMax - xMin);
+            console.log('newGridSizeX: ', newGridSizeX)
+            renderWithNewOrthographicDimensions(newGridSizeX)
+            console.log('grid sizes: ', [gridSizeX, gridSizeY])
         }
         const zoomToOrigin = () => {
             const easeInOutCubic = t => {
@@ -327,7 +335,6 @@ const main = () => {
         }
         const mousePositionWorld = mousePositionScreen => {
             let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
-            const [gridSizeX, gridSizeY] = determineGridSize()
             _mousePositionWorld[0] = roundToFractionOfStep(_mousePositionWorld[0], gridSizeX)
             _mousePositionWorld[1] = roundToFractionOfStep(_mousePositionWorld[1], gridSizeY)
             return _mousePositionWorld
@@ -865,25 +872,25 @@ const computeRoundJoinGeometry = () => {
 
 const determineMinBasedOnGridSize = () => {
     const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
-    const xRange = Math.abs(xMax - xMin)
-    const yRange = Math.abs(yMax - yMin)
+    // const xRange = Math.abs(xMax - xMin)
+    // const yRange = Math.abs(yMax - yMin)
 
-    const maxRange = Math.max(xRange, yRange)
-    const gridSizeX = calculateGridSize(xRange)
-    const gridSizeY = calculateGridSize(yRange)
+    // const maxRange = Math.max(xRange, yRange)
+    // const gridSizeX = calculateGridSize(xRange)
+    // const gridSizeY = calculateGridSize(yRange)
 
     // Min based on grid size
     const xStart = Math.ceil(xMin / gridSizeX) * gridSizeX;
     const yStart = Math.ceil(yMin / gridSizeY) * gridSizeY;
 
-    return [xStart, yStart, gridSizeX, gridSizeY]
+    return [xStart, yStart/*,  gridSizeX, gridSizeY */]
 }
 
 const majorGridPoints = () => {
     const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const points = [];
 
-    const [xStart, yStart, gridSizeX, gridSizeY] = determineMinBasedOnGridSize()
+    const [xStart, yStart/* , gridSizeX, gridSizeY */] = determineMinBasedOnGridSize()
 
     for (let x = xStart; x <= xMax; x += gridSizeX) {
         points.push(x, yMax, x, yMin);
@@ -904,24 +911,24 @@ const minorGridPoints = () => {
 
     const maxRange = Math.max(xRange, yRange)
 
-    const [majorGridSizeX, majorGridSizeY] = determineGridSize()
+    // const [gridSizeX, gridSizeY] = determineGridSize()
 
-    const minorGridSizeX = majorGridSizeX / 5; // 5 minor lines between major lines
-    const minorGridSizeY = majorGridSizeY / 5; // 5 minor lines between major lines
+    const minorGridSizeX = gridSizeX / 5; // 5 minor lines between major lines
+    const minorGridSizeY = gridSizeY / 5; // 5 minor lines between major lines
 
     const xStart = Math.ceil(xMin / minorGridSizeX) * minorGridSizeX;
     const yStart = Math.ceil(yMin / minorGridSizeY) * minorGridSizeY;
 
     for (let x = xStart; x <= xMax; x += minorGridSizeX) {
         // Skip major grid lines
-        if (Math.abs(x % majorGridSizeX) > 0.0001) { 
+        if (Math.abs(x % gridSizeX) > 0.0001) { 
             points.push(x, yMax, x, yMin);
         }
     }
 
     for (let y = yStart; y <= yMax; y += minorGridSizeY) {
         // Skip major grid lines
-        if (Math.abs(y % majorGridSizeY) > 0.0001) { 
+        if (Math.abs(y % gridSizeY) > 0.0001) { 
             points.push(xMin, y, xMax, y);
         }
     }
@@ -942,8 +949,7 @@ const axesPoints = () => {
 const numberPointsXAxis = () => {
     const [,xMax,,] = translatedAxisRanges()
     let points = [];
-    const [xStart,,gridSizeX,] = determineMinBasedOnGridSize()
-
+    const [xStart,] = determineMinBasedOnGridSize()
     for (let x = xStart; x <= xMax; x += gridSizeX) {
         points.push([x, 0]);
     }
@@ -954,7 +960,7 @@ const numberPointsXAxis = () => {
 const numberPointsYAxis = () => {
     const [,,,yMax] = translatedAxisRanges()
     let points = [];
-    const [,yStart, ,gridSizeY] = determineMinBasedOnGridSize()
+    const [,yStart] = determineMinBasedOnGridSize()
 
     for (let y = yStart; y <= yMax; y += gridSizeY) {
         points.push([0, y]);
@@ -1012,7 +1018,11 @@ const initializeGlobalVariables = () => {
         const yRange = yMax - yMin
         const xScale = xRange / yRange
         return xScale
-    })()
+    })();
+
+    [gridSizeX, gridSizeY] = (() => {
+        return determineGridSize()
+    })();
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
     currentFn = functions[7];
@@ -1033,6 +1043,7 @@ let textCanvas
 let textContext
 let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn, correctedScale
 let graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
+let gridSizeX, gridSizeY
 const zoomFactor = 1.05;
 const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
 initializeGlobalVariables()
