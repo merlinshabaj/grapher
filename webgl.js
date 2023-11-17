@@ -316,7 +316,9 @@ const main = () => {
 
                 setLineWidthToDefault()
                 
-                renderWithNewOrthographicDimensions()
+                const maxRange =  Math.max(xMax - xMin, yMax - yMin)
+                const newGridSize = calculateGridSize(maxRange);
+                renderWithNewOrthographicDimensions(newGridSize)
 
                 if (fraction < 1) {
                     requestAnimationFrame(animateZoom); // Continue the animation
