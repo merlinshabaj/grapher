@@ -56,7 +56,7 @@ Possible approaches:
 ```
 - [x] Grid size updates aren't synchronised for x and y axis when zooming
     - [ ] Zooming to origin, doesn't work anymore since globalising gridSizeX and gridSizeY
-
+    - [ ] Changing scaling of an axis while having zoomed in or out updates the grid size and applies each grid size respective to it's axis -> since the max range grid size isn't applied anymore for both an abrupt change in grid size can happens
 
 ## Miscellaneous 
 ### Potential for bugs
