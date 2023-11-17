@@ -45,7 +45,7 @@ Possible approaches:
 - Zooming in and out still has limits that aren't handled
 - Zooming in too far makes minor grid disappear and also major grid when scrolled even further
 - Zooming out too far and graph begins to flig. I assume this is due to the points be recalculated, this being the same bahviour as panning on a low resolution creates. Need to check calculation of resolution 
-- The function `determinGridSize()` doesn't produce the same result as the following:
+- The function `determineGridSize()` doesn't produce the same result as the following:
 ```JS
     const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
     const xRange = Math.abs(xMax - xMin)
@@ -54,12 +54,13 @@ Possible approaches:
     const maxRange = Math.max(xRange, yRange)
     const gridSize =  calculateGridSize(maxRange)
 ```
-- Grid size updates aren't synchronised for x and y axis when zooming
+- [x] Grid size updates aren't synchronised for x and y axis when zooming
+    - [ ] Zooming to origin, doesn't work anymore since globalising gridSizeX and gridSizeY
 
 
 ## Miscellaneous 
 ### Potential for bugs
-The rendering order is currently not really flexible, it would need some refactoring to make it more flexible. For instance, the current rendering process, wouldn't allow for such a rendering oder: line segments > joins >line segments > joins ...
+The rendering order is currently not really flexible, it would need some refactoring to make it more flexible. For instance, the current rendering process, wouldn't allow for such a rendering order: line segments > joins >line segments > joins ...
 
 ### Drawing numbers
 I am currently rendering the numbers twice, this seems to be eliminating a bug. However this is probably a bad solution.
