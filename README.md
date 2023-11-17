@@ -40,6 +40,12 @@ Possible approaches:
                 updateLineWidthOnUniforms()
             }
     ```
+- Refcator this piece of code into a funciton or similar, it is used at least twice: 
+```JS
+const maxRange =  Math.max(xMax - xMin, yMax - yMin)
+const newGridSize = calculateGridSize(maxRange)
+renderWithNewOrthographicDimensions(newGridSize)
+```
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
@@ -55,7 +61,7 @@ Possible approaches:
     const gridSize =  calculateGridSize(maxRange)
 ```
 - [x] Grid size updates aren't synchronised for x and y axis when zooming
-    - [ ] Zooming to origin, doesn't work anymore since globalising gridSizeX and gridSizeY
+    - [x] Zooming to origin, doesn't work anymore since globalising gridSizeX and gridSizeY
     - [ ] Changing scaling of an axis while having zoomed in or out updates the grid size and applies each grid size respective to it's axis -> since the max range grid size isn't applied anymore for both an abrupt change in grid size can happens
 
 ## Miscellaneous 
