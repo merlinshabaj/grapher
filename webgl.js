@@ -273,7 +273,6 @@ const main = () => {
             updateWorldMinAndMax()
             const maxRange = Math.max(xMax - xMin, yMax - yMin)
             const newGridSize = calculateGridSize(maxRange)
-            const aspectRatio = (canvas.width / canvas.height)
             correctedScale === aspectRatio ? renderWithNewOrthographicDimensions(newGridSize) : renderWithNewOrthographicDimensions()
         }
         const zoomToOrigin = () => {
@@ -288,11 +287,8 @@ const main = () => {
             const interpolateNumber = (currentNumber, targetNumber, fraction) => {
                 return currentNumber + fraction * (targetNumber - currentNumber)
             }
-            const setWorldDimensions = (dimensions) => {
-                xMin = dimensions[0]
-                xMax = dimensions[1]
-                yMin = dimensions[2]
-                yMax = dimensions[3]
+            const setWorldDimensions = dimensions => {
+                [xMin, xMax, yMin, yMax] = dimensions
             }
             const setLineWidthToDefault = () => {
                 graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
@@ -308,7 +304,6 @@ const main = () => {
                     minorGrid.updateCorrectedScale(correctedScale)
                     axes.updateCorrectedScale(correctedScale)
                 }
-                const aspectRatio = canvas.width / canvas.height
                 correctedScale = aspectRatio
                 updateCorrectedScaleOnUniforms()
             }
@@ -324,7 +319,6 @@ const main = () => {
                 // Update dimensions, translations, resolution and line widths
                 resolution = interpolateNumber(resolution, 100, fraction)
 
-                const aspectRatio = canvas.clientWidth / canvas.clientHeight
                 const targetDimensions = [-5 * aspectRatio, 5 * aspectRatio, -5, 5]
                 setWorldDimensions(interpolateArray([xMin, xMax, yMin, yMax], targetDimensions, fraction))
 
@@ -985,9 +979,11 @@ const initializeGlobalVariables = () => {
     textContext = textCanvas.getContext('2d')
     near = 0;
     far = 2;
-    
+
+    aspectRatio = canvas.clientWidth / canvas.clientHeight;
+    console.log('aspectRatio: ', aspectRatio);
+
     [xMin, xMax] = (() => {
-        const aspectRatio = canvas.clientWidth / canvas.clientHeight;
         return [-5 * aspectRatio, 5 * aspectRatio]
     })()
     yMin = -5;
@@ -1026,6 +1022,7 @@ let textContext
 let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn, correctedScale
 let graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
 let gridSizeX, gridSizeY
+let aspectRatio
 const zoomFactor = 1.05;
 const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
 initializeGlobalVariables()
