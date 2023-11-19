@@ -3,8 +3,8 @@
 ### Next up
 - [ ] Refactor eventListener section
 - [ ] Refactor Stretch and squash functions
-- [ ] Refactor `renderWithNewOrthographicDimensions(newGridSize)` (see implementations[###implementation])
-- [ ] Resizing the window (see bugs[###bugs])
+- [ ] Refactor `renderWithNewOrthographicDimensions(newGridSize)` ([see implementations](###implementation))
+- [ ] Resizing the window ([see bugs](###bugs))
 ### Features
 - Zoom / pan to origin on button click
     - Interpolation of resolution isn't working yet
