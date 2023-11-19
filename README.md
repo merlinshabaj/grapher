@@ -38,30 +38,36 @@ Possible approaches:
             }
     ```
 - Refactor this piece of code into a funciton or similar, it is used at least twice: 
-```JS
-const maxRange =  Math.max(xMax - xMin, yMax - yMin)
-const newGridSize = calculateGridSize(maxRange)
-renderWithNewOrthographicDimensions(newGridSize)
-```
+    ```JS
+    const maxRange =  Math.max(xMax - xMin, yMax - yMin)
+    const newGridSize = calculateGridSize(maxRange)
+    renderWithNewOrthographicDimensions(newGridSize)
+    ```
 - Refactor eventListener section espeacially the latest code
     - Squash and strecht function need refactoring a lot of duplication
 - Revise exact resolution calculation for stretch and squashing function. Current implementation probably isn't resilient enough
 - Refactor `renderWithNewOrthographicDimensions()`
-- `zoomToOrigin()` doesn't reset cleanly when axes are scale, due to the `lineWidth` being instantly reset
+- `zoomToOrigin()` doesn't reset cleanly when axes are scaled, due to the `lineWidth` being instantly reset
+- I am using this twice:
+    ```JS
+    const maxRange =  Math.max(xMax - xMin, yMax - yMin)
+    const newGridSize = calculateGridSize(maxRange);
+    renderWithNewOrthographicDimensions(newGridSize)
+    ```
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
 - Zooming in too far makes minor grid disappear and also major grid when scrolled even further
 - Zooming out too far and graph begins to flig. I assume this is due to the points be recalculated, this being the same bahviour as panning on a low resolution creates. Need to check calculation of resolution 
 - The function `determineGridSize()` doesn't produce the same result as the following:
-```JS
-    const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
-    const xRange = Math.abs(xMax - xMin)
-    const yRange = Math.abs(yMax - yMin)
+    ```JS
+        const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
+        const xRange = Math.abs(xMax - xMin)
+        const yRange = Math.abs(yMax - yMin)
 
-    const maxRange = Math.max(xRange, yRange)
-    const gridSize =  calculateGridSize(maxRange)
-```
+        const maxRange = Math.max(xRange, yRange)
+        const gridSize =  calculateGridSize(maxRange)
+    ```
 - Resizing the window doesn't update the aspect ratio or somethine else
 - Not sure whether stretching is implemented correctly, when (0, 0) isn't in screen origing there might be weird behaviour 
 
