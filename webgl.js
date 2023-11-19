@@ -310,6 +310,14 @@ const main = () => {
                 axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
                 updateLineWidthOnUniforms()
             }
+            const setScalingToAspectRatio = () => {
+                const aspectRatio = canvas.width / canvas.height
+                correctedScale = aspectRatio
+                graph.updateCorrectedScale(correctedScale)
+                majorGrid.updateCorrectedScale(correctedScale)
+                minorGrid.updateCorrectedScale(correctedScale)
+                axes.updateCorrectedScale(correctedScale)
+            }
 
             let startTime = Date.now()
             const animateZoom = () => {
@@ -325,8 +333,9 @@ const main = () => {
                 setWorldDimensions(interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction))
                 translation = interpolateTranslation(translation, fraction);
 
+                setScalingToAspectRatio()
                 setLineWidthToDefault()
-                
+
                 const maxRange =  Math.max(xMax - xMin, yMax - yMin)
                 const newGridSize = calculateGridSize(maxRange);
                 renderWithNewOrthographicDimensions(newGridSize)
