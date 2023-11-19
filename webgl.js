@@ -377,6 +377,100 @@ const main = () => {
         }
         
         const changeCursorAxes = event => {
+            
+            
+            // const squashX = (scaleFactor) => {
+            //     xMin = xMin * scaleFactor
+            //     xMax = xMax * scaleFactor
+    
+            //     updateCorrectedScale()
+            //     updateResolutionSquash()
+
+            //     renderWithNewOrthographicDimensions()
+            // }
+            // const stretchX = (scaleFactor) => {
+            //     xMin = xMin * scaleFactor
+            //     xMax = xMax * scaleFactor
+    
+            //     updateCorrectedScale()
+            //     updateResolutionStretch()
+
+            //     renderWithNewOrthographicDimensions()
+            // }
+            // const squashY = (scaleFactor) => {
+            //     yMin = yMin * scaleFactor
+            //     yMax = yMax * scaleFactor
+    
+            //     updateCorrectedScale()
+            //     updateResolutionSquash()
+
+            //     renderWithNewOrthographicDimensions()
+            // }
+            // const stretchY = (scaleFactor) => {
+            //     yMin = yMin * scaleFactor
+            //     yMax = yMax * scaleFactor
+    
+            //     updateCorrectedScale()
+            //     updateResolutionStretch()
+
+            //     renderWithNewOrthographicDimensions()
+            // }
+
+            
+            
+            const scaleAxes = () => {
+                const updateScale = (axis, scaleFactor, resolutionFactor) => {
+                    const updateCorrectedScale = () => {
+                        const updateCorrectedScaleOnUniforms = correctedScale => {
+                            graph.updateCorrectedScale(correctedScale)
+                            majorGrid.updateCorrectedScale(correctedScale)
+                            minorGrid.updateCorrectedScale(correctedScale)
+                            axes.updateCorrectedScale(correctedScale)
+                        }
+                        const calculateXScale = () => {
+                            const xRange = xMax - xMin
+                            const yRange = yMax - yMin
+                            const xScale = xRange / yRange
+                            return xScale
+                        }
+        
+                        const _correctedScale = calculateXScale()
+                        correctedScale = _correctedScale
+                        updateCorrectedScaleOnUniforms(correctedScale)
+                    }
+                    const updateResolution = resolutionFactor => resolution = resolution / resolutionFactor
+
+                    if (axis === 'x') {
+                        xMin = xMin * scaleFactor
+                        xMax = xMax * scaleFactor
+                    } else if (axis === 'y') {
+                        yMin = yMin * scaleFactor
+                        yMax = yMax * scaleFactor
+                    }
+                    updateCorrectedScale()
+                    updateResolution(resolutionFactor)
+                    renderWithNewOrthographicDimensions()
+                }
+                const squashX = (scaleFactor, resolutionFactor) => updateScale('x', scaleFactor, resolutionFactor)
+                const stretchX = (scaleFactor, resolutionFactor) => updateScale('x', scaleFactor, resolutionFactor)
+                const squashY = (scaleFactor, resolutionFactor) => updateScale('y', scaleFactor, resolutionFactor)
+                const stretchY = (scaleFactor, resolutionFactor) => updateScale('y', scaleFactor, resolutionFactor)
+                const createAxisHandler = (axisIndex, squashFunc, stretchFunc) => {
+                    if (isMouseDown && startMouse[axisIndex] !== null) {
+                        const currentMouse = axisIndex === 0 ? event.clientX : event.clientY
+                        if (currentMouse > startMouse[axisIndex]) {
+                            squashFunc(scaleFactor, resolutionFactor)
+                        } else if (currentMouse < startMouse[axisIndex]) {
+                            stretchFunc((1 / scaleFactor), (1 / resolutionFactor))
+                        }
+                        startMouse[axisIndex] = currentMouse
+                    }
+                }
+
+                createAxisHandler(0, squashX, stretchX)
+                createAxisHandler(1, squashY, stretchY)
+            }
+
             const mousePositionScreen = [event.clientX, event.clientY]
             const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
             const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
@@ -390,24 +484,9 @@ const main = () => {
                 setCursorStyle(cursorStyle)
             }
 
-            if (isMouseDown && startMouse[0] !== null) {
-                const currentMouseX = event.clientX
-                if (currentMouseX > startMouse[0]) {
-                    squashX()
-                } else if (currentMouseX < startMouse[0]) {
-                    stretchX()
-                }
-                startMouse[0] = currentMouseX  
-            }
-            if (isMouseDown && startMouse[1] !== null) {
-                const currentMouseY = event.clientY
-                if (currentMouseY > startMouse[1]) {
-                    squashY()
-                } else if (currentMouseY < startMouse[1]) {
-                    stretchY()
-                }
-                startMouse[1] = currentMouseY
-            }
+            const scaleFactor = 1.05
+            const resolutionFactor = 1.025
+            scaleAxes()
         }
 
         const setLineWidthToDefault = () => {
@@ -417,99 +496,7 @@ const main = () => {
             axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
             updateLineWidthOnUniforms()
         }
-        const squashX = () => {
-            const scaleFactor = 1.05
-            xMin = xMin * scaleFactor
-            xMax = xMax * scaleFactor
-
-            const _correctedScale = (() => {
-                const xRange = xMax - xMin
-                const yRange = yMax - yMin
-                const xScale = xRange / yRange
-                const yScale = yRange / xRange
-                console.log('xScale: ', xScale, 'yScale: ', yScale)
-                return xScale
-            })()
-            // setLineWidthToDefault()
-            correctedScale = _correctedScale
-            graph.updateCorrectedScale(correctedScale)
-            majorGrid.updateCorrectedScale(correctedScale)
-            minorGrid.updateCorrectedScale(correctedScale)
-            axes.updateCorrectedScale(correctedScale)
-            const recalculate = something => something / scaleFactor
-            const updateResolution = () => resolution = resolution / 1.025
-            updateResolution()
-            // console.log('Squash resolution: ', resolution)
-            renderWithNewOrthographicDimensions()
-        }
-        const stretchX = () => {
-            const scaleFactor = 0.95
-            xMin = xMin * scaleFactor
-            xMax = xMax * scaleFactor
-
-            const _correctedScale = (() => {
-                const xRange = xMax - xMin
-                const yRange = yMax - yMin
-                const xScale = xRange / yRange
-                return xScale
-            })()
-            correctedScale = _correctedScale
-            // setLineWidthToDefault()
-
-            graph.updateCorrectedScale(correctedScale)
-            majorGrid.updateCorrectedScale(correctedScale)
-            minorGrid.updateCorrectedScale(correctedScale)
-            axes.updateCorrectedScale(correctedScale)
-            const recalculate = something => something / 1.025
-            const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
-            updateResolution()
-            // console.log('stretch resolution: ', resolution)
-            renderWithNewOrthographicDimensions()
-        }
-        const squashY = () => {
-            const scaleFactor = 1.05
-            yMin = yMin * scaleFactor
-            yMax = yMax * scaleFactor
-
-            const _correctedScale = (() => {
-                const xRange = xMax - xMin
-                const yRange = yMax - yMin
-                const xScale = xRange / yRange
-                return xScale
-            })()
-            correctedScale = _correctedScale
-
-            graph.updateCorrectedScale(correctedScale)
-            majorGrid.updateCorrectedScale(correctedScale)
-            minorGrid.updateCorrectedScale(correctedScale)
-            axes.updateCorrectedScale(correctedScale)
-            const recalculate = something => something / 1.025
-            const updateResolution = () => resolution = recalculate(resolution)
-            updateResolution()
-            renderWithNewOrthographicDimensions()
-        }
-        const stretchY = () => {
-            const scaleFactor = 0.95
-            yMin = yMin * scaleFactor
-            yMax = yMax * scaleFactor
-
-            const _correctedScale = (() => {
-                const xRange = xMax - xMin
-                const yRange = yMax - yMin
-                const xScale = xRange / yRange
-                return xScale
-            })()
-            correctedScale = _correctedScale
-
-            graph.updateCorrectedScale(correctedScale)
-            majorGrid.updateCorrectedScale(correctedScale)
-            minorGrid.updateCorrectedScale(correctedScale)
-            axes.updateCorrectedScale(correctedScale)
-            const recalculate = something => something / 1.025
-            const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
-            updateResolution()
-            renderWithNewOrthographicDimensions()
-        }
+        
 
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)

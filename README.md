@@ -3,7 +3,7 @@
 ### Next up
 - [x] Change cursor to be `col-resize` when at origin (0,0)
 - [ ] Refactor eventListener section
-- [ ] Refactor Stretch and squash functions
+- [x] Refactor Stretch and squash functions
 - [ ] Refactor `renderWithNewOrthographicDimensions(newGridSize)` ([see implementations](#implementation))
 - [ ] Refactor variable setting cursor style ([see implementations](#implementation))
 - [ ] Resizing the window ([see bugs](#bugs))
