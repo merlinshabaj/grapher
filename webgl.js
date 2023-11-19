@@ -153,6 +153,7 @@ const main = () => {
             canvas.style.cursor = style;
         }
         let panningPosition = null
+        let startMouse = [null, null]
         let isMouseDown = false
         const pan = event => {
             if (!panningPosition) return
@@ -182,6 +183,7 @@ const main = () => {
             const _mousePositionWorld = mousePositionWorld(mousePosition)
             const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
             if (mousePositionWorldHasZero) {
+                _mousePositionWorld[1] === 0 ? startMouse[0] = event.clientX : startMouse[1] = event.clientY
                 canvas.removeEventListener('mousemove', pan)
                 const cursorStyle = _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
                        : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
@@ -196,12 +198,14 @@ const main = () => {
         canvas.addEventListener('mouseup', () => {
             isMouseDown = false
             panningPosition = null
+            startMouse = [null, null]
             setCursorStyle('grab')
             canvas.removeEventListener('mousemove', pan)
         });
         canvas.addEventListener('mouseleave', () => {
             isMouseDown = false
             panningPosition = null
+            startMouse = [null, null]
             setCursorStyle('default')
             canvas.removeEventListener('mousemove', pan)
         });
@@ -359,6 +363,7 @@ const main = () => {
 
             mouseCoordinates.innerHTML = `(${_mousePositionWorld[0]}, ${_mousePositionWorld[1]})`
         }
+        
         const changeCursorAxes = event => {
             const mousePositionScreen = [event.clientX, event.clientY]
             const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
@@ -371,7 +376,27 @@ const main = () => {
 
                 setCursorStyle(cursorStyle)
             }
+
+            if (isMouseDown && startMouse[0] !== null) {
+                const currentMouseX = event.clientX
+                if (currentMouseX > startMouse[0]) {
+                    squashX()
+                } else if (currentMouseX < startMouse[0]) {
+                    stretchX()
+                }
+                startMouse[0] = currentMouseX  
+            }
+            if (isMouseDown && startMouse[1] !== null) {
+                const currentMouseY = event.clientY
+                if (currentMouseY > startMouse[1]) {
+                    squashY()
+                } else if (currentMouseY < startMouse[1]) {
+                    stretchY()
+                }
+                startMouse[1] = currentMouseY
+            }
         }
+
         const setLineWidthToDefault = () => {
             graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
             majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
