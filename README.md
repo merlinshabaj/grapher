@@ -6,8 +6,8 @@
 - Drawing multiple lines
 - Stretching and squashing of individual axes
     - [x] Squashing and stretching of the y-axis
-    - [ ] Squash and stretch by dragging the repsective axis
-    - [ ] Update resolution
+    - [x] Squash and stretch by dragging the repsective axis
+    - [x] Update resolution
     - [ ] Update line widths?
     - [ ] Handle zoom behavior when an axis is stretched or squashed
         - [ ] Update correctedScale uniform
@@ -40,12 +40,15 @@ Possible approaches:
                 updateLineWidthOnUniforms()
             }
     ```
-- Refcator this piece of code into a funciton or similar, it is used at least twice: 
+- Refactor this piece of code into a funciton or similar, it is used at least twice: 
 ```JS
 const maxRange =  Math.max(xMax - xMin, yMax - yMin)
 const newGridSize = calculateGridSize(maxRange)
 renderWithNewOrthographicDimensions(newGridSize)
 ```
+- Refactor eventListener section espeacially the latest code
+    - Squash and strecht function need refactoring a lot of duplication
+- Revise exact resolution calculation for stretch and squashing function. Current implementation probably isn't resilient enough
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
