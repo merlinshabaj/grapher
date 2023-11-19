@@ -264,9 +264,10 @@ const main = () => {
             updateResolution()
             // console.log('Zoom resolution: ', resolution)
             updateWorldMinAndMax()
-            const maxRange =  Math.max(xMax - xMin, yMax - yMin)
-            const newGridSize = calculateGridSize(maxRange);
-            renderWithNewOrthographicDimensions(newGridSize)
+            const maxRange = Math.max(xMax - xMin, yMax - yMin)
+            const newGridSize = calculateGridSize(maxRange)
+            const aspectRatio = (canvas.width / canvas.height)
+            correctedScale === aspectRatio ? renderWithNewOrthographicDimensions(newGridSize) : renderWithNewOrthographicDimensions()
         }
         const zoomToOrigin = () => {
             const easeInOutCubic = t => {
