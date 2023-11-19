@@ -60,15 +60,21 @@ void main() {
 
     vec2 direction = end - start;
     vec2 unitNormal = normalize(vec2(-direction.y, direction.x));
-    float correctedScale = 1.0;
-    if (u_correctedScale < 1.0) {
-        unitNormal = vec2(unitNormal.x * u_correctedScale, unitNormal.y );
-    } else {
-        unitNormal = vec2(unitNormal.x * u_correctedScale, unitNormal.y );
-    }
-    
-    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + unitNormal * u_lineWidth * a_instanceVertexPosition.y;
+    float startAspectRatio = 1.8274111675126903;
+    float correctedScale = u_correctedScale / startAspectRatio;
 
+    bool isVertical = abs(direction.x) == 0.0;
+    bool isHorizontal = abs(direction.y) == 0.0;
+
+    if (abs(direction.x) == 0.0) {
+        unitNormal.x = unitNormal.x * correctedScale;
+    } 
+    
+    // if (abs(direction.y) == 0.0) {
+    //     unitNormal.y = unitNormal.y / correctedScale;
+    // }
+
+    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + unitNormal * u_lineWidth * a_instanceVertexPosition.y;
     gl_Position = u_mvp * vec4(worldSpacePosition, 0, 1);
 }
 `;
@@ -388,11 +394,11 @@ const main = () => {
             })()
             // setLineWidthToDefault()
             correctedScale = _correctedScale
-            console.log(correctedScale)
-            // graph.updateCorrectedScale(correctedScale)
-            // majorGrid.updateCorrectedScale(correctedScale)
-            // minorGrid.updateCorrectedScale(correctedScale)
-            // axes.updateCorrectedScale(correctedScale)
+            console.log('squashX: ', correctedScale)
+            graph.updateCorrectedScale(correctedScale)
+            majorGrid.updateCorrectedScale(correctedScale)
+            minorGrid.updateCorrectedScale(correctedScale)
+            axes.updateCorrectedScale(correctedScale)
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
@@ -408,8 +414,8 @@ const main = () => {
             })()
             correctedScale = _correctedScale
             // setLineWidthToDefault()
-            console.log(correctedScale)
-            // graph.updateCorrectedScale(correctedScale)
+            console.log('stretchX: ', correctedScale)
+            graph.updateCorrectedScale(correctedScale)
             majorGrid.updateCorrectedScale(correctedScale)
             minorGrid.updateCorrectedScale(correctedScale)
             axes.updateCorrectedScale(correctedScale)
@@ -427,6 +433,7 @@ const main = () => {
                 return xScale
             })()
             correctedScale = _correctedScale
+            console.log('squashY: ', correctedScale)
             graph.updateCorrectedScale(correctedScale)
             majorGrid.updateCorrectedScale(correctedScale)
             minorGrid.updateCorrectedScale(correctedScale)
@@ -445,6 +452,7 @@ const main = () => {
                 return xScale
             })()
             correctedScale = _correctedScale
+            console.log('stretchY: ', correctedScale)
             graph.updateCorrectedScale(correctedScale)
             majorGrid.updateCorrectedScale(correctedScale)
             minorGrid.updateCorrectedScale(correctedScale)
@@ -490,6 +498,7 @@ const main = () => {
                 gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, mvp)
                 gl.uniform4fv(object.programInfo.colorLocation, color)
                 gl.uniform1f(object.programInfo.lineWidthLocation, lineWidth)
+                console.log('Uniform1f: ', correctedScale)
                 gl.uniform1f(object.programInfo.correctedScaleLocation, correctedScale)
             }
             const bindVertexArray = () => gl.bindVertexArray(object.vertexArray)
@@ -639,7 +648,6 @@ const main = () => {
             const cameraMatrix = m4.lookAt(cameraPosition, target, up);
             return m4.inverse(cameraMatrix);
         }
-
 
         const orthographicMatrix = m4.orthographic(xMin, xMax, yMin, yMax, near, far);
         viewProjectionMatrix = m4.multiply(orthographicMatrix, viewMatrix());    
@@ -828,7 +836,7 @@ const main = () => {
         primitiveType: gl.TRIANGLE_STRIP,
     })
 
-    line.addElements([minorGrid, majorGrid, axes, graph])
+    line.addElements([minorGrid, majorGrid, axes/* , graph */])
     roundJoin.addElements([graph])
 
     let viewProjectionMatrix, mvpMatrix
