@@ -262,6 +262,7 @@ const main = () => {
             
             updateLineWidths()
             updateResolution()
+            // console.log('Zoom resolution: ', resolution)
             updateWorldMinAndMax()
             const maxRange =  Math.max(xMax - xMin, yMax - yMin)
             const newGridSize = calculateGridSize(maxRange);
@@ -419,11 +420,14 @@ const main = () => {
             })()
             // setLineWidthToDefault()
             correctedScale = _correctedScale
-            console.log('squashX: ', correctedScale)
             graph.updateCorrectedScale(correctedScale)
             majorGrid.updateCorrectedScale(correctedScale)
             minorGrid.updateCorrectedScale(correctedScale)
             axes.updateCorrectedScale(correctedScale)
+            const recalculate = something => something / scaleFactor
+            const updateResolution = () => resolution = resolution / 1.025
+            updateResolution()
+            // console.log('Squash resolution: ', resolution)
             renderWithNewOrthographicDimensions()
         }
         const stretchX = () => {
@@ -439,11 +443,15 @@ const main = () => {
             })()
             correctedScale = _correctedScale
             // setLineWidthToDefault()
-            console.log('stretchX: ', correctedScale)
+
             graph.updateCorrectedScale(correctedScale)
             majorGrid.updateCorrectedScale(correctedScale)
             minorGrid.updateCorrectedScale(correctedScale)
             axes.updateCorrectedScale(correctedScale)
+            const recalculate = something => something / 1.025
+            const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
+            updateResolution()
+            // console.log('stretch resolution: ', resolution)
             renderWithNewOrthographicDimensions()
         }
         const squashY = () => {
@@ -458,11 +466,14 @@ const main = () => {
                 return xScale
             })()
             correctedScale = _correctedScale
-            console.log('squashY: ', correctedScale)
+
             graph.updateCorrectedScale(correctedScale)
             majorGrid.updateCorrectedScale(correctedScale)
             minorGrid.updateCorrectedScale(correctedScale)
             axes.updateCorrectedScale(correctedScale)
+            const recalculate = something => something / 1.025
+            const updateResolution = () => resolution = recalculate(resolution)
+            updateResolution()
             renderWithNewOrthographicDimensions()
         }
         const stretchY = () => {
@@ -477,11 +488,14 @@ const main = () => {
                 return xScale
             })()
             correctedScale = _correctedScale
-            console.log('stretchY: ', correctedScale)
+
             graph.updateCorrectedScale(correctedScale)
             majorGrid.updateCorrectedScale(correctedScale)
             minorGrid.updateCorrectedScale(correctedScale)
             axes.updateCorrectedScale(correctedScale)
+            const recalculate = something => something / 1.025
+            const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
+            updateResolution()
             renderWithNewOrthographicDimensions()
         }
 
@@ -523,7 +537,6 @@ const main = () => {
                 gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, mvp)
                 gl.uniform4fv(object.programInfo.colorLocation, color)
                 gl.uniform1f(object.programInfo.lineWidthLocation, lineWidth)
-                console.log('Uniform1f: ', correctedScale)
                 gl.uniform1f(object.programInfo.correctedScaleLocation, correctedScale)
             }
             const bindVertexArray = () => gl.bindVertexArray(object.vertexArray)
@@ -861,7 +874,7 @@ const main = () => {
         primitiveType: gl.TRIANGLE_STRIP,
     })
 
-    line.addElements([minorGrid, majorGrid, axes/* , graph */])
+    line.addElements([minorGrid, majorGrid, axes, graph])
     roundJoin.addElements([graph])
 
     let viewProjectionMatrix, mvpMatrix
