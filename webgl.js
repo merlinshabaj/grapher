@@ -135,6 +135,12 @@ const colors = () => {
 
 const main = () => {
     const setupEventListeners = () => {
+        const updateAllPoints = () => {
+            graphPointsBuffer.updateData(graphPoints())
+            majorGridPointsBuffer.updateData(majorGridPoints())
+            minorGridPointsBuffer.updateData(minorGridPoints())
+            axesPointsBuffer.updateData(axesPoints())
+        }
         const updateGridSizes = () => {
             [gridSizeX, gridSizeY] = determineGridSize();
         }
@@ -274,29 +280,13 @@ const main = () => {
             const easeInOutCubic = t => {
                 return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
             }
-            const interpolateTranslation = (currentTranslation, fraction) => {
-                fraction = easeInOutCubic(Math.max(0, Math.min(1, fraction)))
-                const targetTranslation = [0, 0, 0]
-  
-                // Interpolate each component of the translation vector
-                let interpolatedTranslation = currentTranslation.map((current, index) => {
-                    return current + fraction * (targetTranslation[index] - current)
-                });
-                return interpolatedTranslation
-            }
-            const interpolateWorldDimensions = (currentValues, fraction) => {
-                fraction = easeInOutCubic(Math.max(0, Math.min(1, fraction)))
-                const aspectRatio = canvas.clientWidth / canvas.clientHeight;
-
-                const targetValues = [-5 * aspectRatio, 5 * aspectRatio, -5, 5] // xMin, xMax, yMin, yMax
-                return currentValues.map((current, index) => {
-                    return current + fraction * (targetValues[index] - current)
+            const interpolateArray = (currentArray, targetArray, fraction) => {
+                return currentArray.map((current, index) => {
+                    return current + fraction * (targetArray[index] - current)
                 });
             }
-            const interpolateResolution = (currentResolution, fraction) => {
-                fraction = easeInOutCubic(Math.max(0, Math.min(1, fraction)))
-                const targetResolution = 100
-                return currentResolution + fraction * (targetResolution - currentResolution)
+            const interpolateNumber = (currentNumber, targetNumber, fraction) => {
+                return currentNumber + fraction * (targetNumber - currentNumber)
             }
             const setWorldDimensions = (dimensions) => {
                 xMin = dimensions[0]
@@ -312,12 +302,15 @@ const main = () => {
                 updateLineWidthOnUniforms()
             }
             const setScalingToAspectRatio = () => {
+                const updateCorrectedScaleOnUniforms = () => {
+                    graph.updateCorrectedScale(correctedScale)
+                    majorGrid.updateCorrectedScale(correctedScale)
+                    minorGrid.updateCorrectedScale(correctedScale)
+                    axes.updateCorrectedScale(correctedScale)
+                }
                 const aspectRatio = canvas.width / canvas.height
                 correctedScale = aspectRatio
-                graph.updateCorrectedScale(correctedScale)
-                majorGrid.updateCorrectedScale(correctedScale)
-                minorGrid.updateCorrectedScale(correctedScale)
-                axes.updateCorrectedScale(correctedScale)
+                updateCorrectedScaleOnUniforms()
             }
 
             let startTime = Date.now()
@@ -326,13 +319,16 @@ const main = () => {
                 let elapsedTime = Date.now() - startTime
                 let fraction = elapsedTime / animationDuration
                 if (fraction > 1) fraction = 1
+                fraction = easeInOutCubic(Math.max(0, Math.min(1, fraction)))
 
-                // Update dimensions, translations, resolution and linewidths
-                const interpolatedResolution = interpolateResolution(resolution, fraction)
-                resolution = interpolatedResolution
+                // Update dimensions, translations, resolution and line widths
+                resolution = interpolateNumber(resolution, 100, fraction)
 
-                setWorldDimensions(interpolateWorldDimensions([xMin, xMax, yMin, yMax], fraction))
-                translation = interpolateTranslation(translation, fraction);
+                const aspectRatio = canvas.clientWidth / canvas.clientHeight
+                const targetDimensions = [-5 * aspectRatio, 5 * aspectRatio, -5, 5]
+                setWorldDimensions(interpolateArray([xMin, xMax, yMin, yMax], targetDimensions, fraction))
+
+                translation = interpolateArray(translation, [0,0,0], fraction)
 
                 setScalingToAspectRatio()
                 setLineWidthToDefault()
@@ -349,13 +345,13 @@ const main = () => {
             startTime = Date.now();
             requestAnimationFrame(animateZoom);
         }
-        const roundToFractionOfStep = (value, step) => {
-            const fraction = step / 10
-            const roundedValue =  Math.round(value / fraction) * fraction
-            const decimalPlaces = (step.toString().split('.')[1] || '').length + 1
-            return Number.parseFloat(roundedValue.toFixed(decimalPlaces))
-        }
         const mousePositionWorld = mousePositionScreen => {
+            const roundToFractionOfStep = (value, step) => {
+                const fraction = step / 10
+                const roundedValue =  Math.round(value / fraction) * fraction
+                const decimalPlaces = (step.toString().split('.')[1] || '').length + 1
+                return Number.parseFloat(roundedValue.toFixed(decimalPlaces))
+            }
             let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
             _mousePositionWorld[0] = roundToFractionOfStep(_mousePositionWorld[0], gridSizeX)
             _mousePositionWorld[1] = roundToFractionOfStep(_mousePositionWorld[1], gridSizeY)
@@ -456,12 +452,7 @@ const main = () => {
         canvas.addEventListener('mousemove', showMouseCoordinates)
         canvas.addEventListener('mousemove', scaleAxes)
     }
-    const updateAllPoints = () => {
-        graphPointsBuffer.updateData(graphPoints())
-        majorGridPointsBuffer.updateData(majorGridPoints())
-        minorGridPointsBuffer.updateData(minorGridPoints())
-        axesPointsBuffer.updateData(axesPoints())
-    }
+    
     const render = () => {
         const drawElements = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
