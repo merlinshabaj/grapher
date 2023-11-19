@@ -1,5 +1,10 @@
 # `Plotter`
 ## TODO 
+### Next up
+- [ ] Refactor eventListener section
+- [ ] Refactor Stretch and squash functions
+- [ ] Refactor `renderWithNewOrthographicDimensions(newGridSize)` (see implementations[###implementation])
+- [ ] Resizing the window (see bugs[###bugs])
 ### Features
 - Zoom / pan to origin on button click
     - Interpolation of resolution isn't working yet
@@ -26,7 +31,7 @@ Possible approaches:
     2. Render set of numbers / symbols that are going to be displayed into textures and send them to the GPU 
     3. Create an atlas of all the symbols
 - I want to move away from defining the variables representing the world dimension (`xMin`, `xMax`, `yMin`, `yMax`) as individual values and either move them together. I don't know how yet but time will tell, I shouldn't do that yet anyway.
-- Move away from having double definitions, like I do for the unfiorms. I have a variable storing the uniform value and an object inside the element object/bundle. Long term it will probably be better to have one single source of truth and it would also simpliy the code. 
+- Move away from having double definitions, like I do for the unfiorms. I have a variable storing the uniform value and an object inside the element object/bundle. Long term it will probably be better to have one single source of truth and it would also simplify the code. 
     - Define a default value for line widths and other globals, so this can be refactored
     ```JS
     const setLineWidthToDefault = () => {
@@ -44,16 +49,10 @@ Possible approaches:
     renderWithNewOrthographicDimensions(newGridSize)
     ```
 - Refactor eventListener section espeacially the latest code
-    - Squash and strecht function need refactoring a lot of duplication
+    - Squash and stretch functions need refactoring, a lot of duplication
 - Revise exact resolution calculation for stretch and squashing function. Current implementation probably isn't resilient enough
 - Refactor `renderWithNewOrthographicDimensions()`
 - `zoomToOrigin()` doesn't reset cleanly when axes are scaled, due to the `lineWidth` being instantly reset
-- I am using this twice:
-    ```JS
-    const maxRange =  Math.max(xMax - xMin, yMax - yMin)
-    const newGridSize = calculateGridSize(maxRange);
-    renderWithNewOrthographicDimensions(newGridSize)
-    ```
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
@@ -68,7 +67,7 @@ Possible approaches:
         const maxRange = Math.max(xRange, yRange)
         const gridSize =  calculateGridSize(maxRange)
     ```
-- Resizing the window doesn't update the aspect ratio or somethine else
+- Resizing the window doesn't update the aspect ratio or something else
 - Not sure whether stretching is implemented correctly, when (0, 0) isn't in screen origing there might be weird behaviour 
 
 ## Miscellaneous 
