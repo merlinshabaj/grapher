@@ -8,13 +8,10 @@
     - [x] Squashing and stretching of the y-axis
     - [x] Squash and stretch by dragging the repsective axis
     - [x] Update resolution
-    - [ ] Update line widths?
-    - [ ] Handle zoom behavior when an axis is stretched or squashed
-        - [ ] Update correctedScale uniform
-        - [ ] handle line width
-        - [ ] probably handle resolution
-        - [ ] Add correctedScale interpolation to zoomToOrigin function
-    - [x] Something about the calculation of grid size needs to be reworked 
+    - [ ] Adjust aspect ratio
+    - [x] Handle zoom behavior when an axis is stretched or squashed
+    - [x] Add correctedScale interpolation to zoomToOrigin function
+    - [x] Something about the calculation of grid size needs to be reworked
 - Display numbers even when axes aren't in view (GeoGebra)
 #### Soon
 - Maybe label for axes (x and y)
@@ -49,6 +46,8 @@ renderWithNewOrthographicDimensions(newGridSize)
 - Refactor eventListener section espeacially the latest code
     - Squash and strecht function need refactoring a lot of duplication
 - Revise exact resolution calculation for stretch and squashing function. Current implementation probably isn't resilient enough
+- Refactor `renderWithNewOrthographicDimensions()`
+- `zoomToOrigin()` doesn't reset cleanly when axes are scale, due to the `lineWidth` being instantly reset
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
@@ -63,9 +62,8 @@ renderWithNewOrthographicDimensions(newGridSize)
     const maxRange = Math.max(xRange, yRange)
     const gridSize =  calculateGridSize(maxRange)
 ```
-- [x] Grid size updates aren't synchronised for x and y axis when zooming
-    - [x] Zooming to origin, doesn't work anymore since globalising gridSizeX and gridSizeY
-    - [ ] Changing scaling of an axis while having zoomed in or out updates the grid size and applies each grid size respective to it's axis -> since the max range grid size isn't applied anymore for both an abrupt change in grid size can happens
+- Resizing the window doesn't update the aspect ratio or somethine else
+- Not sure whether stretching is implemented correctly, when (0, 0) isn't in screen origing there might be weird behaviour 
 
 ## Miscellaneous 
 ### Potential for bugs
