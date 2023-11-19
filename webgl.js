@@ -1,7 +1,7 @@
 'use strict'
 
 import * as webglUtils from './webgl-utils.js';
-import { rangeInclusive, vsub, expect, vmul, vdiv, vadd, elementWithId, div, setProps, log, left } from './utils.js';
+import { rangeInclusive, vsub, expect, vmul, vdiv, vadd, elementWithId, div, setProps, log, left, positionToStyle } from './utils.js';
 import * as m4 from './m4.js';
 
 const flipY = vec2 => [vec2[0], -1 * vec2[1]]
@@ -185,7 +185,8 @@ const main = () => {
             if (mousePositionWorldHasZero) {
                 _mousePositionWorld[1] === 0 ? startMouse[0] = event.clientX : startMouse[1] = event.clientY
                 canvas.removeEventListener('mousemove', pan)
-                const cursorStyle = _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
+                const cursorStyle = _mousePositionWorld.every(position => position === 0) ? 'col-resize'
+                       : _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
                        : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
                        : 'grabbing';
 
@@ -381,7 +382,8 @@ const main = () => {
             const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
         
             if (!isMouseDown || isMouseDown && mousePositionWorldHasZero) {
-                const cursorStyle = _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
+                const cursorStyle = _mousePositionWorld.every(position => position === 0) ? 'col-resize'
+                       : _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
                        : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
                        : 'grab'
 
