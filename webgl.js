@@ -277,41 +277,40 @@ const main = () => {
             correctedScale === aspectRatio ? renderWithNewOrthographicDimensions(newGridSize) : renderWithNewOrthographicDimensions()
         }
         const zoomToOrigin = () => {
-            const easeInOutCubic = t => {
-                return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-            }
-            const interpolateArray = (currentArray, targetArray, fraction) => {
-                return currentArray.map((current, index) => {
-                    return current + fraction * (targetArray[index] - current)
-                });
-            }
-            const interpolateNumber = (currentNumber, targetNumber, fraction) => {
-                return currentNumber + fraction * (targetNumber - currentNumber)
-            }
-            const setWorldDimensions = dimensions => {
-                [xMin, xMax, yMin, yMax] = dimensions
-            }
-            const setLineWidthToDefault = () => {
-                graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
-                majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
-                minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
-                axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
-                updateLineWidthOnUniforms()
-            }
-            const setScalingToAspectRatio = () => {
-                const updateCorrectedScaleOnUniforms = () => {
-                    graph.updateCorrectedScale(correctedScale)
-                    majorGrid.updateCorrectedScale(correctedScale)
-                    minorGrid.updateCorrectedScale(correctedScale)
-                    axes.updateCorrectedScale(correctedScale)
-                }
-                correctedScale = aspectRatio
-                updateCorrectedScaleOnUniforms()
-            }
-
-            let startTime = Date.now()
+            
             const animateZoom = () => {
-                /** Updates translation, resolution adn world dimensions */
+                const easeInOutCubic = t => {
+                    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+                }
+                const interpolateArray = (currentArray, targetArray, fraction) => {
+                    return currentArray.map((current, index) => {
+                        return current + fraction * (targetArray[index] - current)
+                    });
+                }
+                const interpolateNumber = (currentNumber, targetNumber, fraction) => {
+                    return currentNumber + fraction * (targetNumber - currentNumber)
+                }
+                const setWorldDimensions = dimensions => {
+                    [xMin, xMax, yMin, yMax] = dimensions
+                }
+                const setLineWidthToDefault = () => {
+                    graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
+                    majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+                    minorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
+                    axesLineWidth = translationVector([2, 0]).screenToWorldSpace()[0]
+                    updateLineWidthOnUniforms()
+                }
+                const setScalingToAspectRatio = () => {
+                    const updateCorrectedScaleOnUniforms = () => {
+                        graph.updateCorrectedScale(correctedScale)
+                        majorGrid.updateCorrectedScale(correctedScale)
+                        minorGrid.updateCorrectedScale(correctedScale)
+                        axes.updateCorrectedScale(correctedScale)
+                    }
+                    correctedScale = aspectRatio
+                    updateCorrectedScaleOnUniforms()
+                }
+                /** Updates translation, resolution and world dimensions */
                 const interpolateToDefaultValues = () => {
                     const targetDimensions = [-5 * aspectRatio, 5 * aspectRatio, -5, 5]
                     setWorldDimensions(interpolateArray([xMin, xMax, yMin, yMax], targetDimensions, fraction))
@@ -336,9 +335,8 @@ const main = () => {
                     requestAnimationFrame(animateZoom); // Continue the animation
                 }
             }
-            
-            startTime = Date.now();
-            requestAnimationFrame(animateZoom);
+            const startTime = Date.now()
+            requestAnimationFrame(animateZoom)
         }
         const mousePositionWorld = mousePositionScreen => {
             const roundToFractionOfStep = (value, step) => {
