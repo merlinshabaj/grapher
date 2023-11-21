@@ -164,9 +164,6 @@ const main = () => {
             : mousePosition.findIndex((position) => position === 0) === 1 ? 'col-resize'
             : defaultCursor
         }
-        let panningPosition = null
-        let startMouse = [null, null]
-        let isMouseDown = false
         const pan = event => {
             if (!panningPosition) return
             const mousePosition = [event.clientX, event.clientY]
@@ -192,6 +189,9 @@ const main = () => {
             startMouse = [null, null]
             canvas.removeEventListener('mousemove', pan)
         }
+        let panningPosition = null
+        let startMouse = [null, null]
+        let isMouseDown = false
         
         canvas.addEventListener('mousedown', event => {
             isMouseDown = true
@@ -311,20 +311,20 @@ const main = () => {
 
             let startTime = Date.now()
             const animateZoom = () => {
+                /** Updates translation, resolution adn world dimensions */
+                const interpolateToDefaultValues = () => {
+                    const targetDimensions = [-5 * aspectRatio, 5 * aspectRatio, -5, 5]
+                    setWorldDimensions(interpolateArray([xMin, xMax, yMin, yMax], targetDimensions, fraction))
+                    translation = interpolateArray(translation, [0,0,0], fraction)
+                    resolution = interpolateNumber(resolution, 100, fraction)
+                }
                 const animationDuration = 500
                 let elapsedTime = Date.now() - startTime
                 let fraction = elapsedTime / animationDuration
                 if (fraction > 1) fraction = 1
                 fraction = easeInOutCubic(Math.max(0, Math.min(1, fraction)))
 
-                // Update dimensions, translations, resolution and line widths
-                resolution = interpolateNumber(resolution, 100, fraction)
-
-                const targetDimensions = [-5 * aspectRatio, 5 * aspectRatio, -5, 5]
-                setWorldDimensions(interpolateArray([xMin, xMax, yMin, yMax], targetDimensions, fraction))
-
-                translation = interpolateArray(translation, [0,0,0], fraction)
-
+                interpolateToDefaultValues()
                 setScalingToAspectRatio()
                 setLineWidthToDefault()
 
@@ -366,7 +366,6 @@ const main = () => {
 
             mouseCoordinates.innerHTML = `(${_mousePositionWorld[0]}, ${_mousePositionWorld[1]})`
         }
-        
         const scaleAxes = event => {
             const changeCursorStyle = () => {
                 const mousePositionScreen = [event.clientX, event.clientY]
