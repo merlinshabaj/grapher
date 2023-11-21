@@ -144,6 +144,12 @@ const main = () => {
         const updateGridSizes = () => {
             [gridSizeX, gridSizeY] = determineGridSize();
         }
+        const updateLineWidthOnUniforms = () => {
+            graph.updateWidth(graphLineWidth)
+            majorGrid.updateWidth(majorGridLineWidth)
+            minorGrid.updateWidth(minorGridLineWidth)
+            axes.updateWidth(axesLineWidth)
+        }
         const renderWithNewOrthographicDimensions = (newGridSize = null) => {
             computeViewProjectionMatrix()
             if (newGridSize) { 
@@ -163,32 +169,18 @@ const main = () => {
             : mousePosition.findIndex((position) => position === 0) === 0 ? 'row-resize' 
             : mousePosition.findIndex((position) => position === 0) === 1 ? 'col-resize'
             : defaultCursor
-        }
-        const pan = event => {
-            if (!panningPosition) return
-            const mousePosition = [event.clientX, event.clientY]
-
-            const updateTranslation = () => {
-                const deltaScreen = vsub(mousePosition, panningPosition)
-                const deltaWorld = translationVector(deltaScreen).screenToWorldSpace()
-
-                const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
-                translation[0] = newTranslation[0]
-                translation[1] = newTranslation[1]    
+        } 
+        const mousePositionWorld = mousePositionScreen => {
+            const roundToFractionOfStep = (value, step) => {
+                const fraction = step / 10
+                const roundedValue =  Math.round(value / fraction) * fraction
+                const decimalPlaces = (step.toString().split('.')[1] || '').length + 1
+                return Number.parseFloat(roundedValue.toFixed(decimalPlaces))
             }
-            updateTranslation()
-            
-            panningPosition = mousePosition
-            
-            updateAllPoints()
-            render();
-        }
-        const stopPanningAndScaling = () => {
-            isMouseDown = false
-            panningPosition = null
-            startMouse = [null, null]
-            canvas.removeEventListener('mousemove', pan)
-            canvas.removeEventListener('mousemove', scaleAxes)
+            let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
+            _mousePositionWorld[0] = roundToFractionOfStep(_mousePositionWorld[0], gridSizeX)
+            _mousePositionWorld[1] = roundToFractionOfStep(_mousePositionWorld[1], gridSizeY)
+            return _mousePositionWorld
         }
         const calculateMaxRangeGridSize = () => {
             const maxRange = Math.max(xMax - xMin, yMax - yMin)
@@ -239,8 +231,26 @@ const main = () => {
             if (event.deltaY === 0) return
             zoom(event.deltaY < 0, _mousePositionRelativeToCanvas)
         }
-        const scaleAxes = event => {
+        const pan = event => {
+            if (!panningPosition) return
+            const mousePosition = [event.clientX, event.clientY]
+
+            const updateTranslation = () => {
+                const deltaScreen = vsub(mousePosition, panningPosition)
+                const deltaWorld = translationVector(deltaScreen).screenToWorldSpace()
+
+                const newTranslation = vadd(translation.slice(0, -1), deltaWorld)
+                translation[0] = newTranslation[0]
+                translation[1] = newTranslation[1]    
+            }
+            updateTranslation()
             
+            panningPosition = mousePosition
+            
+            updateAllPoints()
+            render();
+        }
+        const scaleAxes = event => {
             const scaleAxes = () => {
                 const updateScale = (axis, scaleFactor, resolutionFactor) => {
                     const updateCorrectedScale = () => {
@@ -297,9 +307,8 @@ const main = () => {
 
             const scaleFactor = 1.05
             const resolutionFactor = 1.025
-            // changeCursorStyle()
             scaleAxes()
-        } 
+        }
         const changeCursorStyle = () => {
             const mousePositionScreen = [event.clientX, event.clientY]
             const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
@@ -310,7 +319,7 @@ const main = () => {
                 setCursorStyle(_cursorStyle)
             }
         }
-        const panOrScaleAxes = event => {
+        const startPanningOrScaling = event => {
             isMouseDown = true
             const mousePosition = [event.clientX, event.clientY]
             panningPosition = mousePosition
@@ -326,32 +335,12 @@ const main = () => {
                 canvas.addEventListener('mousemove', pan)
             }
         }
-        let panningPosition = null
-        let startMouse = [null, null]
-        let isMouseDown = false
-        canvas.addEventListener('mousemove', changeCursorStyle)
-        canvas.addEventListener('mousedown', panOrScaleAxes)
-        canvas.addEventListener('mouseup', () => {
-            stopPanningAndScaling()
-            setCursorStyle('grab')
-        });
-        canvas.addEventListener('mouseleave', () => {
-            stopPanningAndScaling()
-            setCursorStyle('default')
-        });
-        canvas.addEventListener('mouseenter', () => {
-            setCursorStyle('grab')
-        });
-        canvas.addEventListener('wheel', zoom)
-        // Prevent the page from scrolling when using the mouse wheel on the canvas
-        canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false })
-
-        // Only updates on uniforms doesn't update initial / global lineWidth variables
-        const updateLineWidthOnUniforms = () => {
-            graph.updateWidth(graphLineWidth)
-            majorGrid.updateWidth(majorGridLineWidth)
-            minorGrid.updateWidth(minorGridLineWidth)
-            axes.updateWidth(axesLineWidth)
+        const stopPanningAndScaling = () => {
+            isMouseDown = false
+            panningPosition = null
+            startMouse = [null, null]
+            canvas.removeEventListener('mousemove', pan)
+            canvas.removeEventListener('mousemove', scaleAxes)
         }
         const zoomToOrigin = () => {
             const animateZoom = () => {
@@ -413,18 +402,6 @@ const main = () => {
             const startTime = Date.now()
             requestAnimationFrame(animateZoom)
         }
-        const mousePositionWorld = mousePositionScreen => {
-            const roundToFractionOfStep = (value, step) => {
-                const fraction = step / 10
-                const roundedValue =  Math.round(value / fraction) * fraction
-                const decimalPlaces = (step.toString().split('.')[1] || '').length + 1
-                return Number.parseFloat(roundedValue.toFixed(decimalPlaces))
-            }
-            let _mousePositionWorld = vsub(positionVector(mousePositionScreen).screenToWorldSpace(), [translation[0], translation[1]])
-            _mousePositionWorld[0] = roundToFractionOfStep(_mousePositionWorld[0], gridSizeX)
-            _mousePositionWorld[1] = roundToFractionOfStep(_mousePositionWorld[1], gridSizeY)
-            return _mousePositionWorld
-        }
         const showMouseCoordinates = event => {
             const positionDiv = mousePositionScreen => {
                 const mouseCoordinates = document.querySelector(".mouse-coordinates")
@@ -439,12 +416,26 @@ const main = () => {
 
             mouseCoordinates.innerHTML = `(${_mousePositionWorld[0]}, ${_mousePositionWorld[1]})`
         }
-        
-
+        let panningPosition = null
+        let startMouse = [null, null]
+        let isMouseDown = false
+        canvas.addEventListener('mousemove', changeCursorStyle)
+        canvas.addEventListener('mousedown', startPanningOrScaling)
+        canvas.addEventListener('mouseup', () => {
+            stopPanningAndScaling()
+            setCursorStyle('grab')
+        });
+        canvas.addEventListener('mouseleave', () => {
+            stopPanningAndScaling()
+            setCursorStyle('default')
+        });
+        canvas.addEventListener('mouseenter', () => setCursorStyle('grab'))
+        canvas.addEventListener('wheel', zoom)
+        // Prevent the page from scrolling when using the mouse wheel on the canvas
+        canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false })
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)
         canvas.addEventListener('mousemove', showMouseCoordinates)
-        
     }
     
     const render = () => {

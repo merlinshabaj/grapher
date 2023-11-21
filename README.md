@@ -2,10 +2,10 @@
 ## TODO 
 ### Next up
 - [x] Change cursor to be `col-resize` when at origin (0,0)
-- [ ] Refactor eventListener section
+- [x] Refactor eventListener section
 - [x] Refactor Stretch and squash functions
-- [ ] Refactor `renderWithNewOrthographicDimensions(newGridSize)` ([see implementations](#implementation))
-- [ ] Refactor variable setting cursor style ([see implementations](#implementation))
+- [x] Refactor `renderWithNewOrthographicDimensions(newGridSize)` ([see implementations](#implementation))
+- [x] Refactor variable setting cursor style ([see implementations](#implementation))
 - [ ] Resizing the window ([see bugs](#bugs))
 ### Features
 - Zoom / pan to origin on button click
@@ -44,23 +44,12 @@ Possible approaches:
                 updateLineWidthOnUniforms()
             }
     ```
-- Refactor this piece of code into a funciton or similar, it is used at least twice: 
-    ```JS
-    const maxRange =  Math.max(xMax - xMin, yMax - yMin)
-    const newGridSize = calculateGridSize(maxRange)
-    renderWithNewOrthographicDimensions(newGridSize)
-    ```
 - Refactor eventListener section espeacially the latest code
     - Squash and stretch functions need refactoring, a lot of duplication
 - Revise exact resolution calculation for stretch and squashing function. Current implementation probably isn't resilient enough
 - Refactor `renderWithNewOrthographicDimensions()`
 - `zoomToOrigin()` doesn't reset cleanly when axes are scaled, due to the `lineWidth` being instantly reset
-- Refactor the following, since I am using it twice:
-    ```JS
-    const cursorStyle = _mousePositionWorld.every(position => position === 0) ? 'col-resize'
-            : _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
-            : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
-    ```
+
 
 ### Bugs
 - Zooming in and out still has limits that aren't handled
