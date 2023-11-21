@@ -188,6 +188,7 @@ const main = () => {
             panningPosition = null
             startMouse = [null, null]
             canvas.removeEventListener('mousemove', pan)
+            canvas.removeEventListener('mousemove', scaleAxes)
         }
         const calculateMaxRangeGridSize = () => {
             const maxRange = Math.max(xMax - xMin, yMax - yMin)
@@ -238,11 +239,78 @@ const main = () => {
             if (event.deltaY === 0) return
             zoom(event.deltaY < 0, _mousePositionRelativeToCanvas)
         }
-        let panningPosition = null
-        let startMouse = [null, null]
-        let isMouseDown = false
+        const scaleAxes = event => {
+            
+            const scaleAxes = () => {
+                const updateScale = (axis, scaleFactor, resolutionFactor) => {
+                    const updateCorrectedScale = () => {
+                        const updateCorrectedScaleOnUniforms = correctedScale => {
+                            graph.updateCorrectedScale(correctedScale)
+                            majorGrid.updateCorrectedScale(correctedScale)
+                            minorGrid.updateCorrectedScale(correctedScale)
+                            axes.updateCorrectedScale(correctedScale)
+                        }
+                        const calculateXScale = () => {
+                            const xRange = xMax - xMin
+                            const yRange = yMax - yMin
+                            const xScale = xRange / yRange
+                            return xScale
+                        }
         
-        canvas.addEventListener('mousedown', event => {
+                        const _correctedScale = calculateXScale()
+                        correctedScale = _correctedScale
+                        updateCorrectedScaleOnUniforms(correctedScale)
+                    }
+                    const updateResolution = resolutionFactor => resolution = resolution / resolutionFactor
+
+                    if (axis === 'x') {
+                        xMin = xMin * scaleFactor
+                        xMax = xMax * scaleFactor
+                    } else if (axis === 'y') {
+                        yMin = yMin * scaleFactor
+                        yMax = yMax * scaleFactor
+                    }
+                    updateCorrectedScale()
+                    updateResolution(resolutionFactor)
+                    renderWithNewOrthographicDimensions()
+                }
+                const squashX = (scaleFactor, resolutionFactor) => updateScale('x', scaleFactor, resolutionFactor)
+                const stretchX = (scaleFactor, resolutionFactor) => updateScale('x', scaleFactor, resolutionFactor)
+                const squashY = (scaleFactor, resolutionFactor) => updateScale('y', scaleFactor, resolutionFactor)
+                const stretchY = (scaleFactor, resolutionFactor) => updateScale('y', scaleFactor, resolutionFactor)
+                const createAxisHandler = (axisIndex, squashFunc, stretchFunc) => {
+                    if (isMouseDown && startMouse[axisIndex] !== null) {
+                        const currentMouse = axisIndex === 0 ? event.clientX : event.clientY
+                        if (currentMouse > startMouse[axisIndex]) {
+                            squashFunc(scaleFactor, resolutionFactor)
+                        } else if (currentMouse < startMouse[axisIndex]) {
+                            stretchFunc((1 / scaleFactor), (1 / resolutionFactor))
+                        }
+                        startMouse[axisIndex] = currentMouse
+                    }
+                }
+
+                createAxisHandler(0, squashX, stretchX)
+                createAxisHandler(1, squashY, stretchY)
+            }
+            
+
+            const scaleFactor = 1.05
+            const resolutionFactor = 1.025
+            // changeCursorStyle()
+            scaleAxes()
+        } 
+        const changeCursorStyle = () => {
+            const mousePositionScreen = [event.clientX, event.clientY]
+            const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
+            const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
+        
+            if (!isMouseDown || isMouseDown && mousePositionWorldHasZero) {
+                const _cursorStyle = cursorStyle(_mousePositionWorld, 'grab')
+                setCursorStyle(_cursorStyle)
+            }
+        }
+        const panOrScaleAxes = event => {
             isMouseDown = true
             const mousePosition = [event.clientX, event.clientY]
             panningPosition = mousePosition
@@ -250,14 +318,19 @@ const main = () => {
             const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
             if (mousePositionWorldHasZero) {
                 _mousePositionWorld[1] === 0 ? startMouse[0] = event.clientX : startMouse[1] = event.clientY
-                canvas.removeEventListener('mousemove', pan)
                 const _cursorStyle = cursorStyle(_mousePositionWorld, 'grabbing')
                 setCursorStyle(_cursorStyle)
+                canvas.addEventListener('mousemove', scaleAxes)
             } else {
                 setCursorStyle('grabbing')
                 canvas.addEventListener('mousemove', pan)
             }
-        });
+        }
+        let panningPosition = null
+        let startMouse = [null, null]
+        let isMouseDown = false
+        canvas.addEventListener('mousemove', changeCursorStyle)
+        canvas.addEventListener('mousedown', panOrScaleAxes)
         canvas.addEventListener('mouseup', () => {
             stopPanningAndScaling()
             setCursorStyle('grab')
@@ -366,81 +439,12 @@ const main = () => {
 
             mouseCoordinates.innerHTML = `(${_mousePositionWorld[0]}, ${_mousePositionWorld[1]})`
         }
-        const scaleAxes = event => {
-            const changeCursorStyle = () => {
-                const mousePositionScreen = [event.clientX, event.clientY]
-                const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
-                const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
-            
-                if (!isMouseDown || isMouseDown && mousePositionWorldHasZero) {
-                    const _cursorStyle = cursorStyle(_mousePositionWorld, 'grab')
-                    setCursorStyle(_cursorStyle)
-                }
-            }
-            const scaleAxes = () => {
-                const updateScale = (axis, scaleFactor, resolutionFactor) => {
-                    const updateCorrectedScale = () => {
-                        const updateCorrectedScaleOnUniforms = correctedScale => {
-                            graph.updateCorrectedScale(correctedScale)
-                            majorGrid.updateCorrectedScale(correctedScale)
-                            minorGrid.updateCorrectedScale(correctedScale)
-                            axes.updateCorrectedScale(correctedScale)
-                        }
-                        const calculateXScale = () => {
-                            const xRange = xMax - xMin
-                            const yRange = yMax - yMin
-                            const xScale = xRange / yRange
-                            return xScale
-                        }
         
-                        const _correctedScale = calculateXScale()
-                        correctedScale = _correctedScale
-                        updateCorrectedScaleOnUniforms(correctedScale)
-                    }
-                    const updateResolution = resolutionFactor => resolution = resolution / resolutionFactor
-
-                    if (axis === 'x') {
-                        xMin = xMin * scaleFactor
-                        xMax = xMax * scaleFactor
-                    } else if (axis === 'y') {
-                        yMin = yMin * scaleFactor
-                        yMax = yMax * scaleFactor
-                    }
-                    updateCorrectedScale()
-                    updateResolution(resolutionFactor)
-                    renderWithNewOrthographicDimensions()
-                }
-                const squashX = (scaleFactor, resolutionFactor) => updateScale('x', scaleFactor, resolutionFactor)
-                const stretchX = (scaleFactor, resolutionFactor) => updateScale('x', scaleFactor, resolutionFactor)
-                const squashY = (scaleFactor, resolutionFactor) => updateScale('y', scaleFactor, resolutionFactor)
-                const stretchY = (scaleFactor, resolutionFactor) => updateScale('y', scaleFactor, resolutionFactor)
-                const createAxisHandler = (axisIndex, squashFunc, stretchFunc) => {
-                    if (isMouseDown && startMouse[axisIndex] !== null) {
-                        const currentMouse = axisIndex === 0 ? event.clientX : event.clientY
-                        if (currentMouse > startMouse[axisIndex]) {
-                            squashFunc(scaleFactor, resolutionFactor)
-                        } else if (currentMouse < startMouse[axisIndex]) {
-                            stretchFunc((1 / scaleFactor), (1 / resolutionFactor))
-                        }
-                        startMouse[axisIndex] = currentMouse
-                    }
-                }
-
-                createAxisHandler(0, squashX, stretchX)
-                createAxisHandler(1, squashY, stretchY)
-            }
-            
-
-            const scaleFactor = 1.05
-            const resolutionFactor = 1.025
-            changeCursorStyle()
-            scaleAxes()
-        } 
 
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)
         canvas.addEventListener('mousemove', showMouseCoordinates)
-        canvas.addEventListener('mousemove', scaleAxes)
+        
     }
     
     const render = () => {
