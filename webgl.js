@@ -186,7 +186,12 @@ const main = () => {
             updateAllPoints()
             render();
         }
-        
+        const stopPanningAndScaling = () => {
+            isMouseDown = false
+            panningPosition = null
+            startMouse = [null, null]
+            canvas.removeEventListener('mousemove', pan)
+        }
         
         canvas.addEventListener('mousedown', event => {
             isMouseDown = true
@@ -205,18 +210,12 @@ const main = () => {
             }
         });
         canvas.addEventListener('mouseup', () => {
-            isMouseDown = false
-            panningPosition = null
-            startMouse = [null, null]
+            stopPanningAndScaling()
             setCursorStyle('grab')
-            canvas.removeEventListener('mousemove', pan)
         });
         canvas.addEventListener('mouseleave', () => {
-            isMouseDown = false
-            panningPosition = null
-            startMouse = [null, null]
+            stopPanningAndScaling()
             setCursorStyle('default')
-            canvas.removeEventListener('mousemove', pan)
         });
         canvas.addEventListener('mouseenter', () => {
             setCursorStyle('grab')
