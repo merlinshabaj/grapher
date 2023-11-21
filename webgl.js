@@ -193,6 +193,51 @@ const main = () => {
             const maxRange = Math.max(xMax - xMin, yMax - yMin)
             return calculateGridSize(maxRange)
         }
+        const zoom = event => {
+            const zoom = (zoomingIn, mousePosition) => {
+                const adjustedZoomFactor = zoomingIn ? zoomFactor : 1 / zoomFactor
+                const recalculate = something => something / adjustedZoomFactor
+                const updateLineWidths = () => {
+                    const updateLineWidths = () => {
+                        const recalculateEach = somethings => somethings.map(recalculate);
+                        [graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth] = recalculateEach([graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
+                    }
+                 
+                    updateLineWidths()
+                    updateLineWidthOnUniforms()
+                }
+                const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
+                const updateWorldMinAndMax = () => {
+                    const recalculateWorldMinAndMax = () => {
+                        const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
+                        const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), adjustedZoomFactor))
+                        const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), adjustedZoomFactor))
+                        return [minNew, maxNew]
+                    }
+    
+                    const [minNew, maxNew] = recalculateWorldMinAndMax();
+                    [xMin, yMin] = minNew;
+                    [xMax, yMax] = maxNew;
+                }
+                
+                updateLineWidths()
+                updateResolution()
+                updateWorldMinAndMax()
+               
+                const newGridSize = calculateMaxRangeGridSize()
+                correctedScale === aspectRatio ? renderWithNewOrthographicDimensions(newGridSize) : renderWithNewOrthographicDimensions()
+            }
+            const mousePositionRelativeToCanvas = () => {
+                const rect = canvas.getBoundingClientRect()
+                const rectOrigin = [rect.left, rect.top]
+                const mousePosition = [event.clientX, event.clientY]
+                return vsub(mousePosition, rectOrigin)
+            }
+            const _mousePositionRelativeToCanvas = mousePositionRelativeToCanvas()
+            // Determine zoom direction
+            if (event.deltaY === 0) return
+            zoom(event.deltaY < 0, _mousePositionRelativeToCanvas)
+        }
         let panningPosition = null
         let startMouse = [null, null]
         let isMouseDown = false
@@ -224,18 +269,9 @@ const main = () => {
         canvas.addEventListener('mouseenter', () => {
             setCursorStyle('grab')
         });
-        canvas.addEventListener('wheel', event => {
-            const rect = canvas.getBoundingClientRect();
-            const rectOrigin = [rect.left, rect.top]
-            const mousePosition = [event.clientX, event.clientY]
-            const mousePositionRelativeToCanvas = vsub(mousePosition, rectOrigin)
-
-            // Determine zoom direction
-            if (event.deltaY === 0) return
-            zoom(event.deltaY < 0, mousePositionRelativeToCanvas);
-        });
+        canvas.addEventListener('wheel', zoom)
         // Prevent the page from scrolling when using the mouse wheel on the canvas
-        canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false });
+        canvas.addEventListener('wheel', event => event.preventDefault(), { passive: false })
 
         // Only updates on uniforms doesn't update initial / global lineWidth variables
         const updateLineWidthOnUniforms = () => {
@@ -244,42 +280,7 @@ const main = () => {
             minorGrid.updateWidth(minorGridLineWidth)
             axes.updateWidth(axesLineWidth)
         }
-        const zoom = (zoomingIn, mousePosition) => {
-            const adjustedZoomFactor = zoomingIn ? zoomFactor : 1 / zoomFactor
-            const recalculate = something => something / adjustedZoomFactor
-            const updateLineWidths = () => {
-                const updateLineWidths = () => {
-                    const recalculateEach = somethings => somethings.map(recalculate);
-                    [graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth] = recalculateEach([graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth])
-                }
-             
-                updateLineWidths()
-                updateLineWidthOnUniforms()
-            }
-            const updateResolution = () => resolution = 1 / recalculate(1 / resolution)
-            const updateWorldMinAndMax = () => {
-                const recalculateWorldMinAndMax = () => {
-                    const mousePositionWorld = positionVector(mousePosition).screenToWorldSpace()
-                    const minNew = vsub(mousePositionWorld, vdiv(vsub(mousePositionWorld, min()), adjustedZoomFactor))
-                    const maxNew = vadd(mousePositionWorld, vdiv(vsub(max(), mousePositionWorld), adjustedZoomFactor))
-                    return [minNew, maxNew]
-                }
-
-                const [minNew, maxNew] = recalculateWorldMinAndMax();
-                [xMin, yMin] = minNew;
-                [xMax, yMax] = maxNew;
-            }
-            
-            updateLineWidths()
-            updateResolution()
-            // console.log('Zoom resolution: ', resolution)
-            updateWorldMinAndMax()
-           
-            const newGridSize = calculateMaxRangeGridSize()
-            correctedScale === aspectRatio ? renderWithNewOrthographicDimensions(newGridSize) : renderWithNewOrthographicDimensions()
-        }
         const zoomToOrigin = () => {
-            
             const animateZoom = () => {
                 const easeInOutCubic = t => {
                     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
