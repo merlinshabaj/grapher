@@ -155,8 +155,14 @@ const main = () => {
             updateAllPoints()
             render();
         }
-        const setCursorStyle = (style) => {
+        const setCursorStyle = style => {
             canvas.style.cursor = style;
+        }
+        const cursorStyle = (mousePosition, defaultCursor) => {
+            return mousePosition.every(position => position === 0) ? 'col-resize'
+            : mousePosition.findIndex((position) => position === 0) === 0 ? 'row-resize' 
+            : mousePosition.findIndex((position) => position === 0) === 1 ? 'col-resize'
+            : defaultCursor
         }
         let panningPosition = null
         let startMouse = [null, null]
@@ -191,12 +197,8 @@ const main = () => {
             if (mousePositionWorldHasZero) {
                 _mousePositionWorld[1] === 0 ? startMouse[0] = event.clientX : startMouse[1] = event.clientY
                 canvas.removeEventListener('mousemove', pan)
-                const cursorStyle = _mousePositionWorld.every(position => position === 0) ? 'col-resize'
-                       : _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
-                       : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
-                       : 'grabbing';
-
-                setCursorStyle(cursorStyle)
+                const _cursorStyle = cursorStyle(_mousePositionWorld, 'grabbing')
+                setCursorStyle(_cursorStyle)
             } else {
                 setCursorStyle('grabbing')
                 canvas.addEventListener('mousemove', pan)
@@ -373,12 +375,8 @@ const main = () => {
                 const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
             
                 if (!isMouseDown || isMouseDown && mousePositionWorldHasZero) {
-                    const cursorStyle = _mousePositionWorld.every(position => position === 0) ? 'col-resize'
-                           : _mousePositionWorld.findIndex((position) => position === 0) === 0 ? 'row-resize' 
-                           : _mousePositionWorld.findIndex((position) => position === 0) === 1 ? 'col-resize'
-                           : 'grab'
-    
-                    setCursorStyle(cursorStyle)
+                    const _cursorStyle = cursorStyle(_mousePositionWorld, 'grab')
+                    setCursorStyle(_cursorStyle)
                 }
             }
             const scaleAxes = () => {
