@@ -189,6 +189,10 @@ const main = () => {
             startMouse = [null, null]
             canvas.removeEventListener('mousemove', pan)
         }
+        const calculateMaxRangeGridSize = () => {
+            const maxRange = Math.max(xMax - xMin, yMax - yMin)
+            return calculateGridSize(maxRange)
+        }
         let panningPosition = null
         let startMouse = [null, null]
         let isMouseDown = false
@@ -261,19 +265,17 @@ const main = () => {
                     return [minNew, maxNew]
                 }
 
-                const [minNew, maxNew] = recalculateWorldMinAndMax()
-                xMin = minNew[0];
-                yMin = minNew[1];
-                xMax = maxNew[0];
-                yMax = maxNew[1];
+                const [minNew, maxNew] = recalculateWorldMinAndMax();
+                [xMin, yMin] = minNew;
+                [xMax, yMax] = maxNew;
             }
             
             updateLineWidths()
             updateResolution()
             // console.log('Zoom resolution: ', resolution)
             updateWorldMinAndMax()
-            const maxRange = Math.max(xMax - xMin, yMax - yMin)
-            const newGridSize = calculateGridSize(maxRange)
+           
+            const newGridSize = calculateMaxRangeGridSize()
             correctedScale === aspectRatio ? renderWithNewOrthographicDimensions(newGridSize) : renderWithNewOrthographicDimensions()
         }
         const zoomToOrigin = () => {
@@ -327,8 +329,7 @@ const main = () => {
                 setScalingToAspectRatio()
                 setLineWidthToDefault()
 
-                const maxRange =  Math.max(xMax - xMin, yMax - yMin)
-                const newGridSize = calculateGridSize(maxRange);
+                const newGridSize = calculateMaxRangeGridSize()
                 renderWithNewOrthographicDimensions(newGridSize)
 
                 if (fraction < 1) {
