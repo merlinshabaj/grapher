@@ -1,12 +1,13 @@
 # `Plotter`
 ## TODO 
 ### Next up
+- [ ] Resizing the window ([see bugs](#bugs))
+- [ ] Fix bug: zoom limits ([see bugs](#bugs))
 - [x] Change cursor to be `col-resize` when at origin (0,0)
 - [x] Refactor eventListener section
 - [x] Refactor Stretch and squash functions
 - [x] Refactor `renderWithNewOrthographicDimensions(newGridSize)` ([see implementations](#implementation))
 - [x] Refactor variable setting cursor style ([see implementations](#implementation))
-- [ ] Resizing the window ([see bugs](#bugs))
 ### Features
 - Zoom / pan to origin on button click
     - Interpolation of resolution isn't working yet
