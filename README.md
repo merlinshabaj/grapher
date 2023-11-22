@@ -1,4 +1,4 @@
-# `Plotter`
+# `Grapher`
 ## TODO 
 ### Next up
 - [ ] Resizing the window ([see bugs](#bugs))
@@ -21,6 +21,7 @@
     - [x] Add correctedScale interpolation to zoomToOrigin function
     - [x] Something about the calculation of grid size needs to be reworked
 - Display numbers even when axes aren't in view (GeoGebra)
+- Zoom-in shouldn't zoom to exact mouse position, it should zoom to nearest point (round)
 #### Soon
 - Maybe label for axes (x and y)
 - Arrows for axes
@@ -50,6 +51,7 @@ Possible approaches:
 - Revise exact resolution calculation for stretch and squashing function. Current implementation probably isn't resilient enough
 - Refactor `renderWithNewOrthographicDimensions()`
 - `zoomToOrigin()` doesn't reset cleanly when axes are scaled, due to the `lineWidth` being instantly reset
+- `roundToFractionOfStep()` needs a more robust implementation, it is the reason for having the zoom-in cap at 1e-6 and the sporadic rounding errors when showing the mouse coordinates
 
 
 ### Bugs

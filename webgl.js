@@ -141,9 +141,6 @@ const main = () => {
             minorGridPointsBuffer.updateData(minorGridPoints())
             axesPointsBuffer.updateData(axesPoints())
         }
-        const updateGridSizes = () => {
-            [gridSizeX, gridSizeY] = determineGridSize();
-        }
         const updateLineWidthOnUniforms = () => {
             graph.updateWidth(graphLineWidth)
             majorGrid.updateWidth(majorGridLineWidth)
@@ -151,6 +148,9 @@ const main = () => {
             axes.updateWidth(axesLineWidth)
         }
         const renderWithNewOrthographicDimensions = (newGridSize = null) => {
+            const updateGridSizes = () => {
+                [gridSizeX, gridSizeY] = determineGridSize();
+            }
             computeViewProjectionMatrix()
             if (newGridSize) { 
                 gridSizeX = newGridSize
@@ -188,6 +188,8 @@ const main = () => {
         }
         const zoom = event => {
             const zoom = (zoomingIn, mousePosition) => {
+                // Limit zooom in and zoom out
+                if (calculateMaxRangeGridSize() <= 1e-6 && zoomingIn || calculateMaxRangeGridSize() >= 2e+18 && !zoomingIn) { return }
                 const adjustedZoomFactor = zoomingIn ? zoomFactor : 1 / zoomFactor
                 const recalculate = something => something / adjustedZoomFactor
                 const updateLineWidths = () => {
@@ -309,7 +311,7 @@ const main = () => {
             const resolutionFactor = 1.025
             scaleAxes()
         }
-        const changeCursorStyle = () => {
+        const changeCursorStyle = event => {
             const mousePositionScreen = [event.clientX, event.clientY]
             const _mousePositionWorld = mousePositionWorld(mousePositionScreen)
             const mousePositionWorldHasZero = _mousePositionWorld.some(position => position === 0)
@@ -518,8 +520,9 @@ const main = () => {
                 _drawNumber() 
             }
             const roundPoint = point => {
-                point[0] = Math.round(point[0] * 1000000) / 1000000
-                point[1] = Math.round(point[1] * 1000000) / 1000000
+                const precision = 10000000000000 // 1e-13
+                point[0] = Math.round(point[0] * precision) / precision
+                point[1] = Math.round(point[1] * precision) / precision
             
                 return point
             }
@@ -885,16 +888,17 @@ const minorGridPoints = () => {
     const xStart = Math.ceil(xMin / minorGridSizeX) * minorGridSizeX;
     const yStart = Math.ceil(yMin / minorGridSizeY) * minorGridSizeY;
 
+    const precision = 0.000000000000001 
     for (let x = xStart; x <= xMax; x += minorGridSizeX) {
         // Skip major grid lines
-        if (Math.abs(x % gridSizeX) > 0.0001) { 
+        if (Math.abs(x % gridSizeX) > precision) { 
             points.push(x, yMax, x, yMin);
         }
     }
 
     for (let y = yStart; y <= yMax; y += minorGridSizeY) {
         // Skip major grid lines
-        if (Math.abs(y % gridSizeY) > 0.0001) { 
+        if (Math.abs(y % gridSizeY) > precision) { 
             points.push(xMin, y, xMax, y);
         }
     }
@@ -994,7 +998,7 @@ const initializeGlobalVariables = () => {
     })();
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
-    currentFn = functions[7];
+    currentFn = functions[2];
 
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
