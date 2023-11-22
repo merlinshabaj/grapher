@@ -2,25 +2,13 @@
 ## TODO 
 ### Next up
 - [ ] Resizing the window ([see bugs](#bugs))
-- [ ] Fix bug: zoom limits ([see bugs](#bugs))
-- [x] Change cursor to be `col-resize` when at origin (0,0)
-- [x] Refactor eventListener section
-- [x] Refactor Stretch and squash functions
-- [x] Refactor `renderWithNewOrthographicDimensions(newGridSize)` ([see implementations](#implementation))
-- [x] Refactor variable setting cursor style ([see implementations](#implementation))
 ### Features
 - Zoom / pan to origin on button click
     - Interpolation of resolution isn't working yet
 - Drawing multiple lines
 - Stretching and squashing of individual axes
-    - [x] Squashing and stretching of the y-axis
-    - [x] Squash and stretch by dragging the repsective axis
-    - [x] Update resolution
-    - [ ] Adjust aspect ratio
-    - [x] Handle zoom behavior when an axis is stretched or squashed
-    - [x] Add correctedScale interpolation to zoomToOrigin function
-    - [x] Something about the calculation of grid size needs to be reworked
-- Display numbers even when axes aren't in view (GeoGebra)
+    - [ ] Adjust aspect ratio (works for one axis, see shader code)
+- Display numbers even when axes aren't in view (example [Desmos](https://www.desmos.com/calculator/hsocrbfms9))
 - Zoom-in shouldn't zoom to exact mouse position, it should zoom to nearest point (round)
 #### Soon
 - Maybe label for axes (x and y)
@@ -46,18 +34,14 @@ Possible approaches:
                 updateLineWidthOnUniforms()
             }
     ```
-- Refactor eventListener section espeacially the latest code
-    - Squash and stretch functions need refactoring, a lot of duplication
 - Revise exact resolution calculation for stretch and squashing function. Current implementation probably isn't resilient enough
-- Refactor `renderWithNewOrthographicDimensions()`
 - `zoomToOrigin()` doesn't reset cleanly when axes are scaled, due to the `lineWidth` being instantly reset
-- `roundToFractionOfStep()` needs a more robust implementation, it is the reason for having the zoom-in cap at 1e-6 and the sporadic rounding errors when showing the mouse coordinates
+- Zooming is capped at 1e-6 and 2e+18. These limits should probably be increased.
+    - `roundToFractionOfStep()` needs a more robust implementation, it is the reason for having the zoom-in cap at 1e-6 
+    - The precision variable used in `roundPoint()` and `minorGridPoints()` should be refactored
 
 
 ### Bugs
-- Zooming in and out still has limits that aren't handled
-- Zooming in too far makes minor grid disappear and also major grid when scrolled even further
-- Zooming out too far and graph begins to flig. I assume this is due to the points be recalculated, this being the same bahviour as panning on a low resolution creates. Need to check calculation of resolution 
 - The function `determineGridSize()` doesn't produce the same result as the following:
     ```JS
         const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
@@ -68,7 +52,8 @@ Possible approaches:
         const gridSize =  calculateGridSize(maxRange)
     ```
 - Resizing the window doesn't update the aspect ratio or something else
-- Not sure whether stretching is implemented correctly, when (0, 0) isn't in screen origing there might be weird behaviour 
+- Not sure whether stretching is implemented correctly, when (0, 0) isn't the center of the camera there might be weird behaviour 
+- `roundToFractionOfStep()` produces rounding erros when dealing with small numbers, observable in displayed mouse coordinates
 
 ## Miscellaneous 
 ### Potential for bugs
