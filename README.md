@@ -52,8 +52,12 @@ Possible approaches:
         const gridSize =  calculateGridSize(maxRange)
     ```
 - Resizing the window doesn't update the aspect ratio or something else
+    - Using hardcoded value `startAspectRatio` for aspect ratio in line shader, needs to be a uniform 
 - Not sure whether stretching is implemented correctly, when (0, 0) isn't the center of the camera there might be weird behaviour 
-- `roundToFractionOfStep()` produces rounding erros when dealing with small numbers, observable in displayed mouse coordinates
+- `roundToFractionOfStep()` and `roundPoint()` produce rounding erros , observable in displayed mouse coordinates or number labels
+    - when dealing with small numbers
+    - when dealing with big numbers with fraction
+    - when dealing with big numbers
 
 ## Miscellaneous 
 ### Potential for bugs
