@@ -36,13 +36,13 @@ const positionVector = vector => {
 }
 
 const scaleCanvas = canvas => {
-    const width = canvas.clientWidth * devicePixelRatio
-    const height = canvas.clientHeight * devicePixelRatio
+    const width = Math.round(canvas.clientWidth * devicePixelRatio)
+    const height = Math.round(canvas.clientHeight * devicePixelRatio)
     if (canvas.width !== width || canvas.height !== height) {
         canvas.width = width;
         canvas.height = height;
     }
-}
+}      
 
 const lineVertexShaderSource = `#version 300 es
 precision highp float;
@@ -53,6 +53,7 @@ in vec4 a_startAndEndPoints;
 uniform mat4 u_mvp;
 uniform float u_lineWidth;
 uniform float u_correctedScale;
+uniform float u_aspectRatio;
 
 void main() {
     vec2 start = a_startAndEndPoints.xy; // start points
@@ -60,8 +61,8 @@ void main() {
 
     vec2 direction = end - start;
     vec2 unitNormal = normalize(vec2(-direction.y, direction.x));
-    float startAspectRatio = 1.8274111675126903;
-    float correctedScale = u_correctedScale / startAspectRatio;
+    // float startAspectRatio = 1.8274111675126903;
+    float correctedScale = u_correctedScale / u_aspectRatio;
 
     bool isVertical = abs(direction.x) == 0.0;
     bool isHorizontal = abs(direction.y) == 0.0;
@@ -89,7 +90,6 @@ uniform float u_correctedScale;
 
 void main() {
     vec2 startPoint = a_startAndEndPoints.xy;    
-    
     vec2 offset = vec2(a_instanceVertexPosition.x * u_correctedScale, a_instanceVertexPosition.y);
     vec2 point = u_lineWidth * offset + startPoint;
     
@@ -122,6 +122,7 @@ const functions = [
     x => Math.log1p(x),
     x => Math.cos(x) / 0.2,
     x => Math.cos(x / 2 ),
+    x => 3 * x ** 2 - 5 * x + 2,
 ];
 
 const colors = () => {
@@ -438,16 +439,31 @@ const main = () => {
         const homeButton = document.querySelector('.home-button__container')
         homeButton.addEventListener('click', zoomToOrigin)
         canvas.addEventListener('mousemove', showMouseCoordinates)
+        // canvas.addEventListener('resize', event => {
+        //     xMin = xMin
+        //     yMin = -5;
+        //     yMax = 5;
+        //     correctedScale = (() => {
+        //         const xRange = xMax - xMin
+        //         const yRange = yMax - yMin
+        //         const xScale = xRange / yRange
+        //         return xScale
+        //     })();
+        //     aspectRatio = canvas.clientWidth / canvas.clientHeight;
+        //     renderWithNewOrthographicDimensions()
+        // })
+
     }
     
     const render = () => {
         const drawElements = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
-            const setUniforms = (mvp, color, lineWidth, correctedScale) => {
+            const setUniforms = (mvp, color, lineWidth, correctedScale, aspectRatio) => {
                 gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, mvp)
                 gl.uniform4fv(object.programInfo.colorLocation, color)
                 gl.uniform1f(object.programInfo.lineWidthLocation, lineWidth)
                 gl.uniform1f(object.programInfo.correctedScaleLocation, correctedScale)
+                gl.uniform1f(object.programInfo.aspectRatioLocation, aspectRatio)
             }
             const bindVertexArray = () => gl.bindVertexArray(object.vertexArray)
             const draw = () => {
@@ -462,7 +478,7 @@ const main = () => {
                 object.elements().forEach( element => {
                     const buffer = element.buffer
                     const _uniform = element.uniforms()
-                    setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth, _uniform.u_correctedScale)
+                    setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth, _uniform.u_correctedScale, _uniform.u_aspectRatio)
                     buffer.bind()
                     setupStartAndEndPoints(startAndEndPoints)
                     instanceCount = buffer.length() / 4 
@@ -559,9 +575,9 @@ const main = () => {
                 drawNumber(worldPoint[1], numberPosition)
             })
         }
-
+        
         scaleCanvas(canvas)
-        scaleCanvas(textCanvas)
+        scaleCanvas(textCanvas) 
         setupRenderingContext()
         updateMVPMatrices()
         drawEachElement()  
@@ -693,6 +709,7 @@ const main = () => {
             const colorLocation = getUniformLocation('u_color')
             const lineWidthLocation = getUniformLocation('u_lineWidth')
             const correctedScaleLocation = getUniformLocation('u_correctedScale')
+            const aspectRatioLocation = getUniformLocation('u_aspectRatio')
             
             return {
                 program,
@@ -700,6 +717,7 @@ const main = () => {
                 mvpLocation,
                 lineWidthLocation,
                 correctedScaleLocation,
+                aspectRatioLocation,
             }
         }
 
@@ -726,29 +744,30 @@ const main = () => {
         lineWidth,
         correctedScale,
     }) => {
-        const uniforms = ({ color, lineWidth, correctedScale}) => ({
+        const uniforms = ({ color, lineWidth, correctedScale, aspectRatio}) => ({
             u_color: color, 
             u_mvp: m4.identity(),
             u_lineWidth: lineWidth, 
             u_correctedScale: correctedScale,
+            u_aspectRatio: aspectRatio
         })
 
         let _buffer = buffer
         
-        const _uniforms = uniforms({ color, lineWidth, correctedScale})
+        const _uniforms = uniforms({ color, lineWidth, correctedScale, aspectRatio})
         const updateMVPMatrix = mvp => _uniforms.u_mvp = mvp
         const updateWidth = width => _uniforms.u_lineWidth = width
         const updateCorrectedScale = correctedScale => _uniforms.u_correctedScale = correctedScale
+        const updateAspectRatio = aspectRatio => _uniforms.u_aspectRatio = aspectRatio
         return {
             buffer: _buffer,
             uniforms: () => _uniforms,
             updateMVPMatrix,
             updateWidth,
             updateCorrectedScale,
+            updateAspectRatio,
         }
     }
-
-
 
     const lineSegmentInstanceGeometry = [
         0, -0.5,
@@ -758,7 +777,6 @@ const main = () => {
         1, 0.5,
         0, 0.5
     ]
-
     const {
         lineSegmentBuffer,
         roundJoinGeometryBuffer,
@@ -769,10 +787,10 @@ const main = () => {
         axesPointsBuffer,
     } = buffers()
 
-    const graph = element({buffer: graphPointsBuffer, color: graphColor, lineWidth: graphLineWidth, correctedScale: correctedScale})
-    const majorGrid = element({buffer: majorGridPointsBuffer, color: majorGridColor, lineWidth: majorGridLineWidth, correctedScale: correctedScale})
-    const minorGrid = element({buffer: minorGridPointsBuffer, color: minorGridColor, lineWidth: minorGridLineWidth, correctedScale: correctedScale})
-    const axes = element({buffer: axesPointsBuffer, color: axesColor, lineWidth: axesLineWidth, correctedScale: correctedScale})
+    const graph = element({buffer: graphPointsBuffer, color: graphColor, lineWidth: graphLineWidth, correctedScale: correctedScale, aspectRatio})
+    const majorGrid = element({buffer: majorGridPointsBuffer, color: majorGridColor, lineWidth: majorGridLineWidth, correctedScale: correctedScale, aspectRatio})
+    const minorGrid = element({buffer: minorGridPointsBuffer, color: minorGridColor, lineWidth: minorGridLineWidth, correctedScale: correctedScale, aspectRatio})
+    const axes = element({buffer: axesPointsBuffer, color: axesColor, lineWidth: axesLineWidth, correctedScale: correctedScale, aspectRatio})
 
     const line = renderer({
         program: lineProgram,
@@ -794,7 +812,7 @@ const main = () => {
     
     setupEventListeners()
     computeViewProjectionMatrix()
-    render();
+    render()
 }
 
 const computeMVPMatrix = (viewProjectionMatrix, translation, xRotation, yRotation, scale) => {
@@ -998,7 +1016,7 @@ const initializeGlobalVariables = () => {
     })();
     scale = [1, 1, 1];
     resolution = 100 /* 250 */;
-    currentFn = functions[2];
+    currentFn = functions[8];
 
     graphLineWidth = translationVector([3, 0]).screenToWorldSpace()[0]
     majorGridLineWidth = translationVector([1, 0]).screenToWorldSpace()[0]
