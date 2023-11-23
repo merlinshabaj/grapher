@@ -54,6 +54,7 @@ uniform mat4 u_mvp;
 uniform float u_lineWidth;
 uniform float u_correctedScale;
 uniform float u_aspectRatio;
+uniform float u_scaleDirection;
 
 void main() {
     vec2 start = a_startAndEndPoints.xy; // start points
@@ -67,15 +68,24 @@ void main() {
     bool isVertical = abs(direction.x) == 0.0;
     bool isHorizontal = abs(direction.y) == 0.0;
 
-    if (abs(direction.x) == 0.0) {
-        unitNormal.x = unitNormal.x * correctedScale;
-    } 
+    // if (abs(direction.x) == 0.0) {
+    //     unitNormal.x = unitNormal.x * correctedScale;
+    // } 
     
     // if (abs(direction.y) == 0.0) {
     //     unitNormal.y = unitNormal.y / correctedScale;
     // }
 
-    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + unitNormal * u_lineWidth * a_instanceVertexPosition.y;
+    vec2 aspectRatioCorrection;
+    if (u_scaleDirection == 0.0) {
+        // Scaling primarily along x-axis
+        aspectRatioCorrection = vec2(u_correctedScale / u_aspectRatio, 1.0);
+    } else {
+        // Scaling primarily along y-axis
+        aspectRatioCorrection = vec2(1.0, u_aspectRatio / u_correctedScale);
+    }
+
+    vec2 worldSpacePosition = start + direction * a_instanceVertexPosition.x + unitNormal * u_lineWidth * aspectRatioCorrection * a_instanceVertexPosition.y;
     gl_Position = u_mvp * vec4(worldSpacePosition, 0, 1);
 }
 `;
@@ -87,16 +97,41 @@ in vec4 a_startAndEndPoints;
 uniform mat4 u_mvp;
 uniform float u_lineWidth;
 uniform float u_correctedScale;
+uniform float u_aspectRatio;
+uniform float u_scaleDirection;
+uniform vec2 u_cumulativeScale;
 
 void main() {
-    vec2 startPoint = a_startAndEndPoints.xy;    
-    vec2 offset = vec2(a_instanceVertexPosition.x * u_correctedScale, a_instanceVertexPosition.y);
-    vec2 point = u_lineWidth * offset + startPoint;
+    vec2 startPoint = a_startAndEndPoints.xy;   
+       
+    vec2 aspectRatioCorrection;
+    if (u_scaleDirection == 0.0) {
+        // Scaling primarily along x-axis
+        aspectRatioCorrection = vec2(u_correctedScale / u_aspectRatio, 1.0);
+    } else {
+        // Scaling primarily along y-axis
+        aspectRatioCorrection = vec2(1.0, u_aspectRatio / u_correctedScale);
+    }
+    // vec2 test = vec2(u_correctedScale / u_aspectRatio, u_aspectRatio / u_correctedScale);
+    // vec2 aspectRatioCorrection = u_cumulativeScale * test;
+    // vec2 aspectRatioCorrection = vec2(1.0 / u_cumulativeScale.y, 1.0 / u_cumulativeScale.x);
+    vec2 offset = a_instanceVertexPosition * u_lineWidth * aspectRatioCorrection * u_cumulativeScale;
+    vec2 point = startPoint + offset;
     
     gl_Position = u_mvp * vec4(point, 0, 1);
 }
 `;
-
+// vec2 aspectRatioCorrection = vec2(correctedScale, 1.0);
+    // vec2 aspectRatioCorrection;
+    // Y < X AND X < Y
+    // if (u_aspectRatio > u_correctedScale) {
+    //     // Viewport is wider than world coordinates (scale x-component)
+    //     aspectRatioCorrection = vec2(u_correctedScale / u_aspectRatio, 1.0); -> works for scaling xAxis
+    // } else {
+    //     // Viewport is taller than world coordinates (scale y-component)
+    //     aspectRatioCorrection = vec2(1.0, u_aspectRatio / u_correctedScale); -> works for scaling yAxis
+    // }
+    // Y > X and X > Y  
 
 const fragmentShaderSource = `#version 300 es
 
@@ -274,8 +309,20 @@ const main = () => {
                         correctedScale = _correctedScale
                         updateCorrectedScaleOnUniforms(correctedScale)
                     }
+                    const updateCumulativeScale = () => {
+                        graph.updateCumulativeScale(cumulativeScale)
+                        majorGrid.updateCumulativeScale(cumulativeScale)
+                        minorGrid.updateCumulativeScale(cumulativeScale)
+                        axes.updateCumulativeScale(cumulativeScale)
+                    }
+                    const calculateRanges = () => {
+                        const xRange = xMax - xMin
+                        const yRange = yMax - yMin
+                        return [xRange, yRange]
+                    }
                     const updateResolution = resolutionFactor => resolution = resolution / resolutionFactor
 
+                    const [xRange, yRange] = calculateRanges()
                     if (axis === 'x') {
                         xMin = xMin * scaleFactor
                         xMax = xMax * scaleFactor
@@ -283,6 +330,11 @@ const main = () => {
                         yMin = yMin * scaleFactor
                         yMax = yMax * scaleFactor
                     }
+                    const [newXRange, newYRange] = calculateRanges()
+                    cumulativeScale = [newXRange / xRange, newYRange / yRange]
+                    console.log('u_cumulativeScale: ', cumulativeScale)
+
+                    updateCumulativeScale(cumulativeScale)
                     updateCorrectedScale()
                     updateResolution(resolutionFactor)
                     renderWithNewOrthographicDimensions()
@@ -292,6 +344,12 @@ const main = () => {
                 const squashY = (scaleFactor, resolutionFactor) => updateScale('y', scaleFactor, resolutionFactor)
                 const stretchY = (scaleFactor, resolutionFactor) => updateScale('y', scaleFactor, resolutionFactor)
                 const createAxisHandler = (axisIndex, squashFunc, stretchFunc) => {
+                    const updateScaleDirection = () => {
+                        graph.updateScaleDirection(scaleDirection)
+                        majorGrid.updateScaleDirection(scaleDirection)
+                        minorGrid.updateScaleDirection(scaleDirection)
+                        axes.updateScaleDirection(scaleDirection)
+                    }
                     if (isMouseDown && startMouse[axisIndex] !== null) {
                         const currentMouse = axisIndex === 0 ? event.clientX : event.clientY
                         if (currentMouse > startMouse[axisIndex]) {
@@ -300,6 +358,13 @@ const main = () => {
                             stretchFunc((1 / scaleFactor), (1 / resolutionFactor))
                         }
                         startMouse[axisIndex] = currentMouse
+                    }
+                    if (axisIndex == 0.0) {
+                        scaleDirection = 1.0
+                        updateScaleDirection()
+                    } else {
+                        scaleDirection = 0.0
+                        updateScaleDirection()
                     }
                 }
 
@@ -311,6 +376,7 @@ const main = () => {
             const scaleFactor = 1.05
             const resolutionFactor = 1.025
             scaleAxes()
+            console.log('Min', [xMin, yMin], 'Max', [xMax, yMax])
         }
         const changeCursorStyle = event => {
             const mousePositionScreen = [event.clientX, event.clientY]
@@ -458,12 +524,14 @@ const main = () => {
     const render = () => {
         const drawElements = object => {
             const useObjectProgram = () => gl.useProgram(object.programInfo.program)
-            const setUniforms = (mvp, color, lineWidth, correctedScale, aspectRatio) => {
+            const setUniforms = (mvp, color, lineWidth, correctedScale, aspectRatio, scaleDirection) => {
                 gl.uniformMatrix4fv(object.programInfo.mvpLocation, false, mvp)
                 gl.uniform4fv(object.programInfo.colorLocation, color)
                 gl.uniform1f(object.programInfo.lineWidthLocation, lineWidth)
                 gl.uniform1f(object.programInfo.correctedScaleLocation, correctedScale)
                 gl.uniform1f(object.programInfo.aspectRatioLocation, aspectRatio)
+                gl.uniform1f(object.programInfo.scaleDirectionLocation, scaleDirection)
+                gl.uniform2fv(object.programInfo.cumulativeScaleLocation, cumulativeScale)
             }
             const bindVertexArray = () => gl.bindVertexArray(object.vertexArray)
             const draw = () => {
@@ -478,7 +546,7 @@ const main = () => {
                 object.elements().forEach( element => {
                     const buffer = element.buffer
                     const _uniform = element.uniforms()
-                    setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth, _uniform.u_correctedScale, _uniform.u_aspectRatio)
+                    setUniforms(_uniform.u_mvp, _uniform.u_color, _uniform.u_lineWidth, _uniform.u_correctedScale, _uniform.u_aspectRatio, _uniform.u_scaleDirection, _uniform.u_cumulativeScale)
                     buffer.bind()
                     setupStartAndEndPoints(startAndEndPoints)
                     instanceCount = buffer.length() / 4 
@@ -710,6 +778,8 @@ const main = () => {
             const lineWidthLocation = getUniformLocation('u_lineWidth')
             const correctedScaleLocation = getUniformLocation('u_correctedScale')
             const aspectRatioLocation = getUniformLocation('u_aspectRatio')
+            const scaleDirectionLocation = getUniformLocation('u_scaleDirection')
+            const cumulativeScaleLocation = getUniformLocation('u_cumulativeScale')
             
             return {
                 program,
@@ -718,6 +788,8 @@ const main = () => {
                 lineWidthLocation,
                 correctedScaleLocation,
                 aspectRatioLocation,
+                scaleDirectionLocation,
+                cumulativeScaleLocation,
             }
         }
 
@@ -744,12 +816,14 @@ const main = () => {
         lineWidth,
         correctedScale,
     }) => {
-        const uniforms = ({ color, lineWidth, correctedScale, aspectRatio}) => ({
+        const uniforms = ({ color, lineWidth, correctedScale, aspectRatio, scaleDirection, cumulativeScale}) => ({
             u_color: color, 
             u_mvp: m4.identity(),
             u_lineWidth: lineWidth, 
             u_correctedScale: correctedScale,
-            u_aspectRatio: aspectRatio
+            u_aspectRatio: aspectRatio,
+            u_scaleDirection: scaleDirection,
+            u_cumulativeScale: cumulativeScale,
         })
 
         let _buffer = buffer
@@ -759,6 +833,8 @@ const main = () => {
         const updateWidth = width => _uniforms.u_lineWidth = width
         const updateCorrectedScale = correctedScale => _uniforms.u_correctedScale = correctedScale
         const updateAspectRatio = aspectRatio => _uniforms.u_aspectRatio = aspectRatio
+        const updateScaleDirection = scaleDirection => _uniforms.u_scaleDirection = scaleDirection
+        const updateCumulativeScale = cumulativeScale => _uniforms.u_cumulativeScale = cumulativeScale
         return {
             buffer: _buffer,
             uniforms: () => _uniforms,
@@ -766,6 +842,8 @@ const main = () => {
             updateWidth,
             updateCorrectedScale,
             updateAspectRatio,
+            updateScaleDirection,
+            updateCumulativeScale,
         }
     }
 
@@ -787,10 +865,10 @@ const main = () => {
         axesPointsBuffer,
     } = buffers()
 
-    const graph = element({buffer: graphPointsBuffer, color: graphColor, lineWidth: graphLineWidth, correctedScale: correctedScale, aspectRatio})
-    const majorGrid = element({buffer: majorGridPointsBuffer, color: majorGridColor, lineWidth: majorGridLineWidth, correctedScale: correctedScale, aspectRatio})
-    const minorGrid = element({buffer: minorGridPointsBuffer, color: minorGridColor, lineWidth: minorGridLineWidth, correctedScale: correctedScale, aspectRatio})
-    const axes = element({buffer: axesPointsBuffer, color: axesColor, lineWidth: axesLineWidth, correctedScale: correctedScale, aspectRatio})
+    const graph = element({buffer: graphPointsBuffer, color: graphColor, lineWidth: graphLineWidth, correctedScale, aspectRatio, scaleDirection, cumulativeScale})
+    const majorGrid = element({buffer: majorGridPointsBuffer, color: majorGridColor, lineWidth: majorGridLineWidth, correctedScale, aspectRatio, scaleDirection, cumulativeScale})
+    const minorGrid = element({buffer: minorGridPointsBuffer, color: minorGridColor, lineWidth: minorGridLineWidth, correctedScale, aspectRatio, scaleDirection, cumulativeScale})
+    const axes = element({buffer: axesPointsBuffer, color: axesColor, lineWidth: axesLineWidth, correctedScale, aspectRatio, scaleDirection, cumulativeScale})
 
     const line = renderer({
         program: lineProgram,
@@ -808,7 +886,7 @@ const main = () => {
 
     let viewProjectionMatrix, mvpMatrix
 
-    const renderers = [line, roundJoin]
+    const renderers = [roundJoin]
     
     setupEventListeners()
     computeViewProjectionMatrix()
@@ -995,6 +1073,8 @@ const initializeGlobalVariables = () => {
 
     aspectRatio = canvas.clientWidth / canvas.clientHeight;
     console.log('aspectRatio: ', aspectRatio);
+    scaleDirection = 0.0
+    cumulativeScale = [1.0, 1.0];
 
     [xMin, xMax] = (() => {
         return [-5 * aspectRatio, 5 * aspectRatio]
@@ -1032,10 +1112,10 @@ let gl
 let textCanvas
 /** @type {CanvasRenderingContext2D} */
 let textContext
-let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn, correctedScale
+let near, far, xMin, xMax, yMin, yMax, translation, scale, resolution, currentFn
 let graphLineWidth, majorGridLineWidth, minorGridLineWidth, axesLineWidth
 let gridSizeX, gridSizeY
-let aspectRatio
+let aspectRatio, scaleDirection, correctedScale, cumulativeScale
 const zoomFactor = 1.05;
 const { graphColor, majorGridColor, minorGridColor, axesColor } = colors()
 initializeGlobalVariables()
