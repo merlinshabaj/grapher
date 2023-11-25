@@ -290,7 +290,6 @@ const main = () => {
         const mousePositionWorld = mousePositionScreen => {
             const roundToFractionOfStep = (value, step) => {
                 const fraction = step / 10
-                console.log('Step: ', step)
                 const roundedValue =  Math.round(value / fraction) * fraction
                 const decimalPlaces = (step.toString().split('.')[1] || '').length + 1
                 return Number.parseFloat(roundedValue.toFixed(decimalPlaces))
@@ -697,9 +696,9 @@ const main = () => {
                 _drawNumber() 
             }
             const roundPoint = point => {
-                const precision = 10000000000000 // 1e-13
-                point[0] = Math.round(point[0] * precision) / precision
-                point[1] = Math.round(point[1] * precision) / precision
+                const decimalPlaces = 6 // 1e-13
+                point[0] = Number(point[0].toFixed(decimalPlaces));
+                point[1] = Number(point[1].toFixed(decimalPlaces));
             
                 return point
             }
@@ -708,6 +707,7 @@ const main = () => {
 
             numberPointsXAxis().forEach(worldPoint => {
                 worldPoint = roundPoint(worldPoint)
+                console.log('worldPoint: ', worldPoint)
                 if (worldPoint[0] === 0 && worldPoint[1] === 0) { return }
                 const offsetAndCalculateNumberPosition = (width, height) => {
                     const offset = [width / -2, height + numberAxisOffset]
