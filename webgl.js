@@ -290,6 +290,7 @@ const main = () => {
         const mousePositionWorld = mousePositionScreen => {
             const roundToFractionOfStep = (value, step) => {
                 const fraction = step / 10
+                console.log('Step: ', step)
                 const roundedValue =  Math.round(value / fraction) * fraction
                 const decimalPlaces = (step.toString().split('.')[1] || '').length + 1
                 return Number.parseFloat(roundedValue.toFixed(decimalPlaces))
@@ -1132,7 +1133,7 @@ const calculateGridSize = range => {
 
     let gridSize = Math.pow(10, orderOfMagnitude);
     const rangeGridMultiple = range / gridSize;
-
+    const decimalPlaces = 10
     const threshold = 0.5
 
     if (rangeGridMultiple < 5 * threshold) {
@@ -1140,7 +1141,7 @@ const calculateGridSize = range => {
     } else if (rangeGridMultiple < 10 * threshold) {
         gridSize /= 2
     }
-    return gridSize
+    return Number(gridSize.toFixed(decimalPlaces))
 }
 const determineGridSize = () => {
     const [xMin, xMax, yMin, yMax] = translatedAxisRanges()
