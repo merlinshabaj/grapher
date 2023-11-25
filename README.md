@@ -58,6 +58,7 @@ Possible approaches:
     - when dealing with small numbers
     - when dealing with big numbers with fraction
     - when dealing with big numbers
+- Need to update zoom behaviour when aspect ratio is below 1, because y-dimensions scale with aspect ratio now as well if aspect ratio is below 1
 
 ## Miscellaneous 
 ### Potential for bugs
